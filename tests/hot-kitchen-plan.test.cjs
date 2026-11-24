@@ -92,22 +92,6 @@ test('an enriched dough keeps its required fridge and is never shaped warm',()=>
   }
 });
 
-test('a bake under way when the ladder shipped keeps its plan shape; new bakes and Bake again get one spell',()=>{
-  const {legacyHotPlanFor,HOT_PLAN_RULES}=require('../app/utils/hotPlanRules.ts');
-  const now=Date.parse('2026-11-27T12:00:00Z');
-  const saved={recipeGenerated:true,startTime:Date.parse('2026-11-27T10:00:00Z')};
-  assert.equal(legacyHotPlanFor(saved,now),true);                                   // its Start Dough has passed
-  assert.equal(legacyHotPlanFor({...saved,startTime:now+3600000},now),false);        // not under way yet
-  assert.equal(legacyHotPlanFor({...saved,startTime:now+3600000,mixExecution:{at:now}},now),true); // a recorded mix
-  assert.equal(legacyHotPlanFor({...saved,planRules:HOT_PLAN_RULES},now),false);     // made with the ladder
-  assert.equal(legacyHotPlanFor({...saved,planRules:HOT_PLAN_RULES,legacyHotPlan:true},now),true); // kept so once
-  assert.equal(legacyHotPlanFor({...saved,recipeGenerated:false},now),false);
-  // Maya's saved bake rebuilt as it was made: into the fridge, out to shape, back in.
-  const blocks=[wk(26,9,18),wk(27,9,18),nt(26),nt(27),nt(28)];
-  const kept=utils.buildSchedule(new Date(2026,10,27,18,0),new Date(2026,10,28,19,30),blocks,30,45,'hand','neapolitan',4,1,undefined,1,undefined,'off');
-  assert.equal(utils.fridgeSpellCount(kept),2);
-  assert.deepEqual(ids(kept).filter(id=>id.startsWith('cold')),['cold-in','cold-out','cold-in-2','cold-out-2']);
-});
 
 test('Simple, every kitchen (owner): a mild long plan shapes after the warm rise and goes into the fridge once; Custom keeps two stages',()=>{
   const bake=new Date(2026,10,28,19,0);

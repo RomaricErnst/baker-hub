@@ -46,7 +46,7 @@ import { bakeTitleName } from '../utils/bakeTitle';
 import { journalTitle } from '../components/BakeJournal';
 import {commercialPrefermentWindow, commercialPrefermentPlanValid, commercialReadinessWindow, automaticCommercialPlan, earliestPrefermentBake, validateConfirmedBake, STYLE_FERM_DEFAULTS, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
-import { findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake, newNightHandsOn, blocksForLaterBake } from '../utils/scheduleAvailability';
+import { findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake, nightHandsOn, blocksForLaterBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -81,7 +81,7 @@ import { useSessionSave } from '../hooks/useSessionSave';
 import { formatYeastDose, recipeYeastTotal } from '../utils/prefermentDose';
 import { soonStartLabel } from '../utils/startNotice';
 import { nightStepsLine } from '../utils/nightSteps';
-import { checkYeastEntry, entryPlan, entryTiming, type EntryPlan, entryPlanShape, entryPlanSearch, isNightBlock, nearestFittingShownPct, bakerHours, bakerPct, parseDecimal, formatDecimal, legacyEntryTimingFor, keptEntryRulesFor, normalizeEntryNightKept, nightFreeShownPct, entryPlanActions, uncovered, ENTRY_RULES, type YeastEntryCheck, type YeastEntryInput, type PrefermentPlanOption } from '../utils/yeastEntry';
+import { checkYeastEntry, entryPlan, entryTiming, type EntryPlan, entryPlanShape, entryPlanSearch, isNightBlock, nearestFittingShownPct, bakerHours, bakerPct, parseDecimal, formatDecimal, normalizeEntryNightKept, nightFreeShownPct, uncovered, type YeastEntryCheck, type YeastEntryInput, type PrefermentPlanOption } from '../utils/yeastEntry';
 import { starterActionLabelFor, starterBuild } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatPlanClock, clockRange, roundToQuarter, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
 import { formatDuration } from '../utils/duration';
@@ -94,11 +94,9 @@ import {
 import {
   buildSchedule, type PlanLadder, calculateRecipe, recommendedHydration, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type EnteredYeastTiming, type ScheduleResult,
-  starterBulkFactor, legacyStarterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape, withLongerPreheat,
+  starterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape, withLongerPreheat,
 } from '../utils';
 import { exitLeadFor, normalizeExitLead, planExitLead, type ExitLead } from '../utils/exitLead';
-import { HOT_PLAN_RULES, legacyHotPlanFor } from '../utils/hotPlanRules';
-import { restoredLevainLegacy, type LevainLegacy } from '../utils/levainLegacy';
 import { DEFAULT_WASTE_PCT, effectiveWastePct, restoredWastePct } from '../utils/doughAllowance';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { breadNoun, bakeSubject } from '../utils/breadNames';
@@ -1165,17 +1163,11 @@ export default function Home() {
   const [manualSalt, setManualSalt]           = useState<number | undefined>(undefined);
   // Custom, direct dough: the baker's yeast amount as IDY % of flour. The plan is re-timed to it.
   const [yeastPctOverride, setYeastPctOverride] = useState<number | undefined>(undefined);
-  // A bake saved under way with older rules (round 8–13) remembered the knead its amount was planned near; it keeps
-  // it (read only then). Round 15 (owner O2): every other plan derives it from the current inputs (`autoPlan`).
-  const [yeastAnchorH, setYeastAnchorH] = useState<number | undefined>(undefined);
   // Round 9 (bug B): a preferment amount the baker entered and that no longer applies (another storage, or a
   // change that leaves it no window) is cleared, and said once where the baker sees the field.
   const [prefYeastCleared, setPrefYeastCleared] = useState<{type:FlourPreferment;idyPct:number} | null>(null);
   // Round 9 (owner, 22 Nov 2026): the amounts whose night steps the baker chose to keep (the line is not shown again).
   const [entryNightKept, setEntryNightKept] = useState<{yeast?:number;pref?:{type:FlourPreferment;pct:number}} | undefined>(undefined);
-  const [legacyEntryTiming, setLegacyEntryTiming] = useState(false);
-  // Round 13: the entered-amount rules a restored bake under way keeps (2: round 9's), else the current ones.
-  const [keptEntryRules, setKeptEntryRules] = useState<number | undefined>(undefined);
   // Fine-tune: a typed yeast amount too slow for the time before the bake. It is not applied.
   // The plan in the last generated recipe: when its dough starts and its first preparation begins.
   // "Have you mixed?" is asked about this plan, never about an unaccepted edit.
@@ -1190,7 +1182,6 @@ export default function Home() {
   // Levain without a baker-entered %: the % the planner raised the inoculation to so the
   // warm bulk fits the baker's free time (SchedulePicker); undefined is the default amount.
   const [autoStarterPct, setAutoStarterPct] = useState<number | undefined>(undefined);
-  const [levainLegacy, setLevainLegacy] = useState<LevainLegacy>(null);
   // Set by explicit plan-input edits (yeast amount, starter %, poolish storage); the scheduler clears it after replanning.
   const [planReplanPending, setPlanReplanPending] = useState(false);
   // A plan-input edit made after generation: the plan step mounts the scheduler, it replans,
@@ -1309,8 +1300,6 @@ export default function Home() {
   const [preheatExtraMin, setPreheatExtraMin] = useState(0);
   // Bake again keeps the time the dough spent out of the fridge last time (exitLead.ts).
   const [exitLead, setExitLead] = useState<ExitLead | undefined>(undefined);
-  // A bake under way when the hot-kitchen ladder shipped keeps its plan shape (hotPlanRules.ts).
-  const [legacyHotPlan, setLegacyHotPlan] = useState(false);
   const [preheatEdit, setPreheatEdit] = useState(false);
   const pendingPreviousNote = useRef('');
   useEffect(() => {
@@ -1699,7 +1688,7 @@ export default function Home() {
     setKitchenTemp(session.kitchenTemp);
     setCustomKitchenConfirmed(session.customKitchenConfirmed ?? true);
     setHumidity(session.humidity);
-    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setPreviousNote(session.previousNote ?? ''); setPreheatExtraMin(Math.max(0, Math.min(120, session.preheatExtraMin ?? 0))); setExitLead(normalizeExitLead(session.exitLead)); setLegacyHotPlan(legacyHotPlanFor(session, Date.now())); setContainerCapacityLitres(session.containerCapacityLitres);
+    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setPreviousNote(session.previousNote ?? ''); setPreheatExtraMin(Math.max(0, Math.min(120, session.preheatExtraMin ?? 0))); setExitLead(normalizeExitLead(session.exitLead)); setContainerCapacityLitres(session.containerCapacityLitres);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
@@ -1729,18 +1718,17 @@ export default function Home() {
     setManualOil(session.manualOil);
     setManualSugar(session.manualSugar);
     setManualSalt(session.manualSalt);
-    setYeastPctOverride(session.yeastPctOverride);setYeastAnchorH(typeof session.yeastAnchorH==='number'&&Number.isFinite(session.yeastAnchorH)&&session.yeastPctOverride!==undefined?session.yeastAnchorH:undefined);
+    setYeastPctOverride(session.yeastPctOverride);
     setPrefYeastOverride(normalizePrefYeastOverride(session.prefYeastOverride));setPrefYeastIssue(null);
-    setLegacyEntryTiming(legacyEntryTimingFor(session, Date.now()));setKeptEntryRules(keptEntryRulesFor(session, Date.now()));setEntryNightKept(normalizeEntryNightKept(session.entryNightKept));
+    setEntryNightKept(normalizeEntryNightKept(session.entryNightKept));
     setAcceptedPlan(normalizeAcceptedPlan(session.acceptedStartTime, session.acceptedPreparationAt, session.acceptedEatTime));
     setStarterPctOverride(session.starterPctOverride);
     setAutoStarterPct(session.autoStarterPct);
-    setLevainLegacy(restoredLevainLegacy(session));
     setTargetDoughTemp(session.targetDoughTemp);
     setFlourInFridge(session.flourInFridge);
     setMeasuredFlourTemp(session.measuredFlourTemp); setMeasuredPrefermentTemp(session.measuredPrefermentTemp);
     setAddSeeds(session.addSeeds ?? false);
-    setWastePct(restoredWastePct(session.wastePct, !!session.execution || !!session.mixExecution));
+    setWastePct(restoredWastePct(session.wastePct));
     setPriorityOverride(session.priorityOverride);
     if (session.eatTime) setEatTime(new Date(session.eatTime));
     if (session.startTime) setStartTime(new Date(session.startTime));
@@ -2066,7 +2054,7 @@ export default function Home() {
   const exitLeadOnly = exitLeadFor(exitLead, kitchenTemp, styleKey);
   // One trip to the fridge (buildSchedule planLadder): every kitchen in Simple, hot kitchens in Custom (owner,
   // 21 Nov 2026), none for a bake under way kept as it was made (hotPlanRules.ts). Every planner gets the same.
-  const planLadder: PlanLadder = legacyHotPlan ? 'off' : tab === 'simple' ? 'all' : 'hot';
+  const planLadder: PlanLadder = tab === 'simple' ? 'all' : 'hot';
 
   const hasNightBlocker = blocks.some(b =>
     b.label.toLowerCase().includes('night') || b.from.getHours() >= 22 || b.to.getHours() <= 7
@@ -2099,8 +2087,6 @@ export default function Home() {
   // With a poolish or biga it is the final dough's own yeast (round 7).
   const yeastEntryMethod = prefermentType === 'none' || prefermentType === 'poolish' || prefermentType === 'biga';
   const effectiveYeastOverride = !!yeastType && yeastType !== 'sourdough' && yeastEntryMethod ? yeastPctOverride : undefined;
-  // The anchor lives only with an entered amount (every clear of the amount clears it).
-  useEffect(() => { if (yeastPctOverride === undefined && yeastAnchorH !== undefined) setYeastAnchorH(undefined); }, [yeastPctOverride, yeastAnchorH]);
   // The preferment's own yeast (round 7): the entered amount for this preferment, applied only while a
   // window holds it (prefermentYeast.ts), so no plan is ever timed for another amount than the one shown.
   const prefYeastCtx = (type: FlourPreferment, inFridge: boolean) => {
@@ -2140,11 +2126,7 @@ export default function Home() {
   // 110 → 100 g once a flour was asked for). Choosing a flour still changes them, by choice.
   const flourAnswered = flourChosen || confirmed('flour','recipe');
   const flourStrength = recipeFlourStrength(styleKey ?? '', 'custom', flourChosen ? flourBlend : undefined);
-  // A bake saved before 21 Nov 2026 keeps its bulk while its levain % and flour stay (restoredLevainLegacy).
-  const levainLegacyApplies = !!levainLegacy && effectiveStarterOverride === levainLegacy.pct && flourStrength === levainLegacy.strength;
-  const levainBulkFactor = levainLegacyApplies
-    ? legacyStarterBulkFactor(effectiveStarterOverride, kitchenTemp, flourStrength)
-    : starterBulkFactor(effectiveStarterOverride, kitchenTemp);
+  const levainBulkFactor = starterBulkFactor(effectiveStarterOverride, kitchenTemp);
   const handleAutoStarterPct = React.useCallback((pct: number | null) => setAutoStarterPct(pct ?? undefined), []);
   /** `auto`: the calculated recipe for that plan (no entered amount; the preferment's hours given), round 15 (O2). */
   const recipeForSchedule = (schedule: ReturnType<typeof buildSchedule>, auto?: {prefHours: number}) => {
@@ -2207,9 +2189,7 @@ export default function Home() {
   // the difference: its fit (PlanShape) is solved once here and every schedule of the plan is built with it, the
   // picker's included (exitLeadMin prop).
   // Round 15 (owner O2): the calculated plan is the one for the CURRENT inputs, derived each time (`autoPlan`: the
-  // picker's automatic plan with no entered amount), never remembered: same inputs, same plan, whatever the route. A bake
-  // under way saved with the older rules keeps the knead it remembered (`rememberedAnchor`).
-  const rememberedAnchor = legacyEntryTiming || keptEntryRules !== undefined;
+  // picker's automatic plan with no entered amount), never remembered: same inputs, same plan, whatever the route.
   /** The planner's storages for a poolish or biga, each with the window it may take: an entered amount's readiness
    * band (the planner's prefWindow), else the planner's own window (commercialCandidateInput), aimed at the storage's
    * target hours (stable: the plan on screen never seeds the next one). */
@@ -2233,19 +2213,19 @@ export default function Home() {
   const yeastEntryRaw = useMemo(() => eatTime && styleKey && mixerType ? {
     bake: eatTime, now: 0, blocks, kitchenTemp, preheatMin: planPreheatMin, exitLeadMin: exitLeadOnly, planLadder, mixerType: mixerType as MixerType, styleKey,
     numItems, itemWeight, mixingBatches: selectedMixingBatches, fridgeTemp, hydration: poolishInputs.hydrationPct ?? 65, doughTempC: targetDoughTemp,
-    conversion: 1, roomPlans: !legacyEntryTiming, rules: keptEntryRules,
+    conversion: 1,
     // The storage's target hours (stable while the plan moves, so the shape the page builds is the one the plan was found with).
     prefStartH: prefermentType === 'poolish' || prefermentType === 'biga' ? getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridgeState, styleKey, fridgeTemp) : undefined,
   } : null,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [eatTime ? +eatTime : null, styleKey, mixerType, blocks, kitchenTemp, planPreheatMin, exitLeadOnly, planLadder, numItems, itemWeight, selectedMixingBatches, fridgeTemp, poolishInputs.hydrationPct, targetDoughTemp, legacyEntryTiming, keptEntryRules, prefermentType, prefGoesInFridgeState]);
+  [eatTime ? +eatTime : null, styleKey, mixerType, blocks, kitchenTemp, planPreheatMin, exitLeadOnly, planLadder, numItems, itemWeight, selectedMixingBatches, fridgeTemp, poolishInputs.hydrationPct, targetDoughTemp, prefermentType, prefGoesInFridgeState]);
   const entryInForce = yeastPctOverride !== undefined || !!prefYeastOverride;
   // The calculated plan for the current inputs (O2), in Custom with a commercial yeast (where amounts are entered): the
   // anchor of an entered amount's plan and what suggestions move towards. Round 15: the picker's own automatic plan
   // (`automaticCommercialPlan`, the one function the picker applies), never a reconstruction and never remembered;
   // when it finds no plan, the knead it falls back to. Busy times without an earlier plan's covers.
   const automaticAnchor = (busy: AvailabilityBlock[], bake: Date | null) => {
-    if (tab !== 'custom' || !yeastEntryRaw || !yeastType || yeastType === 'sourdough' || legacyEntryTiming || !bake || !styleKey || !mixerType) return null;
+    if (tab !== 'custom' || !yeastEntryRaw || !yeastType || yeastType === 'sourdough' || !bake || !styleKey || !mixerType) return null;
     const now = Date.now(), planBlocks = uncovered(busy), eatTime = bake;
     try {
       const plan = automaticCommercialPlan({ now, styleKey, kitchenTemp, fridgeTemp, flourStrength, tang, preheatMin: planPreheatMin, preheatExtraMin, exitLeadMin: exitLeadOnly, planLadder,
@@ -2255,21 +2235,35 @@ export default function Home() {
         planBlocks, eatTime, timingOverrides);
       if (!plan.times) return null;
       const times = { start: plan.times.start, bake: eatTime, prefHours: plan.times.prefHours };
-      const actions = entryPlanActions({ times, shape: exitLeadOnly, inFridge: plan.times.inFridge }, { ...yeastEntryRaw, blocks: planBlocks, now, preferment: entryPrefOptions(undefined, planBlocks) });
-      return { times, anchorH: (+eatTime - +times.start) / 3600000, nightIds: [...new Set(newNightHandsOn(actions, planBlocks).filter(a => +a.at > now).map(a => a.id))] };
+      return { times, anchorH: (+eatTime - +times.start) / 3600000 };
     } catch { return null; }
   };
   const autoPlan = useMemo(() => automaticAnchor(blocks, eatTime),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [tab, legacyEntryTiming, yeastEntryRaw, yeastType, flourStrength, poolishStorage, bigaStorage, tang, preheatExtraMin, prefGoesInFridgeState, poolishPeakAtMix, execution, mixExecution, poolishInputs.prefermentFlourPct, poolishInputs.doughMassG, poolishInputs.flourTempC, timingOverrides]);
-  const entryAnchor = rememberedAnchor ? (yeastPctOverride !== undefined ? yeastAnchorH : undefined) : autoPlan?.anchorH;
-  const entryNightAllowedIds = autoPlan?.nightIds ?? [];
+  [tab, yeastEntryRaw, yeastType, flourStrength, poolishStorage, bigaStorage, tang, preheatExtraMin, prefGoesInFridgeState, poolishPeakAtMix, execution, mixExecution, poolishInputs.prefermentFlourPct, poolishInputs.doughMassG, poolishInputs.flourTempC, timingOverrides]);
+  const entryAnchor = autoPlan?.anchorH;
   const yeastEntryBase = useMemo(() => yeastEntryRaw ? { ...yeastEntryRaw, anchorH: entryAnchor } : null, [yeastEntryRaw, entryAnchor]);
-  // Round 9 (bug I): read as the picker reads it (the time left first), so the shape the schedules are built with is
-  // the timing's own (a room-temperature plan included).
-  const exitLeadMin = useMemo(() => effectiveYeastOverride !== undefined && yeastEntryBase && (yeastAnchorH !== undefined || !legacyEntryTiming)
-    ? entryPlanShape(effectiveYeastOverride, { ...yeastEntryBase, now: legacyEntryTiming ? 0 : Date.now() }) : exitLeadOnly,
-  [effectiveYeastOverride, yeastAnchorH, yeastEntryBase, exitLeadOnly, legacyEntryTiming]);
+  // Round 17 (finding 1): the shape every schedule is built with is the shape of the plan `entryPlan` builds for these
+  // inputs (the picker applies that plan), so the page's schedule, the line and the editor are one plan.
+  const entryPlanCache = useRef(new Map<string, EntryPlan | null>());
+  const cachedEntryPlan = (idy: number | undefined, o: YeastEntryInput): EntryPlan | null => {
+    const key = JSON.stringify([idy, { ...o, now: Math.floor(o.now / 900000), defaultWindow: undefined, preferment: o.preferment?.options }, flourStrength]);
+    const cache = entryPlanCache.current;
+    if (!cache.has(key)) {
+      let plan: EntryPlan | null = null;
+      try { plan = entryPlan(idy, o); } catch { plan = null; }
+      if (cache.size > 40) cache.delete(cache.keys().next().value as string);
+      cache.set(key, plan);
+    }
+    return cache.get(key) ?? null;
+  };
+  const exitLeadMin = useMemo(() => {
+    if (effectiveYeastOverride === undefined || !yeastEntryBase) return exitLeadOnly;
+    const o: YeastEntryInput = { ...yeastEntryBase, now: Date.now(), defaultWindow: entryDefaultWindow, preferment: entryPrefOptions(effectivePrefYeastOverride, blocks) };
+    const plan = cachedEntryPlan(effectiveYeastOverride, o);
+    return plan ? plan.shape : entryPlanShape(effectiveYeastOverride, o);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveYeastOverride, effectivePrefYeastOverride, yeastEntryBase, exitLeadOnly, poolishStorage, bigaStorage]);
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
     if (!mixerType) return null;
@@ -2433,12 +2427,11 @@ export default function Home() {
     if (!yeastEntryBase || !styleKey) return null;
     const planBlocks = at?.blocks ?? blocks;
     // O2: the night rule reads the hands-on steps between 22:00 and 07:00 not declared free beyond the calculated plan's
-    // (derived for these inputs); a bake kept with the round-9 timing (legacy) has no night rule.
+    // (derived for these inputs).
     // Other busy times or another bake (the picker's replan): the calculated plan for those inputs, derived afresh.
     const busyKey = (list: AvailabilityBlock[]) => JSON.stringify(uncovered(list).map(b => [+b.from, +b.to, b.label ?? '']));
-    const fresh = at && !rememberedAnchor && (+at.bake !== +(eatTime ?? 0) || busyKey(at.blocks) !== busyKey(blocks)) ? automaticAnchor(at.blocks, at.bake) : autoPlan;
-    return { ...yeastEntryBase, ...(at ?? {}), ...(rememberedAnchor ? {} : { anchorH: fresh?.anchorH }), now: Date.now(), conversion, calculatedIdyPct: calcYeast?.idyPct,
-      nightAllowed: legacyEntryTiming ? undefined : fresh?.nightIds ?? [],
+    const fresh = at && (+at.bake !== +(eatTime ?? 0) || busyKey(at.blocks) !== busyKey(blocks)) ? automaticAnchor(at.blocks, at.bake) : autoPlan;
+    return { ...yeastEntryBase, ...(at ?? {}), anchorH: fresh?.anchorH, now: Date.now(), conversion, calculatedIdyPct: calcYeast?.idyPct,
       defaultWindow: entryDefaultWindow, preferment: entryPrefOptions(prefPct, planBlocks) };
   };
   /** Round 11: the entered dough yeast's timing for the picker, the one `entryPlan` searches in (time left first). */
@@ -2446,13 +2439,14 @@ export default function Home() {
     if (effectiveYeastOverride === undefined || !yeastType || yeastType === 'sourdough') return null;
     const o = yeastEntryInput(YEAST_TYPES[yeastType]?.conversion ?? 1, effectivePrefYeastOverride, {blocks: planBlocks, bake});
     if (!o) return null;
-    try { return entryTiming(effectiveYeastOverride, o, Math.max(0, (+bake - o.now) / 3600000)) ?? entryTiming(effectiveYeastOverride, o); } catch { return null; }
+    // The timing of the plan the picker applies (entryPlan), else the amount's own.
+    try { return cachedEntryPlan(effectiveYeastOverride, o)?.timing ?? entryTiming(effectiveYeastOverride, o, Math.max(0, (+bake - o.now) / 3600000)) ?? entryTiming(effectiveYeastOverride, o); } catch { return null; }
   };
   /** Round 11: the plan an entered amount gets, for the picker (one builder with the night line: yeastEntry `entryPlan`). */
   const planEntryFor = (planBlocks: AvailabilityBlock[], bake: Date): EntryPlan | null => {
     if (!entryInForce || !yeastType || yeastType === 'sourdough') return null;
     const o = yeastEntryInput(YEAST_TYPES[yeastType]?.conversion ?? 1, effectivePrefYeastOverride, {blocks: planBlocks, bake});
-    try { return o ? entryPlan(effectiveYeastOverride, o) : null; } catch { return null; }
+    return o ? cachedEntryPlan(effectiveYeastOverride, o) : null;
   };
 
   // The planner may raise the levain % only without a baker-entered one, and only when
@@ -2697,10 +2691,10 @@ export default function Home() {
     return {
       tab, bakeType, bakeName, styleKey, numItems, itemWeight, totalFlourTarget, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
-      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, preheatExtraMin, exitLead, planExitLead: planExitLead(schedule, kitchenTemp, styleKey), planRules: HOT_PLAN_RULES, ...(legacyHotPlan ? {legacyHotPlan: true} : {}), containerCapacityLitres, humidity, fridgeTemp,
+      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, preheatExtraMin, exitLead, planExitLead: planExitLead(schedule, kitchenTemp, styleKey), containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
-      manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, yeastAnchorH: yeastPctOverride !== undefined && rememberedAnchor ? yeastAnchorH : undefined, prefYeastOverride, entryNightKept: yeastPctOverride !== undefined || prefYeastOverride ? entryNightKept : undefined, entryRules: ENTRY_RULES, ...(legacyEntryTiming ? {legacyEntryTiming: true} : {}),...(keptEntryRules ? {entryRulesKept: keptEntryRules} : {}), starterPctOverride, autoStarterPct, levainLegacy: levainLegacyApplies ? levainLegacy : null,
+      manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, prefYeastOverride, entryNightKept: yeastPctOverride !== undefined || prefYeastOverride ? entryNightKept : undefined, starterPctOverride, autoStarterPct,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct: wasteAllowance, addSeeds, priorityOverride,
       prefGoesInFridge, poolishStorage, bigaStorage,
       startTime: startTime?.getTime() ?? null,
@@ -3902,7 +3896,6 @@ export default function Home() {
     rememberLastEquipment({bakeType,oven:confirmed('oven',ovenType)?ovenType:null,mixer:confirmed('mixer',mixerType)?mixerType:null,
       yeast:yeastType&&yeastType!=='sourdough'&&confirmed('yeast',yeastType)?yeastType:null});
     setAutoStarterPct(undefined);
-    setLevainLegacy(null);
     setPendingSession(null);
     setScheduleCandidateValid(true);
     setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
@@ -3916,7 +3909,7 @@ export default function Home() {
     setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
     setStartTime(now);
-    setTimingOverrides({});setStarterRecoveryPending(false);setStarterFeedRecords([]);setExecution(undefined);setMixExecution(undefined);setReplanRequested(false);setLegacyHotPlan(false);setLegacyEntryTiming(false);setKeptEntryRules(undefined);
+    setTimingOverrides({});setStarterRecoveryPending(false);setStarterFeedRecords([]);setExecution(undefined);setMixExecution(undefined);setReplanRequested(false);
     setEatTime(null);
     setBlocks([]); setYeastType(null);
     setStarterTimingValid(true);
@@ -4233,19 +4226,17 @@ export default function Home() {
     setTimingOverrides(rb ? {} : normalizeTimingOverrides(snap.timingOverrides));
     // Bake again keeps the time the dough spent out of the fridge last time (when that exit is free).
     setExitLead(rb ? normalizeExitLead(snap.planExitLead) ?? normalizeExitLead(snap.exitLead) : normalizeExitLead(snap.exitLead));
-    setLegacyHotPlan(!rb && legacyHotPlanFor(snap, Date.now()));
     setStarterRecoveryPending(!rb&&snap.starterRecoveryPending===true);setStarterFeedRecords(rb?[]:normalizeStarterFeedRecords(snap.starterFeedRecords));setExecution(rb?undefined:normalizeBakeExecution(snap.execution));setMixExecution(rb?undefined:normalizeMixExecution(snap.mixExecution));setReplanRequested(false);
     setManualHydration(snap.manualHydration);
     setManualOil(snap.manualOil);
     setManualSugar(snap.manualSugar);
     setManualSalt(snap.manualSalt);
-    setYeastPctOverride(snap.yeastPctOverride);setYeastAnchorH(typeof snap.yeastAnchorH==='number'&&Number.isFinite(snap.yeastAnchorH)&&snap.yeastPctOverride!==undefined?snap.yeastAnchorH:undefined);
+    setYeastPctOverride(snap.yeastPctOverride);
     setPrefYeastOverride(normalizePrefYeastOverride(snap.prefYeastOverride));setPrefYeastIssue(null);
-    setLegacyEntryTiming(!rb && legacyEntryTimingFor(snap, Date.now()));setKeptEntryRules(rb ? undefined : keptEntryRulesFor(snap, Date.now()));setEntryNightKept(normalizeEntryNightKept(snap.entryNightKept));
+    setEntryNightKept(normalizeEntryNightKept(snap.entryNightKept));
     setAcceptedPlan(rb ? undefined : normalizeAcceptedPlan(snap.acceptedStartTime, snap.acceptedPreparationAt, snap.acceptedEatTime));
     setStarterPctOverride(snap.starterPctOverride);
     setAutoStarterPct(snap.autoStarterPct);
-    setLevainLegacy(rb ? null : restoredLevainLegacy(snap));
     setTargetDoughTemp(snap.targetDoughTemp);
     setFlourInFridge(snap.flourInFridge ?? false);
     setAddSeeds(snap.addSeeds ?? false);
@@ -4254,7 +4245,7 @@ export default function Home() {
     setBigaStorage(snap.bigaStorage ?? 'auto');
     setMeasuredFlourTemp(snap.measuredFlourTemp); setMeasuredPrefermentTemp(snap.measuredPrefermentTemp);
     // Bake again: the saved allowance, else 1.5 %; resuming a bake whose dough is recorded keeps what was weighed.
-    setWastePct(restoredWastePct(snap.wastePct, !rb && (!!snap.execution || !!snap.mixExecution)));
+    setWastePct(restoredWastePct(snap.wastePct));
     setPriorityOverride(snap.priorityOverride);
     if (snap.eatTime) setEatTime(shiftD(new Date(snap.eatTime)));
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
@@ -4696,20 +4687,20 @@ export default function Home() {
   const entryNightKeptNow = !!entryNightKept && entryNightKept.yeast === yeastPctOverride
     && (entryNightKept.pref?.type ?? null) === (prefYeastOverride?.type ?? null) && entryNightKept.pref?.pct === prefYeastOverride?.pct;
   const entryNightPref = prefermentType === 'poolish' || prefermentType === 'biga' ? prefermentType as FlourPreferment : null;
-  const screenNightSteps = useMemo(() => schedule ? newNightHandsOn([...(schedule.availabilityActions ?? []),
-    ...(prefStartTime && entryNightPref ? [{id:'preferment', at:prefStartTime}] : [])], blocks).filter(a => +a.at > Date.now() && !entryNightAllowedIds.includes(a.id)) : [],
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [schedule, prefStartTime, entryNightPref, blocks, entryNightAllowedIds.join()]);
-  const entryNightKey = entryInForce && !legacyEntryTiming && tab === 'custom' && (recipeGenerated || customPlanSeen) && eatTime && yeastType && yeastType !== 'sourdough'
+  // Round 17 (findings 1, 5): the line names every night step of the plan on screen (nightHandsOn, one definition).
+  const screenNightSteps = useMemo(() => schedule ? nightHandsOn([...(schedule.availabilityActions ?? []),
+    ...(prefStartTime && entryNightPref ? [{id:'preferment', at:prefStartTime}] : [])], blocks).filter(a => +a.at > Date.now()) : [],
+  [schedule, prefStartTime, entryNightPref, blocks]);
+  const entryNightKey = entryInForce && tab === 'custom' && (recipeGenerated || customPlanSeen) && eatTime && yeastType && yeastType !== 'sourdough'
     ? JSON.stringify([effectiveYeastOverride, effectivePrefYeastOverride, prefermentType, +eatTime, blocks.map(b => [+b.from, +b.to]), kitchenTemp, styleKey, poolishStorage, bigaStorage,
       planReplanPending ? null : screenNightSteps.map(a => a.id + '@' + +a.at), entryNightKeptNow, Math.floor(Date.now() / 900000)]) : null;
   const entryNight = useMemo(() => {
     if (!entryNightKey || !eatTime || !styleKey || !mixerType || !yeastType) return null;
     const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
     const o = yeastEntryInput(conversion);
-    if (!o?.nightAllowed) return null;
+    if (!o) return null;
     try {
-      const steps = planReplanPending ? entryPlan(effectiveYeastOverride, o)?.nightSteps ?? [] : screenNightSteps;
+      const steps = planReplanPending ? cachedEntryPlan(effectiveYeastOverride, o)?.nightSteps ?? [] : screenNightSteps;
       if (!steps.length) return null;
       const pref = entryNightPref;
       if (entryNightKeptNow) return {steps, pref, offer: null, kept: true};
@@ -4745,7 +4736,9 @@ export default function Home() {
     if (!entryNight || (where !== 'finetune' && where !== 'editor' && protocolStale)) return null;
     const conversion = yeastType ? YEAST_TYPES[yeastType]?.conversion ?? 1 : 1;
     const pctText = (value: number) => bakerPct(value, fr);
-    const keptShown = yeastPctOverride !== undefined ? Math.round(yeastPctOverride * conversion * 1000) / 1000 : prefYeastOverride ? Math.round(prefYeastOverride.pct * conversion * 1000) / 1000 : null;
+    // Round 17 (finding 6): Keep names the amount as the recipe rounds it ("Keep 0.15%", not 0.151%).
+    const recipeRound = (v: number) => v < 1 ? Math.round(v * 100) / 100 : Math.round(v * 10) / 10;
+    const keptShown = yeastPctOverride !== undefined ? recipeRound(yeastPctOverride * conversion) : prefYeastOverride ? recipeRound(prefYeastOverride.pct * conversion) : null;
     const button: React.CSSProperties = {minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'};
     const rederive = () => { setPlanReplanPending(true); if (where !== 'finetune' && recipeGenerated && !replanReturn) setReplanReturn({from:+startTime,settled:false}); };
     const offer = entryNight.offer;
@@ -5040,7 +5033,7 @@ export default function Home() {
     // (18 Nov 2026 retention round 4: the pre-mix feed vanished from Your plan at 8:31).
     const dueFeed=yeastType==='sourdough'?overdueStarterFeed(starterEvents,[],Date.now(),+startTime):undefined;
     const from=Math.min(Date.now(),dueFeed?+dueFeed.time:Infinity)-60000;
-    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:isTimeBlocked(e.at,blocks)&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&+e.at>+block.from&&+e.at<+block.to))}));
+    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:blocks.some(block=>+e.at>+block.from&&+e.at<+block.to)&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&+e.at>+block.from&&+e.at<+block.to))}));
     // Round 13 (item 7): a night step is named once, in the night line (entryNightView), not again on its row.
     return steps;
   })();
@@ -5175,7 +5168,7 @@ export default function Home() {
   const ovenShare = ovenOthers.length ? {others:ovenOthers, leadMin:preheatMin, busyMin:ovenBusyMinutes(bakeType,styleKey,numItems,ovenType), ovenType:ovenType ?? null} : undefined;
   const keepOvenAt = (bakeMs:number) => { ovenKept.current = bakeMs; };
   const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void}}) => (
-              <SchedulePicker {...extra} bigaStorage={bigaStorage} inputsOnly={!extra?.planInline&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} yeastAnchorH={effectiveYeastOverride!==undefined?yeastAnchorH:undefined} prefYeastPctOverride={effectivePrefYeastOverride} entryRoomPlans={!legacyEntryTiming} entryNightRule={!legacyEntryTiming&&!rememberedAnchor} entryNightNode={entryNightView('editor')} planEntry={planEntryFor} entryTimingFor={legacyEntryTiming?undefined:entryTimingFor} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
+              <SchedulePicker {...extra} bigaStorage={bigaStorage} inputsOnly={!extra?.planInline&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} prefYeastPctOverride={effectivePrefYeastOverride} entryNightNode={entryNightView('editor')} planEntry={planEntryFor} entryTimingFor={entryTimingFor} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 {...poolishInputs} poolishPeakAtMix={poolishPeakAtMix}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wasteAllowance:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -5262,7 +5255,7 @@ export default function Home() {
                 onDecisionSheetClose={()=>setDecisionSheet(null)} onDecisionSheetBack={backToBakeTime}
                 enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'} bigaStorage={bigaStorage}
-                yeastPctOverride={effectiveYeastOverride} yeastAnchorH={effectiveYeastOverride!==undefined?yeastAnchorH:undefined} prefYeastPctOverride={effectivePrefYeastOverride} entryRoomPlans={!legacyEntryTiming} entryNightRule={!legacyEntryTiming&&!rememberedAnchor} entryNightNode={entryNightView('editor')} planEntry={planEntryFor} entryTimingFor={legacyEntryTiming?undefined:entryTimingFor}
+                yeastPctOverride={effectiveYeastOverride} prefYeastPctOverride={effectivePrefYeastOverride} entryNightNode={entryNightView('editor')} planEntry={planEntryFor} entryTimingFor={entryTimingFor}
                 replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wasteAllowance:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -5744,7 +5737,9 @@ export default function Home() {
 })()}</p>
 {previousNote&&<p data-previous-note style={{margin:'8px 0 0',fontSize:15,color:'var(--ash)'}}><strong>{fr?'La dernière fois : ':'Last time: '}</strong>{previousNote}</p>}
 </div>}
-{recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && (()=>{
+{/* Round 17 (finding 7): not in Preparation, whose heading already gives the plan's new times (one note at most
+    above its steps besides the night line). */}
+{recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && destination!=='protocol' && eatTime && (()=>{
   // Only what moved, and an amount only when it changes what the baker weighs.
   const at=(t:number)=>formatBakeDateTime(new Date(t),locale);
   const prepName=prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):prefermentType==='poolish'?(fr?'Préparer le poolish':'Make Poolish'):(fr?'La préparation':'The preparation');
@@ -6589,13 +6584,18 @@ export default function Home() {
                               const towards=nearestFittingShownPct(shown,ref,fitsShown);if(towards!==null)return towards;
                               // The calculated amount itself may be timed into the night as an entry (its window is narrower than the
                               // planner's): the typing steps between the typed amount and twice past the calculated one, nearest first.
-                              const steps:number[]=[];const lo=Math.min(shown,ref)/2,hi=Math.max(shown,ref)*2;
-                              for(let v=lo;v<=hi&&steps.length<60;v*=1.06)steps.push(v<1?Math.round(v*100)/100:Math.round(v*10)/10);
-                              return [...new Set(steps)].filter(v=>Math.abs(v-shown)>=0.0005).sort((a,b)=>Math.abs(Math.log(a/shown))-Math.abs(Math.log(b/shown))).slice(0,24).find(fitsShown)??null;
+                              // Round 17 (finding 3): every typing step from a quarter of the smaller to four times the larger, so a far
+                              // amount (1.5 % or 0.1 % in a biga) still hears of the nearest one that fits.
+                              const steps:number[]=[];const lo=Math.max(0.01,Math.min(shown,ref)/4),hi=Math.max(shown,ref)*4;
+                              for(let v=lo;v<=hi&&steps.length<120;v*=1.06)steps.push(v<1?Math.round(v*100)/100:Math.round(v*10)/10);
+                              return [...new Set(steps)].filter(v=>Math.abs(v-shown)>=0.0005&&v<=PREF_YEAST_MAX_PCT*conversion+1e-9).sort((a,b)=>Math.abs(Math.log(a/shown))-Math.abs(Math.log(b/shown))).find(fitsShown)??null;
                             };
                             if(!fit.fits){
-                              const miss=fit.reason==='window'?prefermentWindowMiss(pref,pct,stated,prefYeastCtx(pref,stated)):null;
-                              setPrefYeastIssue({type:pref,shownPct:shown,reason:miss?(miss.fast?'fast':'slow'):fit.reason==='window'?'slow':'time',hours:miss?miss.hours:fit.hours,inFridge:miss?stated:fit.inFridge,suggestedShownPct:nearest(),clampedFrom});return;}
+                              // Round 17 (finding 3): the statement speaks of the storage the plan uses (`stated`), never of another
+                              // storage's hours: its window's miss, else (its window holds the amount) the time it needs before the mix.
+                              const miss=prefermentWindowMiss(pref,pct,stated,prefYeastCtx(pref,stated));
+                              const there=miss?null:prefermentYeastTiming(pref,pct,stated,prefYeastCtx(pref,stated));
+                              setPrefYeastIssue({type:pref,shownPct:shown,reason:miss?(miss.fast?'fast':'slow'):there?'time':'slow',hours:miss?miss.hours:there?there.min:fit.hours,inFridge:stated,suggestedShownPct:nearest(),clampedFrom});return;}
                             // Round 8 (bug 6): the planner's own search with this preferment window (and the final dough's
                             // amount), so a fresh or active-dry amount that would leave no plan is said here, not on the plan.
                             const entry=planReady?yeastEntryInput(conversion,pct):null;
@@ -6654,7 +6654,13 @@ export default function Home() {
                     // One helper line, none while a statement shows (round 8, S3).
                     // Round 13 (item 7): "less yeast, longer rise" only when less than the calculated amount was entered.
                     const lessDough = yeastPctOverride!==undefined&&calcYeast?.idyPct!==undefined&&yeastPctOverride<calcYeast?.idyPct-1e-9;
-                    const lessPref = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&prefEntered<calcYeast?.pref.pct-1e-9;
+                    // Round 17 (finding 6): "a longer biga" only when the plan's preferment is longer than the calculated plan's
+                    // (a biga held at its storage's shortest window stays 24 h whatever the amount).
+                    const lessPref = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&prefEntered<calcYeast?.pref.pct-1e-9&&(!autoPlan||prefOffsetH>autoPlan.times.prefHours+0.01);
+                    // Round 17 (finding 6): no "use the calculated amount" for an amount that weighs what the calculated one weighs.
+                    // (The amount as typed and shown, to the thousandth: an amount the timing reads differently keeps its way back.)
+                    const doughIsCalc = yeastPctOverride!==undefined&&calcYeast?.idyPct!==undefined&&Math.round(yeastPctOverride*conversion*1000)===Math.round(calcYeast.idyPct*conversion*1000);
+                    const prefIsCalc = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&Math.round(prefEntered*conversion*1000)===Math.round(calcYeast.pref.pct*conversion*1000);
                     const helper = entryIssue||prefIssue||entryNight||(pref&&prefYeastClearedLine(pref)) ? null : pref
                       ? (prefEntered!==undefined&&yeastPctOverride!==undefined
                         ? (lessDough&&lessPref?(fr?'Chacun suit sa quantité : moins de levure, pousse plus longue.':'Each follows its amount: less yeast, a longer rise.'):(fr?'Chacun suit sa quantité.':'Each follows its amount.'))
@@ -6717,8 +6723,8 @@ export default function Home() {
                       {!entryIssue&&!prefIssue&&entryNightView('finetune')}
                       {helper&&<p data-yeast-helper style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{helper}</p>}
                       {/* One "calculated amount" per field (round 8, S3): none beside a statement that already offers it. */}
-                      {pref&&prefEntered!==undefined&&!prefIssue&&<button type="button" data-pref-yeast-reset onClick={clearPrefYeast} style={{...secondaryButton,marginTop:6,marginRight:8}}>{fr?(pref==='biga'?'Biga : quantité calculée':'Poolish : quantité calculée'):`${pref==='biga'?'Biga':'Poolish'}: use the calculated amount`}</button>}
-                      {yeastPctOverride!==undefined&&!entryIssue&&<button type="button" data-ft-use-calculated-yeast onClick={clearYeast} style={{...secondaryButton,marginTop:6}}>{pref?(fr?'Pâte finale : quantité calculée':'Final dough: use the calculated amount'):fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
+                      {pref&&prefEntered!==undefined&&!prefIssue&&!prefIsCalc&&<button type="button" data-pref-yeast-reset onClick={clearPrefYeast} style={{...secondaryButton,marginTop:6,marginRight:8}}>{fr?(pref==='biga'?'Biga : quantité calculée':'Poolish : quantité calculée'):`${pref==='biga'?'Biga':'Poolish'}: use the calculated amount`}</button>}
+                      {yeastPctOverride!==undefined&&!entryIssue&&!doughIsCalc&&<button type="button" data-ft-use-calculated-yeast onClick={clearYeast} style={{...secondaryButton,marginTop:6}}>{pref?(fr?'Pâte finale : quantité calculée':'Final dough: use the calculated amount'):fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div></div>;
                   })()}
                   <h3 data-finetune-group="process" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Pétrissage et pâte':'Mixing and dough'}</h3>

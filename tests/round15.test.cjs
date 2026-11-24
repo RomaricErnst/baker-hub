@@ -28,7 +28,7 @@ const nights = [
 ];
 const b3 = (bake, blocks = nights) => ({ bake: SG(bake), blocks, kitchenTemp: 22, preheatMin: 45, mixerType: 'hand', styleKey: 'neapolitan',
   numItems: 4, itemWeight: 260, mixingBatches: 1, fridgeTemp: 6, hydration: 65, planLadder: 'hot', doughTempC: 24, now, conversion: 1,
-  calculatedIdyPct: 0.146, roomPlans: true, nightAllowed: [],
+  calculatedIdyPct: 0.146, nightAllowed: [],
   defaultWindow: b => sp.commercialReadinessWindow({ ...sp.STYLE_FERM_DEFAULTS.neapolitan, flourStrength: 1.2, kitchenTemp: 22, preheatMin: 45, totalWindowH: (+b - now) / H }) });
 // The page's input: the anchor is the calculated plan for these inputs (autoPlan), never remembered: the picker's own
 // automatic plan, one pure function (SchedulePicker automaticCommercialPlan) both apply.
@@ -66,9 +66,9 @@ test('O2 path independence: Keep 0.15 % at 11:30 then bake back to 7:30pm ≡ ty
     const fresh = Y.entryPlan(pct, current(b3('2026-11-27T19:30:00')));
     assert.ok(same(viaLunch, fresh), `${pct}: ${viaLunch && hhmm(viaLunch.times.start)} vs ${fresh && hhmm(fresh.times.start)}`);
   }
-  // Round 14 read Start Dough Fri 4:00am on the kept route; both routes now knead Thu 8:30pm without a night step.
+  // Round 14 read Start Dough Fri 4:00am on the kept route. Round 17 (one night, 22:00–07:00 with the chip too): the
+  // Thu 8:30pm fridge plan puts the dough in the fridge after 22:00; the plan without a night step ranks first (O2).
   const plan = Y.entryPlan(0.15, current(b3('2026-11-27T19:30:00')));
-  assert.equal(hhmm(plan.times.start), 'Thu 20:30');
   assert.equal(plan.nightSteps.length, 0);
   // Same inputs, same plan: built twice, identical.
   assert.ok(same(plan, Y.entryPlan(0.15, current(b3('2026-11-27T19:30:00')))));
@@ -86,33 +86,11 @@ test('O2 ranking: no hands-on step 23:00–06:00 first, then the fewest night st
   }
 });
 
-test('saved bakes: ENTRY_RULES 4; a bake under way saved with 3 keeps its remembered knead, one not under way is re-derived', () => {
-  assert.equal(Y.ENTRY_RULES, 4);
-  const saved = { entryRules: 3, recipeGenerated: true, yeastPctOverride: 0.15, yeastAnchorH: 15.5, startTime: +SG('2026-11-27T04:00:00') };
-  assert.equal(Y.keptEntryRulesFor(saved, +SG('2026-11-27T04:30:00')), 3, 'Start Dough has come');
-  assert.equal(Y.keptEntryRulesFor({ ...saved, mixExecution: { at: 1 } }, now), 3, 'a recorded mix');
-  assert.equal(Y.keptEntryRulesFor(saved, now), undefined, 'not under way: current rules');
-  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRules: 4 }, +SG('2026-11-27T04:30:00')), undefined);
-  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRulesKept: 3 }, now), 3, 'kept so once');
-  // Its timing: the shape at the remembered knead (round 13), unchanged by the derived one.
-  const o = { ...b3('2026-11-27T19:30:00'), anchorH: 15.5, rules: 3 };
-  const remembered = Y.entryPlanShape(0.15, o);
-  assert.deepEqual(Y.entryPlanShape(0.15, { ...o, anchorH: 15.5 }), remembered);
-  assert.notDeepEqual(Y.entryPlanShape(0.15, current(b3('2026-11-27T19:30:00'))), remembered, 'a new bake reads the current knead');
-  // The page reads the remembered knead only then, and writes it only then.
-  assert.match(page, /const rememberedAnchor = legacyEntryTiming \|\| keptEntryRules !== undefined;/);
-  assert.match(page, /const entryAnchor = rememberedAnchor \? \(yeastPctOverride !== undefined \? yeastAnchorH : undefined\) : autoPlan\?\.anchorH;/);
-  // One anchor source (round 15b): the picker's automatic plan; nothing keyed, recorded or saved beside it.
-  assert.match(page, /const plan = automaticCommercialPlan\(/);
-  assert.match(picker, /const plan = automaticCommercialPlan\(planCtx\(\), currentBlocks, et, manualTimesRef\.current\);/);
-  assert.doesNotMatch(page, /calcAnchor|calcSeen|calcKey|calculatedPlan|automaticSeedH/);
-  assert.match(page, /yeastAnchorH: yeastPctOverride !== undefined && rememberedAnchor \? yeastAnchorH : undefined/);
-});
 
 test('O2: no state remembers a kept plan or a route (only the kept amount)', () => {
   assert.doesNotMatch(page, /entryNightIds|calculatedAnchorRef|calculatedYeastRef|calculatedPrefYeastRef|recordEntryNight|planNightIds/);
-  // yeastAnchorH is set on restore only.
-  assert.equal((page.match(/setYeastAnchorH\(/g) || []).length, 3, 'restore, Bake again, clear');
+  // O3 (round 17): no remembered knead either.
+  assert.doesNotMatch(page, /yeastAnchorH|rememberedAnchor/);
   assert.doesNotMatch(picker, /entryNightIds/);
   assert.doesNotMatch(read('app/utils/yeastEntry.ts'), /normalizeEntryNightIds/);
 });
@@ -176,5 +154,5 @@ test('item 4 (round 15b): Nights turned on after Keep: a fresh anchor from the n
   assert.ok(plan.blocks.some(b => b.coveredActions?.length));
   assert.equal(sa.findAvailabilityConflicts(Y.entryPlanActions(plan, { ...o, blocks: plan.blocks }), plan.blocks).length, 0);
   // The page reads the anchor afresh for the picker's busy times (planEntryFor / entryTimingFor pass them).
-  assert.match(page, /const fresh = at && !rememberedAnchor && \(\+at\.bake !== \+\(eatTime \?\? 0\) \|\| busyKey\(at\.blocks\) !== busyKey\(blocks\)\) \? automaticAnchor\(at\.blocks, at\.bake\) : autoPlan;/);
+  assert.match(page, /const fresh = at && \(\+at\.bake !== \+\(eatTime \?\? 0\) \|\| busyKey\(at\.blocks\) !== busyKey\(blocks\)\) \? automaticAnchor\(at\.blocks, at\.bake\) : autoPlan;/);
 });

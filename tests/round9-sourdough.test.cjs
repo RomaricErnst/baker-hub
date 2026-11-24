@@ -5,7 +5,6 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {utils}=require('./load-production.cjs');
-const {legacyHotPlanFor,HOT_PLAN_RULES}=require('../app/utils/hotPlanRules.ts');
 const {twinBakeWhen,jarRowName}=require('../app/utils/twinBakes.ts');
 const {sharedStarterFeedFor,sharedFeedLine,savedStarterUse,starterEventsWithSharedFeed,inventedStarterHistory}=require('../app/utils/sharedStarter.ts');
 const {mergeSharedJarRows}=require('../app/lib/localJournal.ts');
@@ -57,23 +56,6 @@ test('K: Simple levain never gains a clash, a newly invalid plan, a fridge spell
   assert.ok(changed>100,`changed ${changed}`);
 });
 
-test('K: a levain bake saved before round 9 and under way keeps its plan; commercial bakes of round 8 are current',()=>{
-  const now=at(2026,11,27,12);
-  assert.equal(HOT_PLAN_RULES,3);
-  const ahead={recipeGenerated:true,yeastType:'sourdough',planRules:2,startTime:at(2026,11,28,7),starterEvents:[{kind:'fridge_in',time:at(2026,11,18,8),historicalStorage:true},{kind:'fridge_out',time:at(2026,11,27,17)},{kind:'pre_mix',time:at(2026,11,27,18,30)}]};
-  assert.equal(legacyHotPlanFor(ahead,now),false,'not under way: the new rules');
-  assert.equal(legacyHotPlanFor(ahead,at(2026,11,27,17,30)),true,'its starter is out of the fridge: under way');
-  assert.equal(legacyHotPlanFor({...ahead,starterFeedRecords:[{kind:'pre_mix'}]},now),true,'a recorded feed');
-  assert.equal(legacyHotPlanFor({...ahead,startTime:now-H},now),true,'its Start Dough has come');
-  assert.equal(legacyHotPlanFor({...ahead,planRules:3},at(2026,11,27,17,30)),false,'made with the levain ladder');
-  assert.equal(legacyHotPlanFor({...ahead,yeastType:'instant',planRules:2,startTime:now-H},now),false,'a commercial bake of round 8 already has its ladder');
-  assert.equal(legacyHotPlanFor({...ahead,yeastType:'instant',planRules:undefined,startTime:now-H},now),true,'one saved before round 8, under way');
-  assert.equal(legacyHotPlanFor({...ahead,planRules:2,legacyHotPlan:true},now),true,'kept so once');
-  // The page saves the rules and passes 'off' for a kept bake; SessionViewer reads the same guard.
-  const page=read('app/[locale]/page.tsx');
-  assert.match(page,/planRules: HOT_PLAN_RULES/);
-  assert.match(page,/const planLadder: PlanLadder = legacyHotPlan \? 'off' : tab === 'simple' \? 'all' : 'hot';/);
-});
 
 test('S7: two bakes of the same name are told apart by day, and by time on the same day',()=>{
   const sat730=at(2026,11,28,19,30),sat830=at(2026,11,28,20,30),sun=at(2026,11,29,12);

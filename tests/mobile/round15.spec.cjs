@@ -14,7 +14,7 @@ const nights=[{label:'Thursday night',from:Z('2026-11-26T23:00:00+08:00'),to:Z('
  {label:'Friday night',from:Z('2026-11-27T23:00:00+08:00'),to:Z('2026-11-28T07:00:00+08:00')}];
 // 0.15 % entered for Fri 7:30pm: kneaded Thu 8:30pm, no night step.
 const b3={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'home_oven_standard',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,
- yeastPctOverride:0.15,entryRules:4,startTime:MIX,eatTime:DINNER,acceptedStartTime:MIX,acceptedPreparationAt:MIX,acceptedEatTime:DINNER,blocks:nights,recipeGenerated:true,protocolStale:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,confirmedSettings:['oven=home_oven_standard','yeast=instant','climate=22','mixer=hand','method=none'],activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'plan'};
+ yeastPctOverride:0.15,startTime:MIX,eatTime:DINNER,acceptedStartTime:MIX,acceptedPreparationAt:MIX,acceptedEatTime:DINNER,blocks:nights,recipeGenerated:true,protocolStale:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,confirmedSettings:['oven=home_oven_standard','yeast=instant','climate=22','mixer=hand','method=none'],activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'plan'};
 
 async function open(page,data,locale){
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -27,6 +27,9 @@ async function open(page,data,locale){
  return errors;
 }
 const hour=ms=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Singapore',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms));
+// The plan once it has settled: the saved start unchanged for 1.5 s (a poll must never pass on a value the page holds
+// for a moment; CI's slower WebKit read 'Thu 19:45' where a fast run had caught an earlier replan's 'Thu 20:00').
+const settledHour=page=>{let last,since=0;return async()=>{const h=hour((await stored(page)).startTime);const t=Date.now();if(h!==last){last=h;since=t;}return t-since>=1500?h:null;};};
 const shot=(page,name)=>page.screenshot({path:test.info().outputPath(`${name}.png`)});
 
 for(const locale of ['en','fr']){
@@ -39,9 +42,11 @@ for(const locale of ['en','fr']){
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   const bake=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time');
   await expect(bake).toBeVisible({timeout:30000});
-  // Lunch: 0.15 % shapes at 3:00am. The editor names those steps with the choice before anything is kept (item 1).
+  // Lunch: 0.15 % kneads Thu 7:45pm, the next quarter hour after the clock (round 17: entryPlan's plan; Thu 8:00pm was
+  // the search's, which the page held for a moment first). The editor names its night steps with the choice before
+  // anything is kept (item 1).
   await bake.fill('2026-11-27T11:30');
-  await expect.poll(async()=>hour((await stored(page)).startTime),{timeout:30000}).toBe('Thu 20:00');
+  await expect.poll(settledHour(page),{timeout:30000,intervals:[250]}).toBe('Thu 19:45');
   const editor=page.locator('[data-entry-night-where="editor"]:visible');
   await expect(editor).toHaveCount(1,{timeout:30000});
   await expect(editor).toContainText(fr?/Ce planning a/:/This plan has/);
@@ -61,11 +66,12 @@ for(const locale of ['en','fr']){
   await expect(prep).toHaveCount(1,{timeout:30000});
   await prep.scrollIntoViewIfNeeded();
   await shot(page,`prep-kept-${locale}`);
-  // Back to 7:30pm: planned as typing 0.15 % there (Thu 8:30pm, no night step; round 14 read Start Dough Fri 4:00am).
+  // Back to 7:30pm: planned as typing 0.15 % there (round 17, O2: the room plan Fri 9:30am, no night step, over Thu
+  // 8:30pm, which folded at 10:10pm and went into the fridge at 10:45pm; round 14 read Start Dough Fri 4:00am).
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(bake).toBeVisible({timeout:30000});
   await bake.fill('2026-11-27T19:30');
-  await expect.poll(async()=>hour((await stored(page)).startTime),{timeout:30000}).toBe('Thu 20:30');
+  await expect.poll(settledHour(page),{timeout:30000,intervals:[250]}).toBe('Fri 09:30');
   await expect(page.locator('[data-entry-night]:visible')).toHaveCount(0);
   await shot(page,`editor-dinner-${locale}`);
   expect(errors).toEqual([]);

@@ -46,10 +46,19 @@ export function nightStepsLine(steps: readonly AvailabilityAction[], fr: boolean
     else groups.push({ key, ids: [step.id], times: [step.at] });
   }
   const and = fr ? ' et ' : ' and ';
-  const parts = groups.map(g => {
+  // Round 17 (finding 6): steps at the same time are one mention ("the take-out and shaping at 3:00am").
+  const merged: { nouns: string[]; times: string[] }[] = [];
+  for (const g of groups) {
     const times = g.times.map(t => clockLabel(t, fr));
-    const list = times.length > 1 ? `${times.slice(0, -1).join(', ')}${and}${times.at(-1)}` : times[0];
-    return `${stepNoun(g.ids[0], fr, preferment, g.times.length)} ${fr ? 'à' : 'at'} ${list}`;
+    const noun = stepNoun(g.ids[0], fr, preferment, g.times.length);
+    const last = merged[merged.length - 1];
+    if (last && times.length === 1 && last.times.length === 1 && last.times[0] === times[0]) last.nouns.push(noun);
+    else merged.push({ nouns: [noun], times });
+  }
+  const parts = merged.map(m => {
+    const list = m.times.length > 1 ? `${m.times.slice(0, -1).join(', ')}${and}${m.times.at(-1)}` : m.times[0];
+    const nouns = m.nouns.length > 1 ? `${m.nouns.slice(0, -1).join(', ')}${and}${m.nouns.at(-1)}` : m.nouns[0];
+    return `${nouns} ${fr ? 'à' : 'at'} ${list}`;
   });
   return fr ? `Ce planning a ${parts.join(', ')}.` : `This plan has ${parts.join(', ')}.`;
 }

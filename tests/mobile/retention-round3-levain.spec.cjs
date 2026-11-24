@@ -5,7 +5,12 @@ const fs=require('node:fs'),path=require('node:path');
 // pain au levain customized (Dutch oven, no knead, 75 %), busy weekdays 9:00–17:30 and nights 23:00–7:00,
 // planned Tue 17 Nov 7:30pm for Sat 21 Nov 10:00am (the planner raised the levain to 27.5 %). Fixture: that
 // generated bake as the app stored it. The refresh planned Thu 8:30pm is recorded as done at 10:30pm.
-const storage=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/priya-levain-tue.json'),'utf8'));
+// Round 17 (O3): a reopened bake is planned with today's levain bulk (starterBulkFactor, no flour-scaled reference). The
+// fixture was planned at 27.5 % on the old reference (bulk factor 0.80); 30 %, the planner's next step, gives that bulk today.
+const PCT=30;
+const storage=(()=>{const f=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/priya-levain-tue.json'),'utf8'));
+ const s=JSON.parse(f.bh_session_v1);s.autoStarterPct=PCT;f.bh_session_v1=JSON.stringify(s);
+ f.bh_journal_v1=JSON.stringify(JSON.parse(f.bh_journal_v1).map(e=>e.session?{...e,session:{...e.session,autoStarterPct:PCT}}:e));return f;})();
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')));
 test.use({timezoneId:'Europe/London',locale:'en-GB'});
 
@@ -40,7 +45,7 @@ test('a refresh fed 2 h late keeps the plan: the pre-mix feed before work, the m
  const s=await stored(page);
  expect(new Date(s.startTime).toISOString()).toBe('2026-11-20T17:30:00.000Z');
  expect(new Date(s.eatTime).toISOString()).toBe('2026-11-21T10:00:00.000Z');
- expect(s.autoStarterPct).toBe(27.5);
+ expect(s.autoStarterPct).toBe(PCT);
  expect(s.lastFedTime).toBe(Date.parse('2026-11-19T22:30:00Z'));
  // Preparation agrees: no clash line.
  await page.locator('.bh-bake-navigator-trigger').tap();
@@ -61,15 +66,16 @@ test('after the late feed, a reload, Change times and a Fine-tune edit keep the 
  await expect(page.getByText(/Starter into the fridge/)).toHaveCount(0);
  await page.getByRole('button',{name:'Back to my choices',exact:false}).first().tap();
  await page.getByRole('button',{name:'Edit : Dough'}).tap();
- await expect(page.locator('[data-starter-override] input')).toHaveValue('27.5');
- const hydration=page.locator('input[type=number]').first();
+ await expect(page.locator('[data-starter-override] input')).toHaveValue(String(PCT));
+ // The hydration box (a decimal text box since round 9 S3; `input[type=number]` had become the starter % box).
+ const hydration=page.getByRole('textbox',{name:/^Hydration/}).first();
  await hydration.fill('74');await hydration.blur();
  await page.getByRole('button',{name:'Update recipe'}).tap();
  // The plan's first row (a feed before the levain build) is under All steps since round 7; Bake is always shown.
  await expect(page.locator('[data-plan-bake]:visible')).toBeVisible();
  expect(await planText(page)).toContain('5:30pm\nStart Dough');
  const s=await stored(page);
- expect(s.autoStarterPct).toBe(27.5);
+ expect(s.autoStarterPct).toBe(PCT);
  expect(s.starterFeedRecords.length).toBe(1);
 });
 
@@ -101,5 +107,5 @@ test('a clash after an edit: one statement, one action, and Back to Recipe resto
  expect(await planText(page)).toContain('10:00am\nBake');
  const s=await stored(page);
  expect(new Date(s.eatTime).toISOString()).toBe('2026-11-21T10:00:00.000Z');
- expect(s.autoStarterPct).toBe(27.5);
+ expect(s.autoStarterPct).toBe(PCT);
 });

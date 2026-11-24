@@ -1,4 +1,6 @@
 // Round 8 (21 Nov 2026): the baker-entered yeast (owner D2, bugs 1–3, 6, 7, M1, M2, S2).
+// Thomas bakes in Singapore time; the night (22:00–07:00) is read in local time (round 17): pin the zone.
+process.env.TZ = 'Asia/Singapore';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { utils } = require('./load-production.cjs');
@@ -71,17 +73,19 @@ test('M1: without an anchor, or beyond what the fridge can absorb, it is the est
 });
 
 test('bug 7: a statement suggests only an amount that gives a plan clear of the busy times', () => {
+  // Round 17 (O3): every check reads the baker's nights as night steps (O1): 0.3 % plans, its night step named, and the
+  // offer is the nearest amount whose plan is clear of the busy times and of night steps.
   const o = entry();
   const fast = Y.checkYeastEntry(0.3, o);
-  assert.equal(fast.fits, false);
-  assert.equal(fast.reason, 'busy');
+  assert.equal(fast.fits, true);
+  assert.equal(fast.nightSteps, true);
+  fast.suggestedShownPct = fast.nightFreeShownPct;
   assert.ok(fast.suggestedShownPct < 0.3 && fast.suggestedShownPct > CALC, `${fast.suggestedShownPct}`);
   assert.equal(Y.checkYeastEntry(fast.suggestedShownPct, o).fits, true, 'the suggestion passes the same check');
-  const found = Y.entryPlanSearch(fast.suggestedShownPct, o);
-  assert.ok(found, 'and the planner search finds its plan');
-  assert.ok(Math.abs(+found.times.start - (+bake - ANCHOR * H)) <= H, 'kneaded Friday evening');
-  // One step more than the suggestion has no plan clear of the busy times.
-  assert.equal(Y.entryPlanFound(Math.round((fast.suggestedShownPct + 0.01) * 100) / 100, o), false);
+  const found = Y.entryPlan(fast.suggestedShownPct, o);
+  assert.ok(found && found.nightSteps.length === 0, 'and its plan (the one shown) has no night step');
+  // One step more than the suggestion has night steps (it is the nearest).
+  assert.ok(Y.entryPlan(Math.round((fast.suggestedShownPct + 0.01) * 100) / 100, o).nightSteps.length > 0);
 });
 
 test('M2 / bug 3: the statement and the re-timing read the same timing and the same search', () => {
@@ -90,29 +94,33 @@ test('M2 / bug 3: the statement and the re-timing read the same timing and the s
     const check = Y.checkYeastEntry(dose, o);
     const availableH = check.availableH;
     const timed = Y.entryTiming(dose, o, availableH);
-    if (check.fits) assert.ok(timed && Y.entryPlanFound(dose, o), `${dose}: fits ⇒ timed and found`);
+    if (check.fits) assert.ok(timed && Y.entryPlan(dose, o), `${dose}: fits ⇒ timed and planned`);
     else if (check.reason === 'time') {
       assert.equal(timed, null, `${dose}: no window in the time left`);
       assert.ok(check.neededH === null || check.neededH > availableH);
     } else assert.ok(timed && !Y.entryPlanFound(dose, o), `${dose}: busy ⇒ timed, no plan`);
   }
-  // B3: Neapolitan, 22 °C, no busy times, bake in 24 h: 0.1 % needs longer; the suggestion plans in time.
+  // B3: Neapolitan, 22 °C, no busy times, bake in 24 h: 0.1 % plans (round 9, a room plan within the day).
   const now = +SG('2026-11-26T19:30:00'), b3 = SG('2026-11-27T19:30:00');
   const b3o = { bake: b3, now, blocks: [], kitchenTemp: 22, preheatMin: 45, mixerType: 'hand', styleKey: 'neapolitan', numItems: 4, itemWeight: 260,
     mixingBatches: 1, fridgeTemp: 6, hydration: 66, conversion: 1, anchorH: 12.5, calculatedIdyPct: 0.21 };
   const c = Y.checkYeastEntry(0.1, b3o);
-  assert.equal(c.reason, 'time');
-  assert.ok(c.neededH > c.availableH);
-  const plan = Y.entryPlanSearch(c.suggestedShownPct, b3o);
-  assert.ok(plan && +plan.times.start > now, 'the suggestion gives a plan before the bake');
+  assert.equal(c.fits, true);
+  const plan = Y.entryPlan(0.1, b3o);
+  assert.ok(plan && +plan.times.start > now, 'a plan before the bake');
 });
 
 test('bug 6: a fresh-yeast amount is checked in IDY and suggested in fresh yeast', () => {
   const o = entry({ conversion: 3 });
+  // Round 17: 0.5 % fresh is 0.167 % instant: it plans (one trip, no night step); 0.9 % fresh (0.3 % instant) is offered
+  // the nearest fresh amount whose plan has none.
   const check = Y.checkYeastEntry(0.5 / 3, o);
-  assert.equal(check.fits, false);
-  assert.ok(check.suggestedShownPct > 0.5 && check.suggestedShownPct < 0.7, `${check.suggestedShownPct}`);
-  assert.equal(Y.checkYeastEntry(Math.round(check.suggestedShownPct / 3 * 10000) / 10000, o).fits, true);
+  assert.equal(check.fits, true); assert.equal(check.nightSteps, undefined);
+  const fast = Y.checkYeastEntry(0.9 / 3, o);
+  assert.equal(fast.nightSteps, true);
+  assert.ok(fast.nightFreeShownPct > 0.63 && fast.nightFreeShownPct < 0.9, `${fast.nightFreeShownPct}`);
+  const offer = Y.checkYeastEntry(Math.round(fast.nightFreeShownPct / 3 * 10000) / 10000, o);
+  assert.equal(offer.fits, true); assert.equal(offer.nightSteps, undefined);
 });
 
 test('bug 2 / S2: either decimal separator, baker time, the locale separator', () => {

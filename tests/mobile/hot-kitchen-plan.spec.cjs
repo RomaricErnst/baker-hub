@@ -57,27 +57,6 @@ for(const lang of ['en','fr'])for(const [name,b] of Object.entries(bakers)){
  });
 }
 
-// A bake under way when the one-spell rule shipped is never re-shaped under the baker (hotPlanRules.ts):
-// Maya's bake saved before it (no planRules), reopened Friday 8:40pm after her 6:00pm Start Dough, keeps the
-// bulk in the fridge at 7:15pm and the shaping at 9:15pm, across a reload. (Her fresh bake above has one spell.)
-test('en: Maya\'s bake already under way keeps the plan it was made with, across a reload',async({page})=>{
- const stored=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
- const s={...bakers.maya.session,savedAt:Z('2026-11-27T10:05')};
- await install(page,{bh_session_v1:JSON.stringify(s)},Z('2026-11-27T12:40'));
- await page.goto('/');
- await page.getByRole('button',{name:words.en.resume}).first().tap();
- const check=async()=>{
-  await expect(page.locator('section[data-guide-title="Refrigerate the dough"]').first()).toContainText('7:15pm');
-  await expect(page.locator('section[data-guide-title="Divide and shape dough balls"]').first()).toContainText('9:15pm');
- };
- await check();
- await expect.poll(async()=>(await stored())?.legacyHotPlan).toBe(true);
- await page.reload();
- const again=page.getByRole('button',{name:words.en.resume});
- if(await again.count())await again.first().tap();
- await check();
-});
-
 // Owner (21 Nov 2026): in Simple the one-trip plan holds in every kitchen. A 24 °C kitchen, Start Dough Fri
 // 11:00pm for Sat 7:00pm (20 h): shaped at 1:15am after the warm rise, into the fridge at 1:30am, out at 3:00pm
 // (was: into the fridge 1:15am, out to shape 5:15am, back in 5:30am).

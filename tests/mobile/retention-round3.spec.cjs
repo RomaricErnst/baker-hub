@@ -114,19 +114,20 @@ test.describe('Maya, zero ticks',()=>{
  });
 
  test('partial ticks: a later tick marks only its step; the earlier ones stay plain and the bar moves on',async({page})=>{
-  // Saved before round 8 and opened under way: the plan keeps the shape it was made with (hotPlanRules.ts).
+  // Round 17 (O3): saved before round 8 and opened under way, the bake is planned with today's rules (one trip:
+  // shaped at the end of the warm rise, the balls into the fridge).
   await install(page,storageFor('maya-1',session()),'2026-11-20T13:20:00Z');
   await reopen(page,'2026-11-20T13:20:00Z');
   await resumeFromHome(page);
-  await expect(bar(page)).toContainText('Now: Divide and shape dough balls');
-  const divide=page.locator('section[data-guide-title="Divide and shape dough balls"]');
-  await divide.getByRole('checkbox',{name:'Step done',exact:true}).click();
-  // 20 Nov 2026 round 6 (owner's decision D2): ticking the shaping no longer ticks the mix, the rise and the
-  // fridge ("says I folded when I didn't"); nothing is recorded for them.
-  await expect(divide).toHaveAttribute('data-guide-done','true');
-  for(const title of ['Start Dough','Let the dough rise','Refrigerate the dough'])
+  await expect(bar(page)).toContainText('Now: Refrigerate the dough balls');
+  const fridge=page.locator('section[data-guide-title="Refrigerate the dough balls"]');
+  await fridge.getByRole('checkbox',{name:'Step done',exact:true}).click();
+  // 20 Nov 2026 round 6 (owner's decision D2): ticking a later step no longer ticks the mix, the rise and the
+  // shaping ("says I folded when I didn't"); nothing is recorded for them.
+  await expect(fridge).toHaveAttribute('data-guide-done','true');
+  for(const title of ['Start Dough','Let the dough rise','Divide and shape dough balls'])
    await expect(page.locator(`section[data-guide-title="${title}"]`)).not.toHaveAttribute('data-guide-done','true');
-  await expect(bar(page)).toContainText('Next: Refrigerate the dough balls');
+  await expect(bar(page)).toContainText('Next: Take the');
   expect((await stored(page)).execution).toBeFalsy();
  });
 });

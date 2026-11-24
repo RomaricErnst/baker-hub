@@ -137,7 +137,6 @@ for(const lang of ['en','fr']){
    if(await keep.count())await keep.first().tap();
    await expect.poll(async()=>(await stored(page))?.recipeGenerated,{timeout:20000}).toBe(true);
    const session=await stored(page);
-   expect(session.planRules).toBe(3);
    const steps=session.computedRecipe?.timelineSteps??[];
    expect(steps.length).toBeGreaterThan(0);
    // One fridge trip: the shaped loaf goes in, nothing comes out to be shaped.

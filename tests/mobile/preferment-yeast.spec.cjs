@@ -106,7 +106,9 @@ test('the final dough of a poolish takes an entered amount and the mix moves wit
  await final.fill(String(Math.round(auto*4*1000)/1000));await final.blur();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeGreaterThan(0);
  // Round 13 (item 7): four times the yeast is more, so no "less yeast, longer rise".
- await expect(fineTune.getByText('The final dough follows its amount.',{exact:true})).toBeVisible();
+ // Round 17 (finding 5): when its plan has night steps the one night line replaces the helper line.
+ await expect(fineTune.getByText('The final dough follows its amount.',{exact:true}).or(fineTune.locator('[data-entry-night] p')).first()).toBeVisible();
+ await expect(fineTune.getByText(/less yeast/)).toHaveCount(0);
  await fineTune.locator('[data-bh-forward]').tap();
  // Four times the yeast: a shorter dough, so a later mix for the same bake.
  await expect.poll(async()=>(await stored(page)).startTime-before,{timeout:20000}).toBeGreaterThan(2*3600000);

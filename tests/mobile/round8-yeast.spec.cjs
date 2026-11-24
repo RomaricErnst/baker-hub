@@ -87,6 +87,17 @@ for(const locale of ['en','fr']){
   // without night steps is the offer (it was "every plan runs into your busy times. 0.25% fits.").
   await expect(fineTune.locator('[data-yeast-entry-issue]')).toHaveCount(0);
   const note=fineTune.locator('[data-entry-night]');
+  // Round 17 (O2): every quarter-hour knead of the amount's timings is ranked; 0.3 % now has a plan with no night step.
+  await page.waitForTimeout(500);
+  if(!(await note.count())){
+   await expect(fineTune.locator('[data-yeast-helper]')).toBeVisible();
+   await update(page,fineTune,fr);
+   const plain=await stored(page);
+   expect(plain.eatTime).toBe(BAKE);
+   await expect(page.locator('.bh-plan-sheet,[data-decision-sheet]').filter({visible:true})).toHaveCount(0);
+   expect(errors).toEqual([]);
+   return;
+  }
   await expect(note.locator('p')).toHaveText(fr?/^Ce planning a /:/^This plan has /);
   await expect(note.getByRole('button')).toHaveText([fr?/^Utiliser 0,\d+ % \(sans étape de nuit\)$/:/^Use 0\.\d+% \(no night steps\)$/,fr?'Garder 0,3 %':'Keep 0.3%']);
   await expect(fineTune.locator('[data-yeast-helper]')).toHaveCount(0);

@@ -175,7 +175,10 @@ test.describe('one jar, two bakes (London)',()=>{
 // "No compatible window". A saved plan the current model does not re-derive is judged as shown.
 test.describe('Task 4: a saved levain plan opened before its first feed',()=>{
  test.use({timezoneId:'Europe/London',locale:'en-GB'});
- const priya=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/priya-levain-tue.json'),'utf8'));
+ // Round 17 (O3): planned with today's levain bulk; 30 % gives the bulk the fixture was planned with (27.5 % on the old reference).
+ const priya=(()=>{const f=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/priya-levain-tue.json'),'utf8'));
+  const s=JSON.parse(f.bh_session_v1);s.autoStarterPct=30;f.bh_session_v1=JSON.stringify(s);
+  f.bh_journal_v1=JSON.stringify(JSON.parse(f.bh_journal_v1).map(e=>e.session?{...e,session:{...e.session,autoStarterPct:30}}:e));return f;})();
  test('Change times on Thursday noon keeps the plan, compatible, with no past-preparation note',async({page})=>{
   await page.clock.install({time:new Date('2026-11-19T12:00:00Z')});
   await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
