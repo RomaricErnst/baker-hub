@@ -76,3 +76,21 @@ test('H5: a page from another build is a new deployment',()=>{
  assert.equal(D.isNewDeployment(html,new Set(['/_next/static/chunks/a1.js','/_next/static/chunks/old.js'])),true);
  assert.equal(D.isNewDeployment('<html></html>',new Set(['/x.js'])),false,'no scripts read: nothing to compare');
 });
+
+test('H3: removing one bake of a jar pair carries its recorded jar feed into the other; Undo puts both back',()=>{
+ const at=(y,m,d,h,mi=0)=>+new Date(y,m-1,d,h,mi);
+ const now=at(2026,11,27,20);
+ const base=(id,need,mix,createdAt,records)=>({...entry(id,createdAt),eatTime:mix+10*H,session:{...session(),yeastType:'sourdough',levainNeed:need,startTime:mix,eatTime:mix+10*H,nextFeedRatio:1,
+  starterEvents:[{kind:'pre_mix',time:at(2026,11,27,19,30),bellPeakTime:at(2026,11,28,9,15),feedingRatio:1}],starterFeedRecords:records}});
+ const fed={kind:'pre_mix',plannedAt:at(2026,11,27,19,30),actualAt:at(2026,11,27,19,30),recordedAt:at(2026,11,27,19,31),ratio:1};
+ seed([base('lead',{mid:39,max:45},at(2026,11,28,8,45),at(2026,11,21,9),[fed]),base('follow',{mid:105,max:110},at(2026,11,28,7,30),at(2026,11,21,10),[])]);
+ const realNow=Date.now;Date.now=()=>now;
+ try{
+  R.removeJournalBake('lead');
+  const follow=J.getJournalEntry('follow');
+  assert.deepEqual(follow.session.starterFeedRecords.map(r=>r.plannedAt),[fed.plannedAt],'the shared feed stays done');
+  R.undoJournalRemoval();
+  assert.deepEqual(J.getJournalEntry('follow').session.starterFeedRecords,[]);
+  assert.ok(J.getJournalEntry('lead'));
+ }finally{Date.now=realNow;}
+});
