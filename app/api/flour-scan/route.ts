@@ -1,11 +1,24 @@
 import { NextResponse } from 'next/server';
 import { FLOUR_DB } from '@/lib/flourDatabase';
+import { allowRequest, clientIp, readJsonCapped } from '../../lib/apiGuard';
+
+// Abuse guard (round 18, M4): per-IP rate limit and an image of at most 5 MB.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_BODY = Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 4096;
 
 export async function POST(request: Request) {
-  const { base64, mediaType } = await request.json();
+  if (!allowRequest('flour-scan', clientIp(request.headers))) {
+    return NextResponse.json({ error: 'Too many scans. Please try again in a few minutes.' }, { status: 429 });
+  }
+  const read = await readJsonCapped(request, MAX_BODY);
+  if (!read.ok) return NextResponse.json({ error: read.status === 413 ? 'Please use an image under 5 MB.' : 'Invalid request' }, { status: read.status });
+  const { base64, mediaType } = (read.body ?? {}) as { base64?: unknown; mediaType?: unknown };
 
-  if (!base64 || !mediaType) {
+  if (typeof base64 !== 'string' || !base64 || typeof mediaType !== 'string' || !mediaType) {
     return NextResponse.json({ error: 'Missing base64 or mediaType' }, { status: 400 });
+  }
+  if (Math.floor(base64.replace(/=+$/, '').length * 3 / 4) > MAX_IMAGE_BYTES) {
+    return NextResponse.json({ error: 'Please use an image under 5 MB.' }, { status: 413 });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

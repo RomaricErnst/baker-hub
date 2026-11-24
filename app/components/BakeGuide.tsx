@@ -430,357 +430,62 @@ function LearnLink({ term, label, onOpen, showSparkle = false }: {
   );
 }
 
-// ── Coach button ─────────────────────────────────────
-const COACH_STEPS = new Set(['poolish','biga','starter','mix','bulk','shape','proof','bake','open','score','pizza_maestro']);
-const GATE_STEPS  = new Set(['poolish','biga','starter','proof']);
-
-const MAESTRO_CONTENT: Record<string, {
-  question: { en: string; fr: string };
-  instruction?: { en: string; fr: string };
-}> = {
-  poolish: {
-    question: { en: 'Does my poolish look ready?', fr: 'Mon poolish est-il prêt ?' },
-    instruction: { en: 'Photo the surface of your container', fr: 'Photographiez la surface de votre récipient' },
-  },
-  biga: {
-    question: { en: 'Does my biga look ready?', fr: 'Ma biga est-elle prête ?' },
-    instruction: { en: 'Photo the surface of your container', fr: 'Photographiez la surface de votre récipient' },
-  },
-  starter: {
-    question: { en: 'Does my starter look ready?', fr: 'Mon levain est-il prêt ?' },
-    instruction: { en: 'Photo the surface of your container', fr: 'Photographiez la surface de votre récipient' },
-  },
-  mix: {
-    question: { en: 'Is my gluten well developed?', fr: 'Mon gluten est-il bien développé ?' },
-    instruction: { en: 'Stretch a small piece thin and photograph it', fr: 'Étirez un petit morceau fin et photographiez-le' },
-  },
-  shape: {
-    question: { en: 'Is my shaping correct?', fr: 'Mon façonnage est-il correct ?' },
-    instruction: { en: 'Photo the top of your shaped ball', fr: 'Photographiez le dessus de votre boule façonnée' },
-  },
-  proof: {
-    question: { en: 'Is my dough properly proofed?', fr: 'Ma pâte est-elle correctement levée ?' },
-    instruction: { en: 'Press gently with a floured finger, then photograph', fr: 'Appuyez doucement avec un doigt fariné, puis photographiez' },
-  },
-  score: {
-    question: { en: 'Are my scores clean and deep enough?', fr: 'Mes grignes sont-elles nettes et assez profondes ?' },
-    instruction: { en: 'Photo top-down before loading the oven', fr: "Photo de dessus avant d’enfourner" },
-  },
-  bake: {
-    question: { en: 'How did my bake turn out?', fr: 'Comment s\'est passée ma cuisson ?' },
-    instruction: { en: 'Photo your loaf fresh from the oven', fr: 'Photographiez votre pain à la sortie du four' },
-  },
-  open: {
-    question: { en: 'Is the base evenly stretched with a good cornicione?', fr: 'La base est-elle bien étalée avec une bonne corniche ?' },
-  },
-  pizza_maestro: {
-    question: { en: 'Ask about this step', fr: 'Poser une question sur cette étape' },
-    instruction: { en: 'Show the base, topped pizza, or fresh from the oven', fr: 'Montrez la base, la pizza garnie, ou à la sortie du four' },
-  },
-};
-
-function CoachButton({
-  stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName,
-}: {
-  stepId: string;
-  styleKey: string;
-  kitchenTemp: number;
-  prefermentType?: string;
-  locale: string;
-  ovenType?: string;
-  pizzaName?: string;
-}) {
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(false);
-  const fileInputRef            = useRef<HTMLInputElement>(null);
-  const isGate                  = GATE_STEPS.has(stepId);
-  const l = locale === 'fr' ? 'fr' : 'en';
-
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    const ALLOWED = ['image/jpeg','image/png','image/webp','image/heic','image/heif'];
-    if (!ALLOWED.includes(file.type)) return;
-
-    setLoading(true);
-    setFeedback(null);
-    setError(false);
-
-    try {
-      // Resize to max 1024px before encoding — keeps payload
-      // under Vercel's 4.5MB limit regardless of photo size
-      const resized = await new Promise<string>((resolve, reject) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.onload = () => {
-          URL.revokeObjectURL(objectUrl);
-          const MAX = 1024;
-          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) { reject(new Error('Canvas unavailable')); return; }
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.85));
-        };
-        img.onerror = reject;
-        img.src = objectUrl;
-      });
-
-      const base64 = resized.split(',')[1];
-      const mimeType = 'image/jpeg';
-
-      const res = await fetch('/api/bake-coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: base64,
-          mimeType,
-          stepId,
-          styleKey,
-          kitchenTemp,
-          prefermentType,
-          locale,
-          ovenType,
-          pizzaName,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.feedback) {
-        setFeedback(data.feedback);
-      } else {
-        setError(true);
-      }
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!COACH_STEPS.has(stepId)) return null;
-
-  return (
-    <div style={{ marginTop: '16px' }}>
-      <input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        style={{ display: 'none' }}
-        ref={fileInputRef}
-        onChange={handleFile}
-      />
-
-      {MAESTRO_CONTENT[stepId]?.question && (
-        <div style={{
-          fontFamily: 'var(--font-ui)', fontSize: '14px',
-          color: 'var(--char)', fontWeight: 600, marginBottom: '4px',
-        }}>
-          {MAESTRO_CONTENT[stepId].question[l]}
-        </div>
-      )}
-
-      {MAESTRO_CONTENT[stepId]?.instruction && (
-        <div style={{
-          fontFamily: 'var(--font-ui)', fontSize: '11px',
-          color: 'var(--smoke)', fontStyle: 'italic', marginBottom: '8px',
-        }}>
-          {MAESTRO_CONTENT[stepId].instruction![l]}
-        </div>
-      )}
-
-      {feedback && (
-        <div style={{
-          background: '#2B2420',
-          borderLeft: '3px solid #6B4423',
-          borderRadius: '16px',
-          padding: '12px 16px',
-          marginBottom: '12px',
-          position: 'relative',
-        }}>
-          <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
-            {feedback}
-          </div>
-          <button
-            onClick={() => { setFeedback(null); setError(false); }}
-            style={{
-              position: 'absolute', bottom: '8px', right: '12px',
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--smoke)', fontSize: '11px',
-              fontFamily: 'var(--font-ui)',
-              textDecoration: 'underline', padding: 0,
-            }}
-          >
-            {l === 'fr' ? 'Reprendre' : 'Retake'}
-          </button>
-        </div>
-      )}
-
-      {error && !feedback && (
-        <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic', marginBottom: '8px' }}>
-          {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
-        </div>
-      )}
-
-      {!feedback && (
-        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: '#2B2420',
-              border: isGate ? '1px solid rgba(156, 130, 72,0.5)' : '1px solid rgba(240, 235, 224,0.15)',
-              borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer',
-              height: '28px', opacity: loading ? 0.7 : 1, transition: 'opacity .15s',
-            }}
-          >
-            {loading ? (
-              <span style={{
-                display: 'inline-block', width: '12px', height: '12px',
-                border: '1.5px solid rgba(240, 235, 224,0.3)',
-                borderTop: '1.5px solid #F0EBE0',
-                borderRadius: '50%',
-                animation: 'bh-spin 0.7s linear infinite',
-                flexShrink: 0,
-              }} />
-            ) : (
-              <svg viewBox="0 0 16 16" width={14} height={14} fill="none"
-                stroke="#F0EBE0" strokeWidth="1.4"
-                strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12"/>
-              </svg>
-            )}
-            <span style={{
-              fontFamily: 'var(--font-ui)', fontSize: '11px',
-              color: loading ? 'rgba(240, 235, 224,0.6)' : '#F0EBE0',
-              whiteSpace: 'nowrap',
-            }}>
-              {loading
-                ? (l === 'fr' ? 'Le Maestro regarde...' : 'Maestro is looking...')
-                : (l === 'fr' ? 'Demander au Maestro' : 'Ask Maestro')}
-            </span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Ask Maestro — unified: text question, photo, or both ─────────
+// ── Ask Maestro — a question about this step, in words (24 Nov 2026 round 18: photo verdicts were wrong
+// too often to keep, so Maestro reads no photos). ─────────
 export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   stepId: string; stepTitle: string; styleKey: string; kitchenTemp: number;
   prefermentType?: string; locale: string; ovenType?: string; recipeContext?: string;
 }) {
   const [q, setQ] = useState('');
-  const [photoB64, setPhotoB64] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<'busy' | 'failed' | null>(null);
   const l = locale === 'fr' ? 'fr' : 'en';
-
-  async function attach(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    const b64 = await new Promise<string | null>((resolve) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        const MAX = 1024;
-        const sc = Math.min(1, MAX / Math.max(img.width, img.height));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
-        const ctx = c.getContext('2d');
-        if (!ctx) { resolve(null); return; }
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-        resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-      img.src = url;
-    });
-    if (b64) { setPhotoB64(b64); setAnswer(null); } else setError(true);
-  }
 
   async function ask() {
     const question = q.trim();
-    if ((!question && !photoB64) || loading) return;
-    setLoading(true); setError(false); setAnswer(null);
+    if (!question || loading) return;
+    setLoading(true); setError(null); setAnswer(null);
     try {
       const res = await fetch('/api/bake-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: question || undefined,
-          imageBase64: photoB64 ?? undefined,
-          mimeType: photoB64 ? 'image/jpeg' : undefined,
-          stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext,
-        }),
+        body: JSON.stringify({ question, stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }),
       });
-      const data = await res.json();
-      if (res.ok && typeof data.feedback === 'string' && data.feedback.trim()) setAnswer(data.feedback); else setError(true);
-    } catch { setError(true); } finally { setLoading(false); }
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && typeof data.feedback === 'string' && data.feedback.trim()) setAnswer(data.feedback);
+      else setError(res.status === 429 ? 'busy' : 'failed');
+    } catch { setError('failed'); } finally { setLoading(false); }
   }
 
-  const canAsk = !loading && (q.trim().length > 0 || photoB64 !== null);
+  const canAsk = !loading && q.trim().length > 0;
 
   return (
-    <div style={{ marginTop: '12px' }}>
-      {MAESTRO_CONTENT[stepId]?.question && !answer && (
-        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: D.char, fontWeight: 600, marginBottom: '8px' }}>
-          {MAESTRO_CONTENT[stepId].question[l]}
-        </div>
-      )}
-      <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} ref={fileRef} onChange={attach} />
-      {photoB64 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <img src={`data:image/jpeg;base64,${photoB64}`} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '12px', border: `1px solid ${D.border}` }} />
-          <button onClick={() => setPhotoB64(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: D.smoke, fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
-            {l === 'fr' ? 'Retirer la photo' : 'Remove photo'}
-          </button>
-        </div>
-      )}
+    <div data-ask-maestro style={{ marginTop: '12px' }}>
+      {!answer && <label htmlFor={`ask-${stepId}`} style={{ display: 'block', fontFamily: 'var(--font-ui)', fontSize: '14px', color: D.char, fontWeight: 600, marginBottom: '8px' }}>
+        {l === 'fr' ? 'Une question sur cette étape ?' : 'A question about this step?'}
+      </label>}
       <div style={{ display: 'flex', gap: '8px' }}>
-        <button
-          onClick={() => fileRef.current?.click()}
-          title={l === 'fr' ? 'Joindre une photo' : 'Attach a photo'}
-          style={{
-            width: '38px', flexShrink: 0, border: `1px solid ${photoB64 ? '#6B7A5A' : D.border}`,
-            borderRadius: '12px', background: photoB64 ? 'rgba(107,122,90,0.08)' : '#fff', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg viewBox="0 0 20 20" width={17} height={17} fill="none" stroke={photoB64 ? '#6B7A5A' : '#8A7F78'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M1 7.5A1.5 1.5 0 012.5 6h.879a2 2 0 001.664-.89l.812-1.22A2 2 0 017.519 3h4.962a2 2 0 011.664.89l.812 1.22A2 2 0 0016.62 6H17.5A1.5 1.5 0 0119 7.5v8A1.5 1.5 0 0117.5 17h-15A1.5 1.5 0 011 15.5v-8z"/>
-            <circle cx="10" cy="11" r="3"/>
-          </svg>
-        </button>
         <input
+          id={`ask-${stepId}`}
           maxLength={500}
-          aria-label={l === 'fr' ? 'Votre question' : 'Your question'}
           value={q}
           onChange={e => setQ(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') ask(); }}
-          placeholder={l === 'fr' ? 'Question, photo, ou les deux…' : 'Question, photo, or both…'}
+          placeholder={l === 'fr' ? 'Ma pâte colle…' : 'My dough is sticky…'}
           style={{
-            flex: 1, border: `1px solid ${D.border}`, borderRadius: '8px',
-            padding: '8px 12px', fontSize: '13px', fontFamily: 'var(--font-ui)',
+            flex: 1, border: `1px solid ${D.border}`, borderRadius: '8px', minHeight: 44, boxSizing: 'border-box',
+            padding: '8px 12px', fontSize: '16px', fontFamily: 'var(--font-ui)',
             color: D.char, background: '#fff', outline: 'none', minWidth: 0,
           }}
         />
         <button
+          type="button"
           onClick={ask}
           disabled={!canAsk}
           style={{
             background: '#2B2420', color: '#F0EBE0', border: 'none',
-            borderRadius: '12px', padding: '12px 16px', minHeight: '44px', fontSize: '13px',
+            borderRadius: '12px', padding: '12px 16px', minHeight: '44px', fontSize: '14px',
             fontFamily: 'var(--font-ui)', cursor: canAsk ? 'pointer' : 'default',
             opacity: canAsk ? 1 : 0.6, whiteSpace: 'nowrap',
           }}
@@ -788,25 +493,21 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           {loading ? '…' : (l === 'fr' ? 'Demander' : 'Ask')}
         </button>
       </div>
-      <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.smoke, marginTop: '4px' }}>
-        {MAESTRO_CONTENT[stepId]?.question?.en === 'Ask about this step'
-          ? (l === 'fr' ? 'Photo facultative.' : 'Photo optional.')
-          : (l === 'fr' ? 'Une question sur cette étape ? Photo facultative.' : 'Ask about this step. Photo optional.')}
-      </div>
       {answer && (
-        <div style={{
+        <div data-maestro-answer style={{
           background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px',
           padding: '12px 16px', marginTop: '8px',
-          color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)', lineHeight: 1.6, whiteSpace: 'pre-line',
+          color: '#F0EBE0', fontSize: '14px', fontFamily: 'var(--font-ui)', lineHeight: 1.6, whiteSpace: 'pre-line',
         }}>
           {answer}
           <div>
             <button
-              onClick={() => { setAnswer(null); setQ(''); setPhotoB64(null); }}
+              type="button"
+              onClick={() => { setAnswer(null); setQ(''); }}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--smoke)', fontSize: '11px', fontFamily: 'var(--font-ui)',
-                textDecoration: 'underline', padding: 0, marginTop: '8px',
+                background: 'none', border: 'none', cursor: 'pointer', minHeight: 44,
+                color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)',
+                textDecoration: 'underline', padding: 0,
               }}
             >
               {l === 'fr' ? 'Autre question' : 'Ask another'}
@@ -815,8 +516,10 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         </div>
       )}
       {error && (
-        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic', marginTop: '8px', fontFamily: 'var(--font-ui)' }}>
-          {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
+        <div role="status" style={{ fontSize: '13px', color: D.smoke, marginTop: '8px', fontFamily: 'var(--font-ui)' }}>
+          {error === 'busy'
+            ? (l === 'fr' ? 'Beaucoup de questions d’un coup. Réessayez dans quelques minutes.' : 'Lots of questions at once. Try again in a few minutes.')
+            : (l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.')}
         </div>
       )}
     </div>

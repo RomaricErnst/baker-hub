@@ -407,7 +407,7 @@ const CONTENT: Record<string, LocaleContent> = {
       {
         title: 'Maestro — help along the way',
         body: (
-          <p style={{ margin: 0, ...bodyText }}>In the step-by-step guide, <B>Ask Maestro</B> answers a question about the step, looks at a photo of your dough or your bake, or both. It knows your recipe, oven, style and the step you are on, so its answer is about your bake, not a generic one: fermentation signs, crumb, crust colour, the spots on a cornicione. It says what a photo can and cannot show.</p>
+          <p style={{ margin: 0, ...bodyText }}>In the step-by-step guide, <B>Ask Maestro</B> answers a question about the step, in words. It knows your recipe, oven, style and the step you are on, so its answer is about your bake, not a generic one: fermentation signs, timing, temperature, what to check next. It cannot see or touch your dough, so it asks for the sign that decides.</p>
         ),
       },
       {
@@ -709,7 +709,7 @@ const CONTENT: Record<string, LocaleContent> = {
       {
         title: 'Maestro — l’aide en chemin',
         body: (
-          <p style={{ margin: 0, ...bodyText }}>Dans le guide pas à pas, <B>Demander au Maestro</B> répond à une question sur l’étape, regarde une photo de votre pâte ou de votre cuisson, ou les deux. Il connaît votre recette, votre four, votre style et l’étape où vous en êtes : sa réponse porte sur votre fournée, pas sur un cas général — signes de fermentation, alvéolage de la mie, couleur de la croûte, taches sur la couronne. Il dit ce qu’une photo peut montrer et ce qu’elle ne montre pas.</p>
+          <p style={{ margin: 0, ...bodyText }}>Dans le guide pas à pas, <B>Demander au Maestro</B> répond par écrit à une question sur l’étape. Il connaît votre recette, votre four, votre style et l’étape où vous en êtes : sa réponse porte sur votre fournée, pas sur un cas général — signes de fermentation, durées, températures, ce qu’il faut vérifier ensuite. Il ne voit ni ne touche votre pâte : il demande le signe qui décide.</p>
         ),
       },
       {

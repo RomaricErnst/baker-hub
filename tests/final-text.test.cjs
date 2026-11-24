@@ -152,8 +152,9 @@ test('one name per style, the picker’s, and guide wording details',()=>{
  assert.doesNotMatch(pizza,/Cooking &amp; serving/);
  const bake=guide('neapolitan','en',{numItems:4,weight:260}).text;
  assert.doesNotMatch(bake,/What does Maestro think/);
- assert.match(bake,/Ask about this step .{0,40}Photo optional\./);
- assert.doesNotMatch(bake,/Ask about this step Ask Ask about this step/);
+ // Maestro reads no photos (round 18, M1): one question box, no camera, no "Photo optional".
+ assert.match(bake,/A question about this step\?/);
+ assert.doesNotMatch(bake,/Photo optional|Attach a photo|Question, photo/);
  const poolish=guide('neapolitan','en',{numItems:4,weight:260,extra:{prefermentType:'poolish'}}).text;
  assert.doesNotMatch(poolish,/\bpoolish \d/);
 });

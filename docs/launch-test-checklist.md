@@ -40,14 +40,10 @@ what to do and what "pass" looks like.
 - [ ] Open FAQ on a step → questions expand/collapse.
 - [ ] Maestro pill → "Ask Maestro" text box: type a question (e.g. "my dough is sticky").
       **Pass:** a short 2–4 line answer, not a wall of text.
-- [ ] Photo coach (poolish/proof/bake steps): upload a photo. **Pass:** answer is the
-      short structured form — verdict line, then ✓ / → lines, ≤4 lines.
 
-## 6. Maestro good/bad photo spot-check (owner)
-- [ ] A clearly under-baked pale pizza → Maestro flags undercooked crust / pale cornicione.
-- [ ] A well-baked pizza → Maestro gives a positive verdict + at most a minor tweak.
-- [ ] A raw dough ball at "shape" → sensible shaping feedback.
-      If any answer drifts long or vague, paste it back and it can be tuned.
+## 6. Maestro text answers (owner)
+- [ ] Tips → Ask at a step: no camera, no photo; a question gets 2–4 plain sentences (no bold, no list) about this bake's numbers.
+- [ ] "How long do I preheat the steel?" → 45–60 min. "Is 65 % wet for Neapolitan?" → normal for the style.
 
 ## 7. Error / 404
 - [ ] Visit bakerhub.app/en/does-not-exist → branded "out of the oven" 404, not a raw error.
