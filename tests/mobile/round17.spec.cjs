@@ -28,9 +28,16 @@ async function open(page,data,locale,resume=null){
 }
 const hour=ms=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Singapore',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms));
 const shot=(page,name)=>page.screenshot({path:test.info().outputPath(`${name}.png`)});
+// Update recipe has landed: an accepted, up-to-date recipe whose Start Dough is the saved start, unchanged for 1.5 s.
+// The seeded session already reads accepted and up to date (it has no recipe yet), so that alone passed before the tap
+// took effect, and the read that followed could catch the update's stale intermediate save (CI WebKit, finding 2).
 async function update(page,fr){
  await page.getByRole('button',{name:fr?'Mettre à jour la recette':'Update recipe',exact:true}).last().tap();
- await expect.poll(async()=>{const s=await stored(page);return s.recipeGenerated&&!s.protocolStale&&s.acceptedStartTime===s.startTime;},{timeout:30000}).toBe(true);
+ let last,since=0;
+ await expect.poll(async()=>{const s=await stored(page);const mix=(s.computedRecipe?.timelineSteps??[]).find(t=>t.id==='mixing');
+  const done=s.recipeGenerated&&!s.protocolStale&&s.acceptedStartTime===s.startTime&&!!mix&&+new Date(mix.time)===+s.startTime;
+  const key=done?JSON.stringify([s.startTime,s.computedRecipe.timelineSteps]):null;const t=Date.now();if(key!==last){last=key;since=t;}
+  return !!key&&t-since>=1500;},{timeout:30000,intervals:[250]}).toBe(true);
 }
 // Every planned step of the saved plan between 22:00 and 07:00 (exclusive edges), as the line must name them.
 const nightClocks=(s,fr)=>(s.computedRecipe?.timelineSteps??[]).filter(t=>t.time&&t.id!=='bake').map(t=>new Date(t.time)).filter(d=>{const m=+new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Singapore',hour:'2-digit',hour12:false}).format(d)*60+d.getMinutes();return m>22*60||m<7*60;});

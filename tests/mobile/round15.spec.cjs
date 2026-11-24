@@ -27,6 +27,9 @@ async function open(page,data,locale){
  return errors;
 }
 const hour=ms=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Singapore',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms));
+// The plan once it has settled: the saved start unchanged for 1.5 s (a poll must never pass on a value the page holds
+// for a moment; CI's slower WebKit read 'Thu 19:45' where a fast run had caught an earlier replan's 'Thu 20:00').
+const settledHour=page=>{let last,since=0;return async()=>{const h=hour((await stored(page)).startTime);const t=Date.now();if(h!==last){last=h;since=t;}return t-since>=1500?h:null;};};
 const shot=(page,name)=>page.screenshot({path:test.info().outputPath(`${name}.png`)});
 
 for(const locale of ['en','fr']){
@@ -39,9 +42,11 @@ for(const locale of ['en','fr']){
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   const bake=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time');
   await expect(bake).toBeVisible({timeout:30000});
-  // Lunch: 0.15 % shapes at 3:00am. The editor names those steps with the choice before anything is kept (item 1).
+  // Lunch: 0.15 % kneads Thu 7:45pm, the next quarter hour after the clock (round 17: entryPlan's plan; Thu 8:00pm was
+  // the search's, which the page held for a moment first). The editor names its night steps with the choice before
+  // anything is kept (item 1).
   await bake.fill('2026-11-27T11:30');
-  await expect.poll(async()=>hour((await stored(page)).startTime),{timeout:30000}).toBe('Thu 20:00');
+  await expect.poll(settledHour(page),{timeout:30000,intervals:[250]}).toBe('Thu 19:45');
   const editor=page.locator('[data-entry-night-where="editor"]:visible');
   await expect(editor).toHaveCount(1,{timeout:30000});
   await expect(editor).toContainText(fr?/Ce planning a/:/This plan has/);
@@ -66,7 +71,7 @@ for(const locale of ['en','fr']){
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(bake).toBeVisible({timeout:30000});
   await bake.fill('2026-11-27T19:30');
-  await expect.poll(async()=>hour((await stored(page)).startTime),{timeout:30000}).toBe('Fri 09:30');
+  await expect.poll(settledHour(page),{timeout:30000,intervals:[250]}).toBe('Fri 09:30');
   await expect(page.locator('[data-entry-night]:visible')).toHaveCount(0);
   await shot(page,`editor-dinner-${locale}`);
   expect(errors).toEqual([]);

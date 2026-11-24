@@ -37,6 +37,9 @@ async function update(page,fr){
  await expect.poll(async()=>{const s=await stored(page);return s.recipeGenerated&&!s.protocolStale&&s.acceptedStartTime===s.startTime&&s.activeTab==='plan';},{timeout:30000}).toBe(true);
 }
 const hour=ms=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Singapore',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms));
+// The plan once it has settled: the saved start unchanged for 1.5 s (a poll must never pass on a value the page holds
+// for a moment; CI's slower WebKit read 'Thu 19:45' where a fast run had caught an earlier replan's 'Thu 20:00').
+const settledHour=page=>{let last,since=0;return async()=>{const h=hour((await stored(page)).startTime);const t=Date.now();if(h!==last){last=h;since=t;}return t-since>=1500?h:null;};};
 const shot=(page,name)=>page.screenshot({path:test.info().outputPath(`${name}.png`)});
 
 for(const locale of ['en','fr']){
@@ -70,9 +73,10 @@ for(const locale of ['en','fr']){
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   const bake=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time');
   await expect(bake).toBeVisible({timeout:30000});
-  // Lunch the next day: 0.5 % fits with an 8:00am knead; the plan is shown, with no error card.
+  // Lunch the next day: 0.5 % fits with a 7:30am knead (round 17: entryPlan's plan; 8:00am was the search's, which
+  // the page held for a moment before entryPlan's landed); the plan is shown, with no error card.
   await bake.fill('2026-11-27T11:30');
-  await expect.poll(async()=>hour((await stored(page)).startTime),{timeout:30000}).toBe('Fri 08:00');
+  await expect.poll(settledHour(page),{timeout:30000,intervals:[250]}).toBe('Fri 07:30');
   await expect(page.locator('.bh-plan-notice:visible')).toHaveCount(0);
   await shot(page,`1-lunch-${locale}`);
   // Tonight at 9:30pm: no plan; the bakes that fit alone (no plan drawn for it, no "past" line).
@@ -87,6 +91,10 @@ for(const locale of ['en','fr']){
 
  test(`${locale}: 5 — a method change after the recipe lands on the Recipe`,async({page})=>{
   const errors=await open(page,b3({blocks:[]}),locale,{activeStep:7,advancedStep:8,setupOverview:false,activeTab:'setup'});
+  // Let the restored session settle first, as fineTune() does: a tap while it restores is not a change (the last test of
+  // a --repeat-each run, alone on the CPU, tapped inside that window and found no Update recipe).
+  await expect(page.getByText('Poolish',{exact:true}).first()).toBeVisible({timeout:30000});
+  await page.waitForTimeout(800);
   await page.getByText('Poolish',{exact:true}).first().tap();
   await update(page,fr);
   expect((await stored(page)).prefermentType).toBe('poolish');

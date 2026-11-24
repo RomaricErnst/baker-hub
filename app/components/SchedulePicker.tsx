@@ -3017,7 +3017,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       ...(wasWorkActive  ? freshWorkdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label })) : []),
       ...(wasNightActive ? freshNights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label })) : []),
     ];
-    applyAndUpdate(newBlocks);
+    applyAndUpdate(newBlocks, true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -6738,7 +6738,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     onChange(d, pendingEatTime, blocks);
   }
 
-  function applyAndUpdate(proposedBlocks: AvailabilityBlock[]) {
+  function applyAndUpdate(proposedBlocks: AvailabilityBlock[], regenerated=false) {
     const newBlocks=chronologicalBlocks(proposedBlocks);
     // A new user constraint starts a new solve, not a runaway notification
     // loop from the previous one (also valid when the planning clock is frozen).
@@ -6746,7 +6746,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     setMovedNote(null);setBlockerNote(null);ratioApplyHistoryRef.current.length=0;
     setStarterPins(null);setEditingRow(null);setEditingEnabled(false);setEditBaseTimes(null);draftOverridesRef.current={};
     const previousBlocks=solverBlocksRef.current;
-    const removingOnly=newBlocks.length<previousBlocks.length && newBlocks.every(next=>previousBlocks.some(old=>
+    // Presets regenerated for a moved bake are not a busy time the baker removed: an entered amount's plan takes
+    // `entryPlan` on this replan too (it had taken the search's plan, then entryPlan's a tick later: two plans for the
+    // same inputs, the first saved for a moment). Automatic and sourdough plans keep the removal rule as before.
+    const removingOnly=!(regenerated&&entryNightRuleOn()) && newBlocks.length<previousBlocks.length && newBlocks.every(next=>previousBlocks.some(old=>
       +old.from===+next.from && +old.to===+next.to && old.label===next.label && old.fridgeRemoval===next.fridgeRemoval));
     solverBlocksRef.current=newBlocks;setLocalBlocks(newBlocks);
     // Recompute automatic recommendations for the new availability, rather
