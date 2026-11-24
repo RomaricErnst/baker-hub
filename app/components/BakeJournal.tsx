@@ -10,10 +10,11 @@ import { ALL_STYLES } from '@/app/data';
 import { bakeTitleName } from '@/app/utils/bakeTitle';
 import { displayTemp, displayWeight, formatBakeDateTime, type UnitSystem } from '@/app/utils/units';
 import {
-  JOURNAL_NOTE_LIMIT, JOURNAL_PHOTO_LIMIT, deleteJournalEntry, journalBakeInProgress, updateJournalEntry,
+  JOURNAL_NOTE_LIMIT, JOURNAL_PHOTO_LIMIT, journalBakeInProgress, updateJournalEntry,
   type JournalEntry,
 } from '@/app/lib/localJournal';
 import { addJournalPhoto, deleteJournalPhotos, readJournalPhotos } from '@/app/lib/journalPhotos';
+import { removeJournalBake } from '@/app/lib/journalRemoval';
 
 /** The bake's own name: the one the baker gave, else the Recipe's automatic one ("Pizza night", "Baguettes"),
  *  so the rating sheet, the menu and home name a bake as its Recipe does (20 Nov 2026 round 6). */
@@ -66,10 +67,23 @@ export function JournalCard({ entry, units, current, onOpen }: {
   );
 }
 
+/** "Removed · Undo" where a removed bake's row was, until the next navigation (round 18, H3). */
+export function RemovedUndo({ entry, onUndo }: { entry: JournalEntry; onUndo: () => void }) {
+  const t = useTranslations('journal');
+  const locale = useLocale();
+  return (
+    <div role="status" data-journal-removed={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 48, padding: '0 4px 0 14px', border: '1px dashed var(--border)', borderRadius: 12, color: 'var(--smoke)', fontSize: 15 }}>
+      <span>{t('removed')} ·</span>
+      <button type="button" data-journal-undo onClick={onUndo} aria-label={t('undoLabel', { name: journalTitle(entry, locale) })}
+        style={{ minHeight: 44, minWidth: 44, padding: '0 10px', border: 'none', background: 'transparent', color: 'var(--char)', font: 'inherit', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>{t('undo')}</button>
+    </div>
+  );
+}
+
 type Status = 'noteSaved' | 'photoFailed' | 'storageFailed' | 'saveToAccountFailed' | null;
 
 /** Render with key={entry.id}: the sheet keeps its own copy of the entry while open. */
-export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, onChange, onResume, onRebake, onSaveToAccount }: {
+export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, onChange, onResume, onRebake, onSaveToAccount, removeAt }: {
   entry: JournalEntry | null;
   units: UnitSystem;
   signedIn: boolean;
@@ -80,6 +94,8 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   onRebake: (entry: JournalEntry) => void;
   /** Present only for signed-in bakers; resolves to the new bake_events id. */
   onSaveToAccount?: (entry: JournalEntry, photos: Blob[]) => Promise<string | null>;
+  /** Where the app will be right after a removal (removeJournalBake's `at`). */
+  removeAt?: Record<string, string>;
 }) {
   const t = useTranslations('journal');
   const locale = useLocale();
@@ -87,7 +103,6 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const [note, setNote] = useState(initial?.note ?? '');
   const [photos, setPhotos] = useState<Array<{ id: string; url: string; blob: Blob }>>([]);
   const [adding, setAdding] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [rateNow, setRateNow] = useState(false);
   const [savingAccount, setSavingAccount] = useState(false);
   const [status, setStatus] = useState<Status>(null);
@@ -142,10 +157,9 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
     if (commit({ photoIds: current.photoIds.filter(value => value !== id) })) void deleteJournalPhotos([id]);
   }
 
+  // Immediate, with Undo where the row was (round 18, H3): no question first; photos go once Undo is gone.
   function remove() {
-    const removed = deleteJournalEntry(current.id);
-    if (!removed) { setStatus('storageFailed'); return; }
-    void deleteJournalPhotos(removed.photoIds);
+    if (!removeJournalBake(current.id, removeAt)) { setStatus('storageFailed'); return; }
     onChange(current.id, null);
     onClose();
   }
@@ -165,7 +179,6 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const divider = { height: 1, background: 'var(--border)', margin: '16px 20px 0' };
   const inProgress = journalBakeInProgress(current);
   const beforeOven = inProgress && (current.eatTime == null || current.eatTime > Date.now());
-  const justBaked = inProgress && !beforeOven;
   // Before the bake there is nothing to rate: the entry shows the plan instead.
   const beforeBake = !rateNow && current.eatTime != null && current.eatTime > Date.now() && current.rating == null && !current.note && current.photoIds.length === 0;
   // The first thing to do: a poolish or biga starts before the dough (17 Nov retention review).
@@ -270,25 +283,17 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
         </div>
 
         <div style={{ borderTop: '1px solid var(--border)', padding: '12px 20px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', display: 'grid', gap: 8, flexShrink: 0 }}>
-          {confirmDelete ? (
-            <div role="group" aria-label={t('deleteQuestion')}>
-              <p style={{ margin: '0 0 8px', fontSize: 14 }}>{t('deleteQuestion')}</p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" onClick={remove} style={{ ...secondary, flex: 1, background: 'var(--char)', color: 'white', borderColor: 'var(--char)' }}>{t('deleteConfirm')}</button>
-                <button type="button" autoFocus onClick={() => setConfirmDelete(false)} style={{ ...secondary, flex: 1 }}>{t('deleteKeep')}</button>
-              </div>
-            </div>
-          ) : <>
-            {/* Right after the bake, opening it again is not the next thing to do: Bake again leads, and Delete waits
-                until the evening is over (18 Nov 2026 retention round 4). */}
+          <>
+            {/* Right after the bake, opening it again is not the next thing to do: Bake again leads (18 Nov 2026
+                retention round 4). Delete is always there: it has an Undo (round 18). */}
             {inProgress && <button type="button" onClick={() => { onResume(current); onClose(); }} style={beforeOven ? { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 } : secondary}>{t('resume')}</button>}
             <button type="button" onClick={() => { onRebake(current); onClose(); }} style={beforeOven ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')} →</button>
             {signedIn && onSaveToAccount && !current.accountEventId && <>
               <button type="button" disabled={savingAccount} aria-busy={savingAccount} onClick={() => void saveToAccount()} style={secondary}>{savingAccount ? t('savingToAccount') : t('saveToAccount')}</button>
               <p style={{ margin: 0, fontSize: 12, color: 'var(--smoke)' }}>{t('saveToAccountNote')}</p>
             </>}
-            {!justBaked && <button type="button" onClick={() => setConfirmDelete(true)} style={{ minHeight: 44, border: 'none', background: 'transparent', color: 'var(--ash)', font: 'inherit', fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>{t('delete')}</button>}
-          </>}
+            <button type="button" data-journal-delete onClick={remove} style={{ minHeight: 44, border: 'none', background: 'transparent', color: 'var(--ash)', font: 'inherit', fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>{t('delete')}</button>
+          </>
         </div>
       </div>
     </>,

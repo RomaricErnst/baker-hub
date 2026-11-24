@@ -102,7 +102,7 @@ test('S6: home shows one row for the jar\'s step, naming both bakes; the other b
  const one=[rows[0]];assert.equal(mergeSharedJarRows(one,now),one);
  const far={...pizza,session:{...pizza.session,startTime:at(2026,11,29,18),starterEvents:pizza.session.starterEvents.map(e=>e.kind==='pre_mix'?{...e,time:at(2026,11,29,8),bellPeakTime:at(2026,11,29,17)}:e)}};
  const apart=[rows[0],row(far,at(2026,11,27,18),'Take starter out of the fridge')];assert.equal(mergeSharedJarRows(apart,now),apart);
- assert.match(page,/mergeSharedJarRows\(rows, Date\.now\(\), locale\)\);/);
+ assert.match(page,/mergeSharedJarRows\(home\.rows, Date\.now\(\), locale\)\);/);
  // Round 9 (N): the names go through jarRowName (two of the same name read once, "· both bakes").
  assert.match(page,/const jarEntries = \[row\.entry, \.\.\.\(row\.jarWith \?\? \[\]\)\];\n\s*const name = jarRowName\(jarEntries\.map\(nameOf\), locale\);/);
 });

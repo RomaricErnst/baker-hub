@@ -151,7 +151,10 @@ test('pizza service help is one inline disclosure in both languages',()=>{
    assert.match(html,locale==='fr'?/Conseils pour garnir et cuire/:/Topping and baking tips/);
    assert.equal((html.match(/<details\b/g)||[]).length,1);
    assert.match(html,locale==='fr'?/Questions fréquentes/:/Common questions/);
-   assert.match(html,/name=|Your question|Votre question/);
+   assert.match(html,locale==='fr'?/Une question sur cette étape/:/A question about this step/);
+   // Maestro reads no photos (round 18, M1).
+   const ask=html.slice(html.indexOf('data-ask-maestro'),html.indexOf('</details>',html.indexOf('data-ask-maestro')));
+   assert.ok(ask.length>0);assert.doesNotMatch(ask,/type="file"|Attach a photo|Joindre une photo|<svg/);
    assert.doesNotMatch(html,/Tips &amp; tricks/);
    assert.equal((html.match(/animation:slideUpSheet/g)||[]).length,1,'only the pizza card opens as a sheet');
   }
