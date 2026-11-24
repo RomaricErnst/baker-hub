@@ -107,6 +107,7 @@ import { buildItems } from '@/app/components/Timeline';
 import UnitInput from '@/app/components/UnitInput';
 import { yeastRowLabel, autoPctPlaceholder, roundShownPct } from '../utils/yeastRow';
 import { choosePrefermentYeastTiming, prefermentYeastTiming, prefermentWindowMiss, normalizePrefYeastOverride, prefermentYeastStorages, prefermentMassG, prefermentYeastBounds, PREF_YEAST_MIN_PCT, PREF_YEAST_MAX_PCT, type FlourPreferment } from '../utils/prefermentYeast';
+import { buildMaestroContext } from '../utils/maestroContext';
 
 
 // ── Constants ────────────────────────────────
@@ -6255,6 +6256,8 @@ export default function Home() {
               <div style={{ display: companionVisible ? 'block' : 'none' }}>
                 <PizzaParty
                   locale={locale}
+                  maestroContext={buildMaestroContext({recipe, schedule, styleKey, numItems, hydration: recipe?.hydration ?? 0, kitchenTemp, prefermentType, ovenType})}
+                  kitchenTemp={kitchenTemp} prefermentType={prefermentType}
                   countKnown={qtyChosen||!!recipeGenerated}
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
@@ -7041,6 +7044,8 @@ export default function Home() {
               <div style={{ display: companionVisible ? 'block' : 'none' }}>
                 <PizzaParty
                   locale={locale}
+                  maestroContext={buildMaestroContext({recipe, schedule, styleKey, numItems, hydration: recipe?.hydration ?? 0, kitchenTemp, prefermentType, ovenType})}
+                  kitchenTemp={kitchenTemp} prefermentType={prefermentType}
                   countKnown={qtyChosen||!!recipeGenerated}
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}

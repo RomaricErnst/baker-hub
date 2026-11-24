@@ -171,6 +171,7 @@ interface BakeTabProps extends CompletionActions {
   prefermentType?: string;
   bakeEventId?: string | null;
   ovenType?: string;
+  maestroContext?: string;
   onSave?: () => unknown | Promise<unknown>;
   onEnsureBakeEvent?: () => Promise<string | null>;
   onShare?: () => void;
@@ -220,7 +221,7 @@ const BAKE_FAQ: Array<{ q: { en: string; fr: string }; a: { en: string; fr: stri
   },
 ];
 
-export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
+export default function BakeTab({ maestroContext, selectedPizzas, plannedPizzaCount, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -844,6 +845,7 @@ export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, sty
                           prefermentType={prefermentType}
                           locale={l}
                           ovenType={ovenType}
+                          recipeContext={maestroContext}
                         />
                 </div>
               </details>

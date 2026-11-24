@@ -2,6 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { FLOUR_DB } from '@/lib/flourDatabase';
+import { formatPercent } from '../utils/units';
+import { SECONDARY_CTA } from '../lib/navButtons';
+import { askToken, dropAskToken } from '../lib/askToken';
 
 export function matchScannedFlour(name: string) {
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -31,6 +34,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
   const [extractedResult, setExtractedResult] = useState<{
     w: number; protein: number; name: string;
     readability: string; confidence: string; source: string; note: string;
+    wOnBag?: boolean; proteinOnBag?: boolean;
   } | null>(null);
   const requestRef = useRef<AbortController | null>(null);
   useEffect(() => () => requestRef.current?.abort(), []);
@@ -41,11 +45,14 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
   async function analyzeImage(base64: string, mediaType: string, signal: AbortSignal) {
     let text = '';
     try {
-      const response = await fetch('/api/flour-scan', {
+      const body = JSON.stringify({ base64, mediaType });
+      const send = async () => fetch('/api/flour-scan', {
         method: 'POST', signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base64, mediaType }),
+        headers: { 'Content-Type': 'application/json', 'x-bh-ask': await askToken('flour-scan', signal) },
+        body,
       });
+      let response = await send();
+      if (response.status === 403) { dropAskToken('flour-scan'); response = await send(); }
 
       const data = await response.json();
       if (!response.ok) {
@@ -53,15 +60,9 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
         throw new Error(`service: ${errMsg}`);
       }
 
-      // Extract text from Anthropic response
-      text = (data.content?.[0]?.text ?? '').trim();
-
-      // Aggressive cleaning — strip any markdown, backticks, extra text
-      // Find JSON object using regex in case there's surrounding text
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No JSON found in response');
-
-      const parsed = JSON.parse(jsonMatch[0]);
+      // The route returns the reading only (round 20): never the provider's message.
+      const parsed = (data.result ?? {}) as Record<string, unknown>;
+      text = JSON.stringify(parsed);
 
       // Validate — w and name required, protein optional (default to 12)
       if (validScannedValues(Number(parsed.w), Number(parsed.protein ?? 12)) && parsed.name && parsed.readability !== 'unreadable') {
@@ -73,6 +74,8 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
           confidence: String(parsed.confidence ?? 'medium'),
           source: String(parsed.source ?? 'estimated'),
           note: String(parsed.note ?? ''),
+          wOnBag: parsed.wOnBag === true,
+          proteinOnBag: parsed.proteinOnBag === true,
         });
         setScanState('result');
       } else {
@@ -290,7 +293,11 @@ style={{ display: 'none' }}
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107, 68, 35,0.2)',
                 }}>
-                  W {matchedEntry?.wRange ? `${matchedEntry.wRangePublished?'':'~'}${matchedEntry.wRange[0]}–${matchedEntry.wRange[1]}` : `${matchedEntry && !matchedEntry.wPublished?'~':''}${displayW}`}
+                  {matchedEntry?.wRange ? `W ${matchedEntry.wRangePublished?'':'~'}${matchedEntry.wRange[0]}–${matchedEntry.wRange[1]}`
+                    : matchedEntry ? `W ${!matchedEntry.wPublished?'~':''}${displayW}`
+                    // A W the model estimated is said so (round 20): only a W printed on the bag or typed is a fact.
+                    : extractedResult.wOnBag || adjustedW != null ? `W ${displayW}`
+                    : (isFr ? `environ W ${displayW} (estimé)` : `about W ${displayW} (estimated)`)}
                 </span>
                 <span style={{
                   fontFamily: 'var(--font-ui)', fontSize: '12px',
@@ -298,7 +305,7 @@ style={{ display: 'none' }}
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107,122,90,0.25)',
                 }}>
-                  {displayProtein}% {isFr?'de protéines':'protein'}
+                  {formatPercent(displayProtein, isFr ? 'fr' : 'en')} {isFr?'de protéines':'protein'}
                 </span>
                 {isEstimated && (
                   <button
@@ -356,9 +363,9 @@ style={{ display: 'none' }}
                 <button
                   onClick={() => setAdjusting(false)}
                   style={{
-                    alignSelf: 'flex-start', padding: '4px 12px',
-                    background: 'var(--terra)', border: 'none', borderRadius: '12px',
-                    color: '#fff', fontSize: '12px', cursor: 'pointer',
+                    alignSelf: 'flex-start', padding: '8px 12px', minHeight: 44,
+                    background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px',
+                    color: 'var(--ash)', fontSize: '14px', cursor: 'pointer',
                     fontFamily: 'var(--font-ui)',
                   }}
                 >
@@ -374,12 +381,8 @@ style={{ display: 'none' }}
           <button
             disabled={!validScannedValues(displayW, displayProtein)}
             onClick={() => onResult({ ...extractedResult, w: displayW, protein: displayProtein })}
-            style={{
-              flex: 2, padding: '12px 16px', border: 'none',
-              borderRadius: '12px', background: 'var(--terra)', color: '#fff',
-              fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700,
-              cursor: 'pointer',
-            }}
+            // Not a second brown fill (round 20): the step's bottom bar holds the screen's one primary.
+            style={{ ...SECONDARY_CTA, flex: 2, width: 'auto', border: '1.5px solid var(--terra)', color: 'var(--terra)', fontWeight: 600 }}
           >
             {isDatabase ? (isFr ? 'Utiliser cette farine →' : 'Use this flour →') : (isFr ? 'Choisir le type de farine →' : 'Choose flour type →')}
           </button>

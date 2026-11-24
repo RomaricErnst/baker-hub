@@ -12,6 +12,10 @@ type Pill = 'pizzas' | 'shopping' | 'party';
 
 interface PizzaPartyProps extends CompletionActions {
   locale: string;
+  /** The bake's own numbers for Maestro's box on the bake tab (round 20, `buildMaestroContext`). */
+  maestroContext?: string;
+  kitchenTemp?: number;
+  prefermentType?: string;
   bakeTime: Date;
   numItems: number;
   styleKey?: string;
@@ -66,7 +70,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({countKnown=true, locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,selectionForward,skipLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
+export default function PizzaParty({countKnown=true, locale, maestroContext, kitchenTemp, prefermentType, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,selectionForward,skipLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -204,6 +208,7 @@ export default function PizzaParty({countKnown=true, locale, bakeTime, numItems,
           styleKey={pickStyleKey}
           bakeEventId={bakeEventId}
           ovenType={ovenType}
+          maestroContext={maestroContext} kitchenTemp={kitchenTemp} prefermentType={prefermentType}
           onEnsureBakeEvent={onEnsureBakeEvent}
           onSave={onSave}
           onShare={onShare}
