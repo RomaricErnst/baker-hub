@@ -446,7 +446,7 @@ test('fillings chosen after the Recipe lead on to Shopping without changing the 
  await noOverflow(page);
 });
 
-test('bread family return preserves choices; wraps and meal examples are discoverable',async({page})=>{
+test('bread family card on home starts afresh, the unfinished bake kept; wraps and meal examples are discoverable',async({page})=>{
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
@@ -465,11 +465,13 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await page.locator('.bh-style-confirm').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
+ // Round 18 (H2): a family card on home always starts a fresh bake; the unfinished one is kept (My bakes).
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.numItems)).toBe(5);
  await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
- await page.getByRole('button',{name:/^Quantité →$/}).tap();
- await expect(quantity).toHaveValue('5');await noOverflow(page);
- await page.goBack();await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
- await page.goForward();await expect(quantity).toHaveValue('5');
+ await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:/^Quantité →$/})).toHaveCount(0);
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(JSON.parse(localStorage.getItem('bh_previous_bake_v1')).session).numItems)).toBe(5);
+ await noOverflow(page);
 });
 
 test('landing photos stay above text and bread meal examples are readable',async({page})=>{

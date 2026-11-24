@@ -1,4 +1,6 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
+// Round 18 (H2): home has no "Start a new bake"; a family card on home starts a fresh bake.
+const startNewBake=async page=>{await page.getByRole('button',{name:'Pizza',exact:true}).tap();};
 const draft=()=>({version:1,savedAt:Date.now(),bakeName:'AUDIT resume protection',tab:'simple',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'home_oven_standard',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'pizza00',flour2:null,ratio1:100},prefermentType:'none',prefOffsetH:0,flourInFridge:false,eatTime:null,startTime:null,blocks:[],recipeGenerated:false,modeChosen:true,activeStep:3,highestStep:3,activeTab:'batch'});
 for(const locale of ['fr','en']) {
  test(`${locale}: one resume choice after starting a new bake and returning`,async({page})=>{
@@ -8,14 +10,12 @@ for(const locale of ['fr','en']) {
   await page.evaluate(value=>localStorage.setItem('bh_session_v1',value),original);
   await page.reload();
   await expect(page.getByRole('button',{name:locale==='fr'?'Masquer':'Dismiss',exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:locale==='fr'?'Nouvelle fournée':'Start a new bake',exact:true}).tap();
+  await startNewBake(page);
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.getByRole('button',{name:locale==='fr'?'Reprendre →':'Resume →',exact:true})).toHaveCount(0);
   // No undo banner (13 Nov 2026): the earlier bake is found again in My bakes, below.
   const undo=page.getByRole('button',{name:locale==='fr'?'Annuler la nouvelle fournée':'Undo new bake',exact:true});
   await expect(undo).toHaveCount(0);
-  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
-  await expect(page.getByRole('dialog')).not.toBeVisible();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_previous_bake_v1')).session)).toBe(original);
   await page.locator('.bh-batch-content').getByRole('button',{name:locale==='fr'?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1'))?.bakeType)).toBe('pizza');
@@ -32,7 +32,7 @@ for(const locale of ['fr','en']) {
   await page.goto(locale==='fr'?'/fr':'/');
   await page.evaluate(value=>{localStorage.setItem('bh_session_v1',JSON.stringify(value));localStorage.setItem('bh_shop_ticks_v1','{"flour":true}');},draft());
   await page.reload();
-  await page.getByRole('button',{name:locale==='fr'?'Nouvelle fournée':'Start a new bake',exact:true}).tap();
+  await startNewBake(page);
   await expect(page.getByRole('dialog')).not.toBeVisible();
   expect(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBeNull();
   await page.reload();
@@ -50,10 +50,10 @@ for(const locale of ['fr','en']) {
   await page.goto(locale==='fr'?'/fr':'/');
   await page.evaluate(value=>localStorage.setItem('bh_session_v1',JSON.stringify(value)),draft());
   await page.reload();
-  await expect(page.getByRole('button',{name:locale==='fr'?'Nouvelle fournée':'Start a new bake',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:locale==='fr'?'Reprendre →':'Resume →',exact:true})).toBeVisible();
   const newer=JSON.stringify({...draft(),bakeName:'AUDIT newer draft',numItems:24});
   await page.evaluate(value=>localStorage.setItem('bh_session_v1',value),newer);
-  await page.getByRole('button',{name:locale==='fr'?'Nouvelle fournée':'Start a new bake',exact:true}).tap();
+  await startNewBake(page);
   expect(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBe(newer);
   await expect(page.getByRole('alert').filter({hasText:locale==='fr'?'Cette fournée a été modifiée':'This bake was updated'})).toBeVisible();
  });

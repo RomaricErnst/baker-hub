@@ -1,7 +1,7 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // Bake journal on this device, signed out: a generated bake appears under
-// "My bakes"; rating and note survive a reload; delete is confirmed in the page.
+// "My bakes"; rating and note survive a reload; delete is immediate, with Undo (round 18).
 const journal=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journal_v1')||'[]'));
 async function generate(page,fr,count=1){
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
@@ -65,18 +65,26 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in �
  await expect(sheet.getByLabel('Notes',{exact:true})).toHaveValue('Leopard spots, a little pale underneath');
  await expect(sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true})).toHaveAttribute('aria-pressed','true');
 
- // Delete asks in the page; "Keep it" keeps it.
- await sheet.getByRole('button',{name:fr?'Supprimer':'Delete',exact:true}).tap();
- await expect(sheet.getByText(fr?'Supprimer cette fournée de cet appareil ? Ses notes et ses photos seront supprimées aussi.':'Delete this bake from this device? Its notes and photos go with it.',{exact:true})).toBeVisible();
- await sheet.getByRole('button',{name:fr?'La garder':'Keep it',exact:true}).tap();
- expect((await journal(page)).length).toBe(1);
- await sheet.getByRole('button',{name:fr?'Supprimer':'Delete',exact:true}).tap();
- await sheet.getByRole('button',{name:fr?'Supprimer':'Delete',exact:true}).tap();
+ // Delete is immediate, with Undo in My bakes where its card was (round 18, H3); never a confirm.
+ await sheet.getByRole('button',{name:fr?'Supprimer de cet appareil':'Delete from this device',exact:true}).tap();
  await expect(sheet).toHaveCount(0);
  expect(await journal(page)).toEqual([]);
- expect(confirms).toBe(0);
- // The bake itself is still open in the page.
+ const removed=menu.locator(`[data-journal-removed="${first.id}"]`);
+ await expect(removed).toContainText(fr?'Supprimée ·':'Removed ·');
+ // It was the bake on screen: its draft goes with it, and Undo brings both back.
+ expect(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBeNull();
+ await removed.locator('[data-journal-undo]').tap();
+ expect((await journal(page)).map(e=>e.id)).toEqual([first.id]);
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.recipeGenerated)).toBe(true);
+ await expect(menu.locator(`[data-journal-entry="${first.id}"]`)).toBeVisible();
+ // Delete again and close the menu: Undo is gone.
+ await menu.locator(`[data-journal-entry="${first.id}"]`).tap();
+ await sheet.getByRole('button',{name:fr?'Supprimer de cet appareil':'Delete from this device',exact:true}).tap();
+ await expect(removed).toBeVisible();
+ await page.keyboard.press('Escape');
+ await expect(page.locator('[data-journal-removed]')).toHaveCount(0);
+ expect(await journal(page)).toEqual([]);
+ expect(confirms).toBe(0);
  expect(errors).toEqual([]);
 });
 
@@ -104,12 +112,11 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  await expect(sheet.locator('img')).toHaveCount(1);
  await sheet.getByRole('button',{name:'Close',exact:true}).tap();
  // Start a new bake: the earlier entry stays, the next generation adds one.
- // A reload now reopens the bake itself; a new visit shows the Resume card with "Start a new bake".
+ // A new visit shows the Resume card; a family card on home starts a fresh bake (round 18, H2).
  const visit=await page.context().newPage();
  visit.on('pageerror',e=>errors.push(e.message));
  await visit.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await visit.goto('/');
- await visit.getByRole('button',{name:'Start a new bake',exact:true}).tap();
  await generate(visit,false,2);
  expect((await journal(visit)).some(row=>row.id===entry.id&&row.photoIds.length===1)).toBe(true);
  expect(errors).toEqual([]);
