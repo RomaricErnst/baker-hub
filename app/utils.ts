@@ -2140,8 +2140,8 @@ export interface EnteredYeastTiming { center: number; from: number; to: number; 
  * fermentationWindowForYeast nearest the anchor (else the style's window): the established inversion.
  * Callers build every schedule with the returned shape (buildSchedule's last argument). An `exitLeadMin`
  * that is already a fit (the page solved it) is kept: only the band around the anchor is read with it. */
-export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; prefStartH?: number; oneTrip?: boolean }): EnteredYeastTiming | null {
-  const { anchorH, prefStartH, oneTrip, ...input } = o;
+export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; prefStartH?: number; oneTrip?: boolean; fitFirst?: boolean }): EnteredYeastTiming | null {
+  const { anchorH, prefStartH, oneTrip, fitFirst, ...input } = o;
   const anchored = anchorH !== undefined && Number.isFinite(anchorH);
   // A room-temperature timing the page already chose (ROOM_PLAN): its window nearest the anchor, kept.
   if (isRoomShape(input.exitLeadMin)) {
@@ -2270,7 +2270,9 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
         otherNight = Math.min(otherNight, nightOf(s, h));
       } catch { /* not buildable at this window */ }
     }
-    if (otherNight < soft.night) return other;
+    // `fitFirst` (entryPlan's extra candidate): the fit in the baker's nights even when the established timing looks lighter,
+    // as that timing's count does not check the preferment (a poolish ripe for a mix in the night is not a plan).
+    if (!fitFirst && otherNight < soft.night) return other;
     chosen = soft;
   }
   if (!chosen) return plain();

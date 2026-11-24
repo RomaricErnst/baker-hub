@@ -191,6 +191,9 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
     add((o.now > 0 ? entryTiming(idyPct, input, left) : null) ?? entryTiming(idyPct, input));
     if (!timings.length) return null;
     if (days.length < blocks.length) add(entryTiming(idyPct, { ...input, blocks: days }, left));
+    // The fit at the calculated knead with steps in the baker's nights, even when the timing prefers the established one:
+    // that one can be a shape no plan realises (a room plan kneaded in the night after a poolish).
+    if (days.length < blocks.length) add(enteredYeastTiming(idyPct, { ...timingInput(input), anchorH: o.anchorH, prefStartH: o.prefStartH, maxH: left, fitFirst: true }));
     add(enteredYeastTiming(idyPct, { ...timingInput(input), anchorH: o.anchorH, prefStartH: o.prefStartH, maxH: left, oneTrip: true }), true);
     // The room-temperature plan (round 9) where the style takes one: no fridge trip at all can be the lightest.
     if (roomPlanAllowed(o.styleKey)) add(enteredYeastTiming(idyPct, { ...timingInput(input), exitLeadMin: ROOM_PLAN, anchorH: o.anchorH, maxH: left }));
@@ -223,17 +226,40 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
   let best: { p: NonNullable<ReturnType<typeof entryPlanSearch>>; t: number; night: AvailabilityAction[]; key: Key } | null = null;
   for (const c of raw) {
     if (best && less(c.key, best.key) > 0) break;
-    const p = entryPlanSearch(idyPct, input, undefined, { softNights: true, mix: new Date(c.at), timing: timings[c.t] });
+    const mode: EntrySearchMode = { softNights: true, mix: new Date(c.at), timing: timings[c.t] };
+    // A preferment whose target hours would start it before now starts at the next quarter hour, within its window.
+    const fromNow = o.preferment?.options.map(x => ({ ...x, prefHours: Math.min(x.prefHours, Math.floor((c.at - earliest) / QUARTER) / 4) }))
+      .filter(x => x.prefHours > 0 && x.prefHours >= x.prefWindow.min);
+    const p = entryPlanSearch(idyPct, input, undefined, mode) ?? (fromNow?.length ? entryPlanSearch(idyPct, input, fromNow, mode) : null);
     if (!p) continue;
     const night = nightHandsOn(entryPlanActions(p, input), blocks).filter(a => +a.at > o.now);
     const key = keyOf(night, +p.times.start);
     if (!best || less(key, best.key) < 0 || (less(key, best.key) === 0 && (c.t < best.t || (c.t === best.t && +p.times.start < +best.p.times.start)))) best = { p, t: c.t, night, key };
   }
-  if (!best) {
-    // No knead on the grid gives a plan: the search's own (off-grid busy edges), as before.
-    const p = entryPlanSearch(idyPct, input, undefined, { softNights: true, ...(timings[0] ? { timing: timings[0] } : {}) });
-    if (!p) return null;
-    best = { p, t: 0, night: nightHandsOn(entryPlanActions(p, input), blocks).filter(a => +a.at > o.now), key: [0, 0, 0] };
+  // The search's own plans, ranked alike: unpinned, a preferment's hours move within its window (a pinned knead keeps
+  // its storage's target hours, which can start a poolish at night or before now), and off-grid busy edges.
+  for (const mode of [{}, { softNights: true }] as EntrySearchMode[]) {
+    const p = entryPlanSearch(idyPct, input, undefined, { ...mode, ...(timings[0] ? { timing: timings[0] } : {}) });
+    if (!p) continue;
+    const night = nightHandsOn(entryPlanActions(p, input), blocks).filter(a => +a.at > o.now);
+    const key = keyOf(night, +p.times.start);
+    if (!best || less(key, best.key) < 0) best = { p, t: 0, night, key };
+  }
+  if (!best) return null;
+  // The chosen knead's preferment takes any hours of its window (nearest its target first) that make the plan lighter:
+  // a pinned knead holds the storage's target hours, which can start a poolish at night.
+  const option = o.preferment?.options.find(x => x.inFridge === best!.p.inFridge);
+  if (option && best.p.times.prefHours > 0) {
+    const base = best.p.times.prefHours, hours: number[] = [];
+    for (let h = Math.ceil(option.prefWindow.min * 4) / 4; h <= option.prefWindow.max + 1e-9; h += 0.25) if (Math.abs(h - base) > 1e-9) hours.push(h);
+    hours.sort((a, b) => Math.abs(a - base) - Math.abs(b - base) || a - b);
+    for (const h of hours) {
+      const p = entryPlanSearch(idyPct, input, [{ ...option, prefHours: h }], { softNights: true, mix: best.p.times.start, timing: timings[best.t] ?? undefined });
+      if (!p) continue;
+      const night = nightHandsOn(entryPlanActions(p, input), blocks).filter(a => +a.at > o.now);
+      const key = keyOf(night, +p.times.start);
+      if (less(key, best.key) < 0) best = { p, t: best.t, night, key };
+    }
   }
   const chosen = best.p;
   const actions = entryPlanActions(chosen, input);
@@ -293,7 +319,8 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   const noWorse = (idy: number) => o.blocks.length > 0 && !(calcClear ??= entryPlanSearch(undefined, o, undefined, loose) !== null)
     && entryPlanSearch(idy, o, undefined, { ...loose, ignoreBlocks: true }) !== null;
   const memo = new Map<number, boolean>();
-  const plans = (idy: number) => { if (!memo.has(idy)) memo.set(idy, fitsTime(idy) && (entryPlanSearch(idy, o, undefined, loose) !== null || noWorse(idy))); return memo.get(idy)!; };
+  // One judge: an amount whose own plan (entryPlan, the plan shown) exists fits.
+  const plans = (idy: number) => { if (!memo.has(idy)) memo.set(idy, fitsTime(idy) && (entryPlanSearch(idy, o, undefined, loose) !== null || noWorse(idy) || entryPlan(idy, o) !== null)); return memo.get(idy)!; };
   const enteredShown = Math.round(idyPct * o.conversion * 1000) / 1000;
   const calcShown = o.calculatedIdyPct !== undefined ? Math.round(o.calculatedIdyPct * o.conversion * 1000) / 1000 : undefined;
   // Round 13 (item 7): a suggestion is an amount whose own plan has no new night step when one exists (0.03 % was told

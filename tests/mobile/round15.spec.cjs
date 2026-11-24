@@ -61,11 +61,12 @@ for(const locale of ['en','fr']){
   await expect(prep).toHaveCount(1,{timeout:30000});
   await prep.scrollIntoViewIfNeeded();
   await shot(page,`prep-kept-${locale}`);
-  // Back to 7:30pm: planned as typing 0.15 % there (Thu 8:30pm, no night step; round 14 read Start Dough Fri 4:00am).
+  // Back to 7:30pm: planned as typing 0.15 % there (round 17, O2: the room plan Fri 9:30am, no night step, over Thu
+  // 8:30pm, which folded at 10:10pm and went into the fridge at 10:45pm; round 14 read Start Dough Fri 4:00am).
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(bake).toBeVisible({timeout:30000});
   await bake.fill('2026-11-27T19:30');
-  await expect.poll(async()=>hour((await stored(page)).startTime),{timeout:30000}).toBe('Thu 20:30');
+  await expect.poll(async()=>hour((await stored(page)).startTime),{timeout:30000}).toBe('Fri 09:30');
   await expect(page.locator('[data-entry-night]:visible')).toHaveCount(0);
   await shot(page,`editor-dinner-${locale}`);
   expect(errors).toEqual([]);

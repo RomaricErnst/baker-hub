@@ -116,8 +116,9 @@ for(const locale of ['en','fr']){
   await update(page,fr);
   const s=await stored(page);
   expect(s.yeastPctOverride).toBe(0.14);
-  // The steps in the baker's night are covered in the saved blocks: the plan is complete as saved.
-  expect(s.blocks.filter(b=>b.label.endsWith(' night')).flatMap(b=>b.coveredActions??[]).length).toBeGreaterThan(0);
+  // Steps the plan puts in the baker's night are covered in the saved blocks (round 17: this plan's night steps, at
+  // 10:30pm and 10:45pm, come before her 11pm night): the plan is complete as saved, no step left in a busy time.
+  await expect(page.locator('[data-plan-busy]:visible')).toHaveCount(0);
   await expect(page.locator('[data-kept-night]:visible')).toHaveText(text);
   await expect(page.locator('[data-plan-clash]')).toHaveCount(0);
   await shot(page,`o1-recipe-${locale}`);

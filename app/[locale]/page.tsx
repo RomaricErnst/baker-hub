@@ -6658,8 +6658,9 @@ export default function Home() {
                     // (a biga held at its storage's shortest window stays 24 h whatever the amount).
                     const lessPref = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&prefEntered<calcYeast?.pref.pct-1e-9&&(!autoPlan||prefOffsetH>autoPlan.times.prefHours+0.01);
                     // Round 17 (finding 6): no "use the calculated amount" for an amount that weighs what the calculated one weighs.
-                    const doughIsCalc = yeastPctOverride!==undefined&&calcYeast?.idyPct!==undefined&&sameGrams(yeastPctOverride*conversion,calcYeast.idyPct*conversion,recipe?.flour);
-                    const prefIsCalc = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&sameGrams(prefEntered*conversion,calcYeast.pref.pct*conversion,recipe?.preferment?.prefFlour);
+                    // (The amount as typed and shown, to the thousandth: an amount the timing reads differently keeps its way back.)
+                    const doughIsCalc = yeastPctOverride!==undefined&&calcYeast?.idyPct!==undefined&&Math.round(yeastPctOverride*conversion*1000)===Math.round(calcYeast.idyPct*conversion*1000);
+                    const prefIsCalc = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&Math.round(prefEntered*conversion*1000)===Math.round(calcYeast.pref.pct*conversion*1000);
                     const helper = entryIssue||prefIssue||entryNight||(pref&&prefYeastClearedLine(pref)) ? null : pref
                       ? (prefEntered!==undefined&&yeastPctOverride!==undefined
                         ? (lessDough&&lessPref?(fr?'Chacun suit sa quantité : moins de levure, pousse plus longue.':'Each follows its amount: less yeast, a longer rise.'):(fr?'Chacun suit sa quantité.':'Each follows its amount.'))

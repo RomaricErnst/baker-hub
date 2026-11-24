@@ -42,7 +42,7 @@ const shot=(page,name)=>page.screenshot({path:test.info().outputPath(`${name}.pn
 for(const locale of ['en','fr']){
  const fr=locale==='fr';
 
- test(`${locale}: 3 — less yeast (0.12 %) keeps the calculated knead (Thu 8:30pm) with the fridge, no night steps`,async({page})=>{
+ test(`${locale}: 3 — less yeast (0.12 %) has no night steps (round 17, O2: the room plan, Fri 7:30am)`,async({page})=>{
   const errors=await open(page,b3(),locale);const ft=await fineTune(page);
   const yeast=ft.locator('[data-yeast-override] input');
   await yeast.fill(fr?'0,12':'0.12');await yeast.blur();
@@ -52,7 +52,8 @@ for(const locale of ['en','fr']){
   await expect(ft.getByText(fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.',{exact:true})).toBeVisible();
   await update(page,fr);
   const s=await stored(page);
-  expect(hour(s.startTime)).toBe('Thu 20:30');
+  // Round 17 (O2): fewer night steps first (Thu 8:30pm folded at 10:10pm and went into the fridge at 10:45pm).
+  expect(hour(s.startTime)).toBe('Fri 07:30');
   await expect(page.locator('[data-kept-night]')).toHaveCount(0);
   await shot(page,`3-recipe-${locale}`);
   expect(errors).toEqual([]);

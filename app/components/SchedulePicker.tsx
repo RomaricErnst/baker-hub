@@ -7574,7 +7574,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         const shared=planEntry(candidateBlocks,pendingEatTime);
         const storage=shared?.inFridge??prefGoesInFridge;
         // Judged with the shape and window it was found with (the page's exitLeadMin follows once the busy times reach it).
-        const check=shared?validateScheduleCandidate({...commercialCandidateInput(shared.blocks,storage,shared.times.start,pendingEatTime),exitLeadMin:shared.shape??exitLeadMin,window:()=>shared.window,prefHours:shared.times.prefHours},shared.times):null;
+        // Round 17: the plan's own shape, the engine's plain plan included (`undefined`), never the shape of the plan on screen.
+        const check=shared?validateScheduleCandidate({...commercialCandidateInput(shared.blocks,storage,shared.times.start,pendingEatTime),exitLeadMin:shared.shape,window:()=>shared.window,prefHours:shared.times.prefHours},shared.times):null;
         if(shared&&check?.valid){
           if(hasPrefActive)noteChosenStorage(storage);
           setSearchFailed(false);
