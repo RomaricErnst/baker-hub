@@ -13,6 +13,7 @@ import { sharedStarterFeedFor, savedStarterUse, type StarterUse } from '../utils
 import type { SessionData } from './session';
 import { rowStep, clockMark, type ClockStep } from '../utils/guideProgress';
 import { translateGuideTitle } from '../utils/guideTitles';
+import { getStarterFridgeWarmupH } from '../utils/starterPeak';
 
 export const JOURNAL_KEY = 'bh_journal_v1';
 export const JOURNAL_CURRENT_KEY = 'bh_journal_current_v1';
@@ -211,6 +212,11 @@ export function deleteJournalEntry(id: string): JournalEntry | null {
   } catch { return null; }
 }
 
+/** Puts back an entry deleteJournalEntry returned (Undo, round 18 H3). */
+export function restoreJournalEntry(entry: JournalEntry): boolean {
+  try { return writeJournal([entry, ...listJournal().filter(row => row.id !== entry.id)]).ok; } catch { return false; }
+}
+
 /** Resume is offered while the bake time is ahead, or within the day after it. */
 export function journalBakeInProgress(entry: Pick<JournalEntry, 'eatTime'>, now = Date.now()): boolean {
   return entry.eatTime == null || entry.eatTime + 12 * 3600000 > now;
@@ -397,3 +403,44 @@ export function mergeSharedJarRows(rowsIn: LiveJournalBake[], now = Date.now(), 
 }
 const sortRows = (rows: LiveJournalBake[]) => rows.slice()
   .sort((a, b) => Number(!!a.rate) - Number(!!b.rate) || a.at - b.at || (a.entry.eatTime ?? 0) - (b.entry.eatTime ?? 0));
+
+/** Under way: a step's time has come (the plan's first step, a starter take-out or feed included), or anything is
+ *  ticked or recorded (round 18, H1). */
+export function journalBakeStarted(entry: JournalEntry, now = Date.now()): boolean {
+  const s = entry.session as SessionData & { starterLocation?: unknown; kitchenTemp?: unknown };
+  if (s.execution || s.mixExecution || (s.starterFeedRecords?.length ?? 0) > 0) return true;
+  const plan = guidePlanSnapshot(entry.id);
+  if (plan?.steps.some(step => step.done || step.at <= now)) return true;
+  const times: number[] = (s.computedRecipe?.timelineSteps ?? []).map(step => step.time).filter(t => Number.isFinite(t));
+  const start = finite(s.startTime);
+  if (start != null) times.push(start - (s.prefermentType !== 'none' && s.prefermentType !== 'levain' && finite(s.prefOffsetH) ? (s.prefOffsetH as number) * 3600000 : 0));
+  // The starter's planned steps, after its last feed (never its history); a fridge starter comes out before its first feed.
+  const events = (s.starterEvents ?? []).filter(e => Number.isFinite(e.time) && !e.historicalStorage);
+  const lastFed = Math.max(-Infinity, ...events.filter(e => e.kind === 'last_fed').map(e => e.time));
+  const planned = events.filter(e => e.kind !== 'last_fed' && e.time > lastFed).map(e => e.time);
+  if (planned.length && s.starterLocation === 'fridge') planned.push(Math.min(...planned) - getStarterFridgeWarmupH(typeof s.kitchenTemp === 'number' ? s.kitchenTemp : 22) * 3600000);
+  return [...times, ...planned].some(t => t <= now);
+}
+
+/** Home's rows (round 18, H1): every bake under way (and every bake to rate), plus the most recently generated
+ *  bake not started yet; a bake sharing a jar feed with a shown row stays with it. The other planned bakes are a
+ *  count behind "N more planned · My bakes" (each restart left the last plan live until its bake). */
+export function homeJournalRows(rows: LiveJournalBake[], now = Date.now()): { rows: LiveJournalBake[]; hidden: number } {
+  const current = currentJournalId();
+  const shown = new Set(rows.filter(row => row.rate || journalBakeStarted(row.entry, now)).map(row => row.entry.id));
+  const newest = rows.filter(row => !shown.has(row.entry.id))
+    .sort((a, b) => b.entry.updatedAt - a.entry.updatedAt || Number(b.entry.id === current) - Number(a.entry.id === current) || b.entry.createdAt - a.entry.createdAt)[0];
+  if (newest) shown.add(newest.entry.id);
+  const uses = rows.map(row => savedStarterUse(row.entry as Parameters<typeof savedStarterUse>[0], row.entry.id, false, now)).filter((use): use is StarterUse => !!use);
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const use of uses) {
+      if (shown.has(use.id)) continue;
+      const shared = sharedStarterFeedFor(use, uses, now);
+      if (shared && shown.has(shared.otherId)) { shown.add(use.id); changed = true; }
+      else if (uses.some(other => shown.has(other.id) && sharedStarterFeedFor(other, uses, now)?.otherId === use.id)) { shown.add(use.id); changed = true; }
+    }
+  }
+  const kept = rows.filter(row => shown.has(row.entry.id));
+  return { rows: kept, hidden: rows.length - kept.length };
+}

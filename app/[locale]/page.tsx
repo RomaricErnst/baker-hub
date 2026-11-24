@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import {usePageTop} from '../hooks/usePageTop';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
@@ -43,7 +43,9 @@ import { sharedOvenFor, ovenBackTitle } from '../utils/sharedOven';
 import { sharedStarterFeedFor, sharedFeedLine, starterEventsWithSharedFeed, savedStarterUse, carriedJarRecords, starterStepShownTime, withStarterTakeOut, type StarterUse } from '../utils/sharedStarter';
 import { scalePicks, allPicksBaked } from '../utils/pizzaPicks';
 import { bakeTitleName } from '../utils/bakeTitle';
-import { journalTitle } from '../components/BakeJournal';
+import { journalTitle, RemovedUndo } from '../components/BakeJournal';
+import { useReloadOnNewDeployment } from '../hooks/useReloadOnNewDeployment';
+import { noteJournalNavigation, pendingJournalRemoval, subscribeJournalRemoval, undoJournalRemoval } from '../lib/journalRemoval';
 import {commercialPrefermentWindow, commercialPrefermentPlanValid, commercialReadinessWindow, automaticCommercialPlan, earliestPrefermentBake, validateConfirmedBake, STYLE_FERM_DEFAULTS, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake, nightHandsOn, blocksForLaterBake } from '../utils/scheduleAvailability';
@@ -72,7 +74,7 @@ import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
 import { clockMark } from '../utils/guideProgress';
 import { ovenBusyMinutes, bakeEndAt, ovenClash, nextFreeOvenShift, ovenBusyClause, ovenUseEnd, ovenFreeAt, ovenTakenAt, type OvenUse } from '../utils/ovenWindow';
-import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, liveJournalBakes, mergeSharedJarRows, guidePlanSnapshot, journalDueStep, type JournalEntry, type LiveJournalBake } from '../lib/localJournal';
+import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, liveJournalBakes, mergeSharedJarRows, homeJournalRows, guidePlanSnapshot, journalDueStep, type JournalEntry, type LiveJournalBake } from '../lib/localJournal';
 import { deleteJournalPhotos } from '../lib/journalPhotos';
 import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
@@ -481,7 +483,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, forward, busyRow,
     ...steps.flatMap(step => [
       ...(kitchenRow && step.group === 'plan' ? [{ key: 'kitchen-temperature', label: fr ? 'Température de la cuisine' : 'Kitchen temperature', value: kitchenRow.value, onClick: kitchenRow.onClick }] : []),
       ...(starterRow && step.group === 'plan' ? [{ key: 'starter', label: fr ? 'Votre levain' : 'Your starter', value: starterRow.value, onClick: starterRow.onClick }] : []),
-      { key: String(step.id), label: step.id===3 ? step.title : step.id===10 ? (fr ? 'Pâte' : 'Dough') : step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) },
+      { key: String(step.id), label: step.id===3 ? step.title : step.id===10 ? (fr ? 'Peaufiner la pâte' : 'Fine-tune the dough') : step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) },
       ...(busyRow && step.group === 'plan' ? [{ key: 'busy', label: fr ? 'Moments occupés' : 'Busy times', value: busyRow.value, onClick: busyRow.onClick }] : []),
     ]),
   // Only what the baker chose: assumed values are not listed in Simple.
@@ -1541,6 +1543,12 @@ export default function Home() {
   const [dueEntry, setDueEntry] = useState<JournalEntry | null>(null);
   // Home: one row per bake under way, the most pressing first (17 Nov 2026 retention round 2).
   const [liveBakes, setLiveBakes] = useState<LiveJournalBake[]>([]);
+  // Planned bakes not shown on home (round 18, H1): "2 more planned · My bakes".
+  const [hiddenBakes, setHiddenBakes] = useState(0);
+  const [libraryRequest, setLibraryRequest] = useState(0);
+  // A bake removed from its sheet: "Removed · Undo" where its row was, until the next navigation (round 18, H3).
+  const journalRemoval = useSyncExternalStore(subscribeJournalRemoval, pendingJournalRemoval, () => null);
+  const [removedRowIndex, setRemovedRowIndex] = useState(0);
   // Rows only with two or more bakes under way: one bake keeps the single Resume card, so the app looks exactly
   // as a single-bake app for a baker who never runs two (18 Nov 2026 retention round 3, owner's rule B).
   const showLiveRows = liveBakes.length > 0;
@@ -3026,10 +3034,42 @@ export default function Home() {
     try {
       const rows = liveJournalBakes(Date.now(), locale);
       const draftShown = !!pendingSession?.recipeGenerated || (!!bakeType && recipeGenerated);
+      // The bakes under way and the newest plan; older plans wait in My bakes (round 18, H1). With one bake
+      // (owner's rule B) nothing changes.
+      const home = homeJournalRows(rows, Date.now());
+      setHiddenBakes(home.hidden);
       // Two bakes on one jar: one row for the jar's step (round 8, S6); with one bake the rows are unchanged.
-      setLiveBakes(rows.length === 1 && rows[0].entry.id === currentJournalId() && draftShown ? [] : mergeSharedJarRows(rows, Date.now(), locale));
+      setLiveBakes(rows.length === 1 && rows[0].entry.id === currentJournalId() && draftShown ? [] : mergeSharedJarRows(home.rows, Date.now(), locale));
     } catch {}
-  }, [homeShown, locale, pendingSession, bakeType, recipeGenerated, journalId]);
+  // journalRemoval: a removal or an Undo changes the rows (the sheet's delete left them stale).
+  }, [homeShown, locale, pendingSession, bakeType, recipeGenerated, journalId, journalRemoval]);
+  // Leaving home, or another section, ends Undo (round 18, H3).
+  const removalMovedPage = useRef(false);
+  useEffect(() => { noteJournalNavigation('page', `${homeShown ? 'home' : 'bake'}:${destination}:${activeTab}`, removalMovedPage.current); removalMovedPage.current = false; }, [homeShown, destination, activeTab]);
+  // A removed bake that was the draft on screen goes with it (bh_session_v1); Undo brings it back behind Resume.
+  function journalEntryRemoved(id: string) {
+    const removal = pendingJournalRemoval();
+    if (!removal || removal.entry.id !== id) return;
+    setRemovedRowIndex(Math.max(0, liveBakes.findIndex(row => row.entry.id === id || !!row.jarWith?.some(entry => entry.id === id))));
+    if (dueEntry?.id === id) setDueEntry(null);
+    if (!removal.session) return;
+    removalMovedPage.current = true; window.setTimeout(() => { removalMovedPage.current = false; }, 0);
+    if (bakeType) startOver(); else { clearSession(); setPendingSession(null); }
+    setJournalId(null); setShowWelcomeBack(false);
+  }
+  // A tab left open across a deployment reloads when it comes back, once the bake is saved (round 18, H5).
+  useReloadOnNewDeployment(() => {
+    if (localSaveConflict) return false;
+    if (!bakeType) return true;
+    try { if (recipeGenerated && journalId && journalId === currentJournalId()) refreshCurrentJournalSnapshot(buildSessionPayload()); } catch {}
+    return saveSession(buildSessionPayload());
+  });
+  function undoRemovedBake() {
+    const removal = undoJournalRemoval();
+    if (!removal?.session) return;
+    const restored = loadSession();
+    if (restored) { setPendingSession(restored); setShowWelcomeBack(true); }
+  }
   const navigationHistory=useRef<string|null>(null);
   const replayingNavigation=useRef(false);
   const bakeTypeRef=useRef(bakeType);bakeTypeRef.current=bakeType;
@@ -3066,13 +3106,10 @@ export default function Home() {
   },[showProductHome,bakeType,activeTab,batchView,activeStep,advancedStep,setupOverview,sessionRestored,scheduleRestoreRevision]);
   function backToProducts(){setShowProductHome(true);setActiveTab('batch');scrollToStepTop();}
   async function selectBakeType(bt: BakeType) {
-    // Choosing a family preserves the unapplied draft before starting fresh.
-    if (!bakeType) {
-      if (!startRecoverableBake()) return;
-      setPendingSession(null); setShowWelcomeBack(false);
-    }
-    if(bakeType===bt){setShowProductHome(false);setActiveTab('batch');setBatchView('style');return;}
-    if(bakeType&&(styleKey||hasWorkInProgress)&&!window.confirm(fr?'Changer de famille réinitialise les choix de cette fournée. Continuer ?':'Changing product family resets this bake’s choices. Continue?'))return;
+    // A family card on home always starts a fresh bake (round 18, H2): the bake on screen is kept in My bakes and
+    // its home row or Resume card is the way back, so there is nothing to confirm.
+    if (!startRecoverableBake()) return;
+    setPendingSession(null); setShowWelcomeBack(false);
     setShowProductHome(false);
     setActiveTab('batch');setBatchView('style');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
     setSandwichParty(createSandwichSnapshot());
@@ -5426,6 +5463,9 @@ export default function Home() {
           onRebakeJournalEntry={entry => { void openJournalEntry(entry, true); }}
           openCurrentJournalRequest={journalRequest}
           openJournalEntryRequest={journalEntryRequest}
+          openLibraryRequest={libraryRequest}
+          onJournalEntryRemoved={journalEntryRemoved}
+          onUndoJournalRemoval={undoRemovedBake}
           currentBakeActive={!!bakeType}
           onOpenProfile={() => setProfileOpen(true)}
         />
@@ -5475,8 +5515,9 @@ export default function Home() {
              covered tap targets above the bottom nav) ── */}
         {/* Several bakes under way: one compact row each, the most pressing first, each opening its bake at the
             step that is due (17 Nov 2026 retention round 2: one card offered only the bake already baked). */}
+        {homeShown && destination === 'batch' && journalRemoval && !showLiveRows && <div style={{margin:'0 0 14px'}}><RemovedUndo entry={journalRemoval.entry} onUndo={undoRemovedBake}/></div>}
         {homeShown && destination === 'batch' && showLiveRows && <nav data-live-bakes aria-label={fr ? 'Fournées en cours' : 'Bakes under way'} style={{display:'flex',flexDirection:'column',gap:8,margin:'0 0 14px'}}>
-          {liveBakes.map((row, index) => {
+          {liveBakes.flatMap((row, index) => {
             // One name per bake: the Recipe's title ("Pizza night", "Baguettes"), as the rating sheet (20 Nov 2026 round 6).
             const nameOf = (entry: JournalEntry) => journalTitle(entry, locale);
             // A row for the shared jar names both bakes (round 8, S6); two of the same name read once, "· both bakes" (round 9, N).
@@ -5493,8 +5534,12 @@ export default function Home() {
             // Baked and not rated: the row's action is the rating (20 Nov 2026 round 6, Thomas).
             const text = [day && day[0].toUpperCase() + day.slice(1), name, row.rate ? (fr ? 'Noter' : 'Rate') : row.label].filter(Boolean).join(' · ');
             // The name and step may shorten; the time never does (320–390 px, 18 Nov 2026 retention round 4).
-            return <button key={row.entry.id} type="button" data-live-bake={row.entry.id} data-live-jar={row.jarWith?.length ? row.jarWith.map(entry => entry.id).join(' ') : undefined} aria-label={`${text} ${when} →`}
-              style={index === 0 ? {...NEXT_CTA, minHeight: 48, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', minWidth: 0, textAlign: 'left'} : {...SECONDARY_CTA, minHeight: 48, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', minWidth: 0, textAlign: 'left'}}
+            const removedHere = journalRemoval && index === removedRowIndex ? [<RemovedUndo key="removed" entry={journalRemoval.entry} onUndo={undoRemovedBake}/>] : [];
+            // A quiet "⋯" opens the bake's sheet (Resume / Bake again / Delete), round 18, H3.
+            const rowName = jarEntries.length > 1 ? nameOf(row.entry) : name;
+            return [...removedHere, <div key={row.entry.id} style={{display:'flex',alignItems:'stretch',gap:4,minWidth:0}}><button type="button" data-live-bake={row.entry.id} data-live-jar={row.jarWith?.length ? row.jarWith.map(entry => entry.id).join(' ') : undefined} aria-label={`${text} ${when} →`}
+              // The first row is the one filled button, at the other rows' type size and weight (round 18: 16/700 clipped "Start Do…").
+              style={{...(index === 0 ? {...NEXT_CTA, padding: SECONDARY_CTA.padding, fontSize: SECONDARY_CTA.fontSize, fontWeight: SECONDARY_CTA.fontWeight} : SECONDARY_CTA), flex: '1 1 auto', width: 'auto', minHeight: 48, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', minWidth: 0, textAlign: 'left'}}
               data-live-rate={row.rate ? true : undefined}
               onClick={() => {
                 if (row.rate) { setJournalEntryRequest({ id: row.entry.id, n: Date.now() }); return; }
@@ -5502,12 +5547,17 @@ export default function Home() {
                 // The bake already in this browser's draft resumes from it (it may be a second ahead of its entry).
                 if (row.entry.id === currentJournalId() && pendingSession?.recipeGenerated) { const own = loadSession(); acceptCurrentSessionStorage(); if (own) { applySession(own); return; } }
                 void openJournalEntry(row.entry, false);
-              }}><span style={{minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis'}}>{text}</span>{when && <>{' '}<span data-live-time style={{flexShrink: 0}}>{when}</span></>}<span aria-hidden="true" style={{flexShrink: 0, marginLeft: 'auto'}}>→</span></button>;
+              }}><span style={{minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis'}}>{text}</span>{when && <>{' '}<span data-live-time style={{flexShrink: 0}}>{when}</span></>}<span aria-hidden="true" style={{flexShrink: 0, marginLeft: 'auto'}}>→</span></button>
+              <button type="button" data-live-more={row.entry.id} aria-label={fr ? `Supprimer ${rowName}` : `Remove ${rowName}`} onClick={() => setJournalEntryRequest({ id: row.entry.id, n: Date.now() })}
+                style={{flex: '0 0 44px', minWidth: 44, minHeight: 48, padding: 0, border: 'none', background: 'transparent', color: 'var(--smoke)', font: 'inherit', fontSize: 20, lineHeight: 1, cursor: 'pointer'}}><span aria-hidden="true">⋯</span></button></div>];
           })}
           {pendingOver && pendingSession?.styleKey && (() => { const cta = oneLineCta(`${pendingSession.bakeName || bakeTitleName(pendingSession.bakeType ?? null, pendingSession.styleKey ?? null, pendingSession.numItems, pendingSession.eatTime ? new Date(pendingSession.eatTime).getHours() : undefined, fr, styleDisplayName(pendingSession.styleKey as StyleKey))} · ${fr ? 'Refaire' : 'Bake again'}`); return <button type="button" data-live-again className={cta.className} aria-label={cta['aria-label']} style={{...SECONDARY_CTA, minHeight: 48, justifyContent: 'space-between', textAlign: 'left'}} onClick={bakePendingAgain}>{cta.children}</button>; })()}
           {pendingSetupRow && (() => { const cta = oneLineCta(`${styleDisplayName(pendingSession!.styleKey as StyleKey)} · ${fr ? 'à compléter' : 'unfinished'}`); return <button type="button" data-live-setup className={cta.className} aria-label={cta['aria-label']} style={{...SECONDARY_CTA, minHeight: 48, justifyContent: 'space-between', textAlign: 'left'}}
             onClick={() => { const own = loadSession(); acceptCurrentSessionStorage(); answerWelcomeBack(); if (own) { applySession(own); scrollToStepTop(); } }}>{cta.children}</button>; })()}
-          <button type="button" onClick={() => { startRecoverableBake(); }} style={{...SECONDARY_CTA, minHeight: 44}}>{fr ? 'Nouvelle fournée' : 'Start a new bake'}</button>
+          {journalRemoval && removedRowIndex >= liveBakes.length && <RemovedUndo entry={journalRemoval.entry} onUndo={undoRemovedBake}/>}
+          {hiddenBakes > 0 && <button type="button" data-home-more onClick={() => setLibraryRequest(n => n + 1)}
+            style={{alignSelf: 'flex-start', minHeight: 44, padding: '0 2px', border: 'none', background: 'transparent', color: 'var(--smoke)', font: 'inherit', fontSize: 14, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer'}}>
+            {fr ? `${hiddenBakes} ${hiddenBakes > 1 ? 'autres prévues' : 'autre prévue'} · Mes fournées` : `${hiddenBakes} more planned · My bakes`}</button>}
         </nav>}
         {showWelcomeBack && destination === 'batch' && !showLiveRows && (
           <div style={{
@@ -5607,12 +5657,6 @@ export default function Home() {
                 ? (locale === 'fr' ? 'Voir les ingrédients →' : 'View ingredients →')
                 : (locale === 'fr' ? 'Reprendre →' : 'Resume →')}
             </button>
-            <button
-              onClick={() => { startRecoverableBake(); }}
-              style={{ flex: '1 1 auto', whiteSpace: 'nowrap', background: 'none', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: 16, padding: '10px 14px', minHeight: 44, cursor: 'pointer' }}
-            >
-              {fr ? 'Nouvelle fournée' : 'Start a new bake'}
-            </button>
           </div>
         )}
 
@@ -5668,9 +5712,6 @@ export default function Home() {
               }}
             >
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
-            </button>
-            <button type="button" onClick={() => { startRecoverableBake(); }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', font: 'inherit', padding: '8px 16px', minHeight: 44, cursor: 'pointer' }}>
-              {fr ? 'Nouvelle fournée' : 'Start a new bake'}
             </button>
           </div>
         )}

@@ -96,7 +96,7 @@ for(const lang of ['en','fr']){
    await pizza.close();
    // The loaf, five minutes later, feeds the same jar at 9:45pm for its own levain.
    const page=await visit(context,'2026-11-25T20:05:00+08:00',lang);
-   await page.getByRole('button',{name:fr?'Nouvelle fournée':'Start a new bake',exact:true}).tap();
+   // Round 18 (H2): the family card on home starts the new bake.
    await page.getByRole('button',{name:fr?'Pain & repas':'Bread & meals',exact:true}).tap();
    await page.getByRole('button',{name:'Pain au levain',exact:true}).tap();
    await page.getByRole('button',{name:fr?/^Quantité →$/:/^Quantity →$/}).tap();

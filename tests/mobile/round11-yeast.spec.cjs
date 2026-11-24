@@ -263,7 +263,7 @@ for(const locale of ['en','fr']){
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(0.3);
   await update(page,fr);
   await page.getByRole('button',{name:fr?/Mes choix/:/My choices/}).last().tap();
-  await page.getByRole('button',{name:fr?'Modifier : Pâte':'Edit : Dough'}).tap();
+  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit : Fine-tune the dough'}).tap();
   const again=await fineTune(page);
   await again.locator('[data-ft-use-calculated-yeast]').first().tap();
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeUndefined();
@@ -275,7 +275,7 @@ for(const locale of ['en','fr']){
   const pct=num(body.match(fr?/Levure sèche instantanée[^%]*?(\d+[.,]\d+)\s?%/:/Instant dry yeast[^%]*?(\d+[.,]\d+)\s?%/)[1]);
   // Back on Fine-tune, the box shows the amount this recipe uses.
   await page.getByRole('button',{name:fr?/Mes choix/:/My choices/}).last().tap();
-  await page.getByRole('button',{name:fr?'Modifier : Pâte':'Edit : Dough'}).tap();
+  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit : Fine-tune the dough'}).tap();
   const third=await fineTune(page);
   expect(Math.abs(num(await third.locator('[data-yeast-override] input').getAttribute('placeholder'))-pct)).toBeLessThan(0.006);
   log('placeholder',shown,'before',before,'recipe',pct);
@@ -312,7 +312,7 @@ for(const locale of ['en','fr']){
   await expect(page.locator('[data-recipe-stages]:visible')).toContainText('Le 5 Stagioni Oro');
   await shot(page,`8-flour-${locale}`,page.locator('[data-recipe-stages]:visible'));
   await page.getByRole('button',{name:fr?/Mes choix/:/My choices/}).last().tap();
-  await page.getByRole('button',{name:fr?'Modifier : Pâte':'Edit : Dough'}).tap();
+  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit : Fine-tune the dough'}).tap();
   await fineTune(page).catch(()=>{});
   await expect(page.locator('[data-pref-yeast-override]:visible')).toHaveCount(1,{timeout:30000});
   await expect(page.locator('[data-pref-yeast-cleared]:visible')).toHaveCount(0);

@@ -42,7 +42,8 @@ async function reopen(page,at,url='/'){
 
 test.describe('item 1 · live bakes never leave home',()=>{
  test.use({timezoneId:'Europe/London',locale:'en-GB'});
- const pizza=session({startTime:Date.parse('2026-11-21T16:00:00Z'),eatTime:Date.parse('2026-11-22T19:00:00Z')});
+ // Round 18 (H1): home keeps every bake under way and the newest plan; the pizza has started (its dough at 4pm).
+ const pizza=session({startTime:Date.parse('2026-11-20T16:00:00Z'),eatTime:Date.parse('2026-11-22T19:00:00Z')});
  const storage={bh_session_v1:JSON.stringify(loaf()),bh_journal_v1:JSON.stringify([entryFor('loaf',loaf()),entryFor('pizza',pizza)]),bh_journal_current_v1:'loaf',[planKey('loaf')]:loafPlan()};
  test('a tap on a family card, then a reload, keeps both rows',async({page})=>{
   await install(page,storage,'2026-11-20T18:00:00Z');

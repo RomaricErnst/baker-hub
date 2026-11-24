@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '../navigation';
@@ -30,7 +30,8 @@ import { ALL_STYLES } from '@/app/data';
 import SessionViewer from './SessionViewer';
 import {localBakes, type LocalBake, type SessionData, readAuthIntent, type AuthIntent} from '../lib/session';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
-import { JournalCard, JournalEntrySheet } from './BakeJournal';
+import { JournalCard, JournalEntrySheet, RemovedUndo } from './BakeJournal';
+import { noteJournalNavigation, pendingJournalRemoval, subscribeJournalRemoval } from '../lib/journalRemoval';
 import { listJournal, currentJournalId, journalBakeInProgress, type JournalEntry } from '../lib/localJournal';
 
 function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
@@ -265,7 +266,7 @@ export default function Header({
   openSessionId,
   onShareSessionClose,
   onResumeJournalEntry,
-  onRebakeJournalEntry, openCurrentJournalRequest, openJournalEntryRequest,
+  onRebakeJournalEntry, openCurrentJournalRequest, openJournalEntryRequest, openLibraryRequest, onJournalEntryRemoved, onUndoJournalRemoval,
   currentBakeActive = false,
 }: {
   units?: UnitSystem;
@@ -304,6 +305,11 @@ export default function Header({
   openCurrentJournalRequest?: number;
   /** A home "Rate" row: opens that bake's entry (20 Nov 2026 round 6). */
   openJournalEntryRequest?: { id: string; n: number } | null;
+  /** Increments to open Menu → My bakes (home's "2 more planned · My bakes", round 18). */
+  openLibraryRequest?: number;
+  /** A bake was removed from its sheet (round 18, H3); Undo goes through the page. */
+  onJournalEntryRemoved?: (id: string) => void;
+  onUndoJournalRemoval?: () => void;
   /** A bake is open in the page (not only waiting to be resumed). */
   currentBakeActive?: boolean;
 }) {
@@ -320,6 +326,9 @@ export default function Header({
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [journalCurrent, setJournalCurrent] = useState<string | null>(null);
   const [viewingJournal, setViewingJournal] = useState<JournalEntry | null>(null);
+  // Opened from My bakes: a removal returns there, with Undo in the list (round 18, H3).
+  const [journalFromLibrary, setJournalFromLibrary] = useState(false);
+  const removal = useSyncExternalStore(subscribeJournalRemoval, pendingJournalRemoval, () => null);
   const [confirmDeleteEventId, setConfirmDeleteEventId] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -329,6 +338,9 @@ export default function Header({
   const menuButton: React.CSSProperties = { width: '100%', textAlign: 'left', minHeight: 44, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'white', color: 'var(--char)', font: 'inherit', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' };
   const menuGroup: React.CSSProperties = { fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--smoke)', margin: '12px 0 4px' };
   useEffect(() => { if (!menuOpen) setMenuPage('main'); }, [menuOpen]);
+  useEffect(() => { noteJournalNavigation('menu', menuOpen ? `open:${menuPage}` : 'closed'); }, [menuOpen, menuPage]);
+  useEffect(() => { setJournal(listJournal()); }, [removal]);
+  useEffect(() => { if (openLibraryRequest) { setMenuOpen(true); setMenuPage('library'); } }, [openLibraryRequest]);
   useEffect(() => { drawerRef.current?.scrollTo(0, 0); drawerRef.current?.focus({preventScroll:true}); }, [menuPage]);
   const drawerRef = useRef<HTMLDivElement>(null);
   // Keep keyboard navigation inside the open menu and restore the trigger.
@@ -419,7 +431,7 @@ export default function Header({
   useEffect(() => {
     if (!openJournalEntryRequest) return;
     const entry = listJournal().find(row => row.id === openJournalEntryRequest.id);
-    if (entry) { setJournal(listJournal()); setViewingJournal(entry); }
+    if (entry) { setJournal(listJournal()); setJournalFromLibrary(false); setViewingJournal(entry); }
   }, [openJournalEntryRequest]);
 
   useEffect(() => {
@@ -659,9 +671,9 @@ export default function Header({
             <section aria-label={tJ('onDevice')} style={{padding:'12px 16px 4px'}}>
               <h3 style={{margin:0,fontSize:15}}>{tJ('onDevice')}</h3>
               <p style={{margin:'2px 0 0',fontSize:12,color:'var(--smoke)'}}>{tJ('deviceOnly')}</p>
-              {journal.length===0 && <p style={{margin:'8px 0 0',fontSize:14,color:'var(--ash)'}}>{tJ('empty')}</p>}
+              {journal.length===0 && !removal && <p style={{margin:'8px 0 0',fontSize:14,color:'var(--ash)'}}>{tJ('empty')}</p>}
               {/* Upcoming bakes first, soonest first; then past ones, latest first (17 Nov retention review). */}
-              {[...journal].sort((a,b)=>{const now=Date.now(),up=(e:typeof a)=>e.eatTime!=null&&journalBakeInProgress(e,now)&&!e.session?.bakedDone;const ua=up(a),ub=up(b);if(ua!==ub)return ua?-1:1;return ua?(a.eatTime??0)-(b.eatTime??0):(b.eatTime??b.updatedAt)-(a.eatTime??a.updatedAt);}).map(entry=><JournalCard key={entry.id} entry={entry} units={units} current={currentBakeActive && entry.id===journalCurrent} onOpen={row=>{setMenuOpen(false);setViewingJournal(row);}} />)}
+              {[...journal.filter(entry=>entry.id!==removal?.entry.id),...(removal?[removal.entry]:[])].sort((a,b)=>{const now=Date.now(),up=(e:typeof a)=>e.eatTime!=null&&journalBakeInProgress(e,now)&&!e.session?.bakedDone;const ua=up(a),ub=up(b);if(ua!==ub)return ua?-1:1;return ua?(a.eatTime??0)-(b.eatTime??0):(b.eatTime??b.updatedAt)-(a.eatTime??a.updatedAt);}).map(entry=>removal?.entry.id===entry.id?<RemovedUndo key={entry.id} entry={entry} onUndo={()=>onUndoJournalRemoval?.()}/>:<JournalCard key={entry.id} entry={entry} units={units} current={currentBakeActive && entry.id===journalCurrent} onOpen={row=>{setMenuOpen(false);setJournalFromLibrary(true);setViewingJournal(row);}} />)}
               {(()=>{
                 // Recovery copies kept when switching bakes. A generated bake that
                 // already has a journal entry is not listed twice.
@@ -1032,7 +1044,13 @@ export default function Header({
       units={units}
       signedIn={!!user}
       onClose={() => setViewingJournal(null)}
-      onChange={(id, next) => setJournal(prev => next ? prev.map(row => row.id === id ? next : row) : prev.filter(row => row.id !== id))}
+      onChange={(id, next) => {
+        setJournal(prev => next ? prev.map(row => row.id === id ? next : row) : prev.filter(row => row.id !== id));
+        if (next) return;
+        onJournalEntryRemoved?.(id);
+        if (journalFromLibrary) { setMenuOpen(true); setMenuPage('library'); }
+      }}
+      removeAt={journalFromLibrary ? { menu: 'open:library' } : undefined}
       onResume={entry => onResumeJournalEntry?.(entry)}
       onRebake={entry => onRebakeJournalEntry?.(entry)}
       onSaveToAccount={user ? saveJournalEntryToAccount : undefined}
