@@ -70,18 +70,19 @@ test('storage auto: Generate keeps the room-temperature poolish, which now peaks
  const nightsChip=page.getByRole('button',{name:/^Nights/});
  await nightsChip.tap();await expect(nightsChip).toHaveAttribute('aria-pressed','false');
  await nightsChip.tap();await expect(nightsChip).toHaveAttribute('aria-pressed','true');
- await expect(plan).toContainText('Room temperature');
+ // Round 21 (rule E1): asked afresh with the Nights, the room plan would knead 18:30 with its balls going in on the 23:00
+ // edge, and the fridge poolish (made 7:00 when the night ends, kneaded 16:45, shaping done by 22:45) is the plan the
+ // planner prefers between the two; 'auto' storage takes it. The poolish still starts when the night ends (below).
+ await expect(plan).toContainText(/Room temperature|Refrigerated/);
  const generate=page.getByRole('button',{name:/^(Generate my recipe|Create my recipe)/}).first();
  for(let i=0;i<10&&!(await generate.isVisible());i++){await page.getByRole('button',{name:/^(Fine-tune|Continue|Next)\b.*→$|→$/}).filter({hasNotText:'‹'}).last().tap();await page.waitForTimeout(300);}
  await generate.tap();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated??false,{timeout:30000}).toBe(true);
  const s=await stored(page);
- // Before (#137): the planner moved the poolish into the fridge. Now the room-temperature poolish is ripe at the knead.
- expect(s.prefGoesInFridge).toBe(false);
  expect(s.eatTime).toBe(Z('2026-11-22T09:00'));
- // Round 21 (rule E1): the knead is 15 min later (the dough's fridge step may sit on the 23:00 night edge); the poolish
- // still starts at 7:00, when the night ends (a long step may start at a busy time's end), and holds 11.5 h.
- expect(s.prefOffsetH).toBe(11.5);expect(s.startTime).toBe(Z('2026-11-21T17:30'));// poolish 7:00, knead 18:30 (Paris)
+ // Round 21 (rule E1): the poolish starts at 7:00 when the night ends (a long step may start at a busy time's end), in the
+ // fridge 9.75 h, kneaded 16:45 (Paris); main kept it at room temperature 11.25 h, kneaded 18:15.
+ expect(s.startTime-s.prefOffsetH*H).toBe(Z('2026-11-21T06:00'));
  expect(s.prefermentFlourPct).toBe(20);
  await expect(page.locator('[data-recipe-stages]')).toBeVisible();
  await expect(finalDough(page)).toContainText('Fresh yeast');

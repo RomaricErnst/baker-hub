@@ -1372,7 +1372,9 @@ export default function Home() {
   const fillingsForward=recipeGenerated&&fillingsReturn&&!fillingsReturn.forward&&(fillingsReturn.destination==='protocol'||fillingsReturn.destination==='service')?{
     label:hasFillings?(locale==='fr'?'Liste de courses →':'Shopping list →'):bakeType==='pizza'?(locale==='fr'?'Liste de courses · pâte seule →':'Shopping list · dough only →'):(locale==='fr'?'Liste de courses · pain seul →':'Shopping list · bread only →'),
     onClick:()=>{setFillingsReturn(null);openDestination('shopping');}}:undefined;
-  const setupReturnLabel=protocolStale?(locale==='fr'?'Mettre à jour la recette':'Update recipe'):fillingsReturn?fillingsDoneLabel:(locale==='fr'?'Retour à la recette':'Back to Recipe');
+  // A pending plan-input edit (an entered amount, a storage) is an update too (round 21: on a slow phone its replan lands
+  // later, and the button read "Back to Recipe" meanwhile though tapping it updates).
+  const setupReturnLabel=protocolStale||planReplanPending?(locale==='fr'?'Mettre à jour la recette':'Update recipe'):fillingsReturn?fillingsDoneLabel:(locale==='fr'?'Retour à la recette':'Back to Recipe');
   const bottomNavCollapsed = false;
   const stickTop = stickyHeadH;
   const pizzaPartyEnabled = bakeType === 'pizza';
@@ -5961,7 +5963,7 @@ export default function Home() {
               <SetupReview
                 kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${displayTemp(kitchenTemp,units,fr?'fr':'en')}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
                 starterRow={simpleStarterScreen&&simpleStarterLabel?{value:simpleStarterLabel,onClick:()=>{captureEditReturn();openSimpleStarter();}}:undefined}
-                stale={protocolStale}
+                stale={protocolStale||planReplanPending}
                 flow={simpleFlow}
                 reviewValues={{ 3: simpleKitchenSummary, 7: reviewTiming }}
                 busyRow={reviewBusy?{value:reviewBusy,onClick:()=>{setSetupOverview(false);setBakeTimeQuestion(true);simpleFlow.onJump(7);}}:undefined}
@@ -6374,7 +6376,7 @@ export default function Home() {
             {setupOverview && (
               <SetupReview
                 kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${displayTemp(kitchenTemp,units,fr?'fr':'en')}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
-                stale={protocolStale}
+                stale={protocolStale||planReplanPending}
                 flow={customFlow}
                 reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, ...(levainCustom ? (starterStepValue===null&&starterLocationAnswered?{8:starterLocation==='fridge'?(fr?'Frigo':'Fridge'):(fr?'Ambiante':'Room temperature')}:{}) : {8: prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType])}), 10:reviewDough, 9:reviewTiming}}
                 busyRow={reviewBusy?{value:reviewBusy,onClick:()=>{setSetupOverview(false);setBakeTimeQuestion(true);customFlow.onJump(9);}}:undefined}

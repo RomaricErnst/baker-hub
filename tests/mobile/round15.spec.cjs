@@ -46,9 +46,9 @@ for(const locale of ['en','fr']){
   // the search's, which the page held for a moment first). The editor names its night steps with the choice before
   // anything is kept (item 1).
   await bake.fill('2026-11-27T11:30');
-  // Round 21 (rule E1): the plan kneads at the calculated 8:15pm, shaping until 11:00pm and the balls in at 11:00pm (a quick
-  // step on the night's edge); main kneaded 7:45pm for a one-trip plan whose 11:00pm fridge step sat in the night.
-  await expect.poll(settledHour(page),{timeout:30000,intervals:[250]}).toBe('Thu 20:15');
+  // Round 21 (rule E1): the plan kneads at the calculated 8:00pm (a proof fit, the balls in before the night); main kneaded
+  // 7:45pm for a one-trip plan whose 11:00pm fridge step sat in the baker's night.
+  await expect.poll(settledHour(page),{timeout:30000,intervals:[250]}).toBe('Thu 20:00');
   const editor=page.locator('[data-entry-night-where="editor"]:visible');
   await expect(editor).toHaveCount(1,{timeout:30000});
   await expect(editor).toContainText(fr?/Ce planning a/:/This plan has/);

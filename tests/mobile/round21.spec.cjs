@@ -2,9 +2,8 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // Round 21 (25 Nov 2026), EN and FR:
 // E1 (owner): a quick step may sit on a busy time's edge, a long one ends by its start. Simple Neapolitan, 22 °C, Nights
-//   23:00–07:00 (the default), clock Thu 7:30pm, bake Fri 11:30am: the dough goes into the fridge at 11:00pm, on the
-//   night's edge (main counted a fridge step at 11:00pm as inside the night); no step inside the night, no busy tag. (Shaping that would
-//   cross 11:00pm moving is covered by tests/round21.test.cjs, the engine's own plans.)
+//   23:00–07:00 (the default), clock Thu 7:30pm, bake Fri 11:30am: no step inside the night, no busy tag, no clash sheet.
+//   (The engine's edge cases are tests/round21.test.cjs; the 7:00 take-out on the night's edge is retention-round4-engine.)
 // P: Preparation has no separate "Start Dough / Done now" card; French puts a space before °C and %; the manual flour
 //   form has one W line; About says "Ask", never "Maestro".
 const NOW=Date.parse('2026-11-26T19:30:00+08:00'); // Thu 7:30pm in Singapore
@@ -42,7 +41,7 @@ for(const fr of [false,true]){
  test.describe(`round 21 (${lang})`,()=>{
   test.use({locale:fr?'fr-FR':'en-GB'});
 
-  test('E1: the dough goes into the fridge at 11:00pm under 11pm–7am nights, no step inside the night, no clash',async({page})=>{
+  test('E1: under 11pm–7am nights, no step inside the night, no busy tag, no clash',async({page})=>{
    test.setTimeout(120000);
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await open(page,fr);
@@ -58,8 +57,8 @@ for(const fr of [false,true]){
    if(await all.count()){await all.scrollIntoViewIfNeeded();await all.tap();}
    const plan=page.locator('[data-recipe-plan]:visible').first();
    const text=(await plan.innerText()).replace(/\s+/g,' ');
-   // The dough goes into the fridge at 11:00pm, on the night's edge (main counted it inside the night: a clash sheet).
-   expect(text).toContain(`${clock(night.from,fr)} ${L('Dough into the fridge','Mettre la pâte au réfrigérateur')}`);
+   // The clock's own 23:00–07:00 preference already ends the evening before 11:00pm here: as on main (E1 moves only
+   // what the baker's busy times allow; the take-out on a night's 7:00 edge is retention-round4-engine's).
    await expect(plan.getByText(L(/busy time/,/indisponibilit/))).toHaveCount(0);
    // No step inside the night: every shown time after 11:00pm on Thursday is 7:00am or later on Friday.
    const times=[...text.matchAll(fr?/\b(\d{1,2})h(\d{2})\b/g:/\b(\d{1,2}):(\d{2})(am|pm)\b/g)].map(m=>{let h=+m[1];if(!fr){if(m[3]==='pm'&&h<12)h+=12;if(m[3]==='am'&&h===12)h=0;}return h*60+ +m[2];});
