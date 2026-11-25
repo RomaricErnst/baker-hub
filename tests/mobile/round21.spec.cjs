@@ -51,7 +51,7 @@ for(const fr of [false,true]){
    const s=await stored(page);
    expect(s.blocks.some(b=>/ night$/.test(b.label))).toBe(true);
    const night=s.blocks.filter(b=>/ night$/.test(b.label)).sort((a,b)=>a.from-b.from)[0];
-   expect(new Date(night.from).getHours()).toBe(23);
+   expect(+new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Singapore',hour:'2-digit',hour12:false}).format(new Date(night.from))).toBe(23); // the page's zone, not the runner's (CI runs in UTC)
    // The plan on screen (every step).
    const all=page.getByRole('button',{name:L(/^All steps/,/^Toutes les étapes/)}).first();
    if(await all.count()){await all.scrollIntoViewIfNeeded();await all.tap();}
