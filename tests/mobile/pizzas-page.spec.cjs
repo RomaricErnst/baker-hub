@@ -22,7 +22,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Pizzas page, first visit to 
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Recipe','Recette'));
 
  // The section is named for what the baker picks.
- await page.locator('.bh-recipe-next:visible [data-toppings-step]').tap();
+ await page.locator('[data-add-fillings]:visible').tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Pizzas');
  await expect(page.getByRole('heading',{level:1})).toHaveText(L('Which pizzas?','Quelles pizzas ?'));
  // No bake summary block, no "suited to" bar, no "Showing N".
