@@ -46,7 +46,7 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};
   // The tap's own clock (round 20): `now` is the page's 30-second clock, which a phone's throttled timers
   // can leave minutes behind; "Mixed now" at 9:50 recorded an earlier minute.
-  const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed)&&parsed<=Math.max(now,Date.now());
+  const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed);
   return <section className="bh-start-status" aria-label={fr?'Préparation de la fournée':'Bake preparation'}>
     {execution?(preparing?<>
       <p><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong></p>
@@ -70,6 +70,6 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
       {!preparing&&<button type="button" className="bh-start-link" onClick={onRecipe}>{fr?'Voir la recette':'View recipe'}</button>}
       </>}
     </>}
-    {different&&<div className="bh-start-actions"><label>{method==='none'?(fr?'Heure du pétrissage':'Mixing time'):(fr?'Heure réelle':'Actual time')}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/></label><button type="button" style={STATUS_BUTTON} disabled={!valid} onClick={()=>{onMade(parsed);setDifferent(false);}}>{fr?'Enregistrer':'Set time'}</button>{!execution&&<button type="button" style={STATUS_BUTTON} onClick={()=>{onMade(Date.now());setDifferent(false);}}>{fr?'Maintenant':'Now'}</button>}</div>}
+    {different&&<div className="bh-start-actions"><label>{method==='none'?(fr?'Heure du pétrissage':'Mixing time'):(fr?'Heure réelle':'Actual time')}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/></label><button type="button" style={STATUS_BUTTON} disabled={!valid} onClick={()=>{if(parsed>Date.now())return;onMade(parsed);setDifferent(false);}}>{fr?'Enregistrer':'Set time'}</button>{!execution&&<button type="button" style={STATUS_BUTTON} onClick={()=>{onMade(Date.now());setDifferent(false);}}>{fr?'Maintenant':'Now'}</button>}</div>}
   </section>;
 }

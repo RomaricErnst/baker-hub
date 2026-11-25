@@ -104,6 +104,8 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const [photos, setPhotos] = useState<Array<{ id: string; url: string; blob: Blob }>>([]);
   const [adding, setAdding] = useState(false);
   const [rateNow, setRateNow] = useState(false);
+  // The moment the sheet opened: whether the bake is still to come (round 20, item 7).
+  const [openedAt] = useState(() => Date.now());
   const [savingAccount, setSavingAccount] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const urlsRef = useRef<string[]>([]);
@@ -188,7 +190,7 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const nextWeekLabel = nextWeek ? nextWeek.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
   const noteChanged = note !== current.note;
   // A bake still to come offers neither the rating nor Bake again (round 20, item 7): both belong after the bake.
-  const future = current.eatTime != null && current.eatTime > Date.now();
+  const future = current.eatTime != null && current.eatTime > openedAt;
 
   return createPortal(
     <>

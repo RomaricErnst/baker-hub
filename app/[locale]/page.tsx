@@ -17,7 +17,7 @@ import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
 import StylePicker, { StylePhotoPreload } from '../components/StylePicker';
-import BakeNavigator, {DestinationIcon, type BakeStepLink} from '../components/BakeNavigator';
+import BakeNavigator, {type BakeStepLink} from '../components/BakeNavigator';
 import { bakeHeadline, recipeSummaryLine } from '../utils/bakeHeadline';
 import BakeTypeChooser from '../components/BakeTypeChooser';
 import {getServingTimeEstimate, breadCoolingRange} from '../utils/servingTime';

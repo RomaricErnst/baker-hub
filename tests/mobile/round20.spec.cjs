@@ -80,7 +80,7 @@ for(const fr of [false,true]){
    await page.getByRole('button',{name:L('Different time?','À une autre heure ?')}).first().tap();
    const late=new Date(mixAt+15*60000);const local=new Date(+late-late.getTimezoneOffset()*60000).toISOString().slice(0,16);
    await page.getByLabel(L(/Actual time|Mixing time/,/Heure réelle|Heure du pétrissage/)).first().fill(local);
-   await page.getByRole('button',{name:L('Set time','Enregistrer'),exact:true}).first().tap();
+   await page.locator('[data-done-time]:visible, .bh-start-status:visible').getByRole('button',{name:L('Set time','Enregistrer'),exact:true}).first().tap();
    await expect.poll(async()=>(await stored(page))?.execution?.actualAt,{timeout:10000}).toBe(mixAt+15*60000);
    expect((await stored(page)).executionClash).toBe(false);
    await expect(page.locator('[data-plan-clash]:visible')).toHaveCount(0);
@@ -210,7 +210,7 @@ for(const fr of [false,true]){
    await loaf.close();
    test.skip(shared===0,'no shared feed for these two bakes at this clock');
    const page=await visit(context,'2026-11-25T20:07:00+08:00',fr);
-   const pizzaRow=page.locator('[data-live-bake]').filter({hasText:/Pizza/}).last();
+   const pizzaRow=page.locator('[data-live-bake]').filter({hasText:/pizza/i}).first();
    await pizzaRow.tap();
    await section(page,fr,L('Recipe','Recette'));
    // The levain build at the shared feed's ratio (never the pizza's own 1:1:1 beside a shared 1:R:R).
