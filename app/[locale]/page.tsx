@@ -5889,7 +5889,7 @@ export default function Home() {
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
 
-          {hasFillings&&(destination==='protocol'||(destination==='service'&&bakeType!=='pizza'))&&<section className={`bh-section-choices${destination==='protocol'?' bh-preparation-tabs':''}`} aria-label={fr?'À préparer':'What to prepare'}>
+          {hasFillings&&(destination==='protocol'||(destination==='service'&&bakeType!=='pizza'))&&<section className="bh-section-choices bh-preparation-tabs" aria-label={fr?'À préparer':'What to prepare'}>
             <button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='dough'} onClick={()=>{if(destination==='protocol')setProtocolView('dough');else setServiceView('dough');}}>{destination==='protocol'?(fr?'Pâte':'Dough'):bakeType==='bread'?(fr?'Guide de cuisson':'Baking guide'):(fr?'Guide de cuisson':'Cooking guide')}</button>
             {hasFillings&&<button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='fillings'} onClick={()=>{if(destination==='protocol')setProtocolView('fillings');else setServiceView('fillings');}}>{destination==='protocol'?(fr?'Garnitures':'Fillings'):(bakeType==='pizza'?(fr?'Cuire les pizzas':'Cook the pizzas'):(fr?'Assembler et servir':'Assemble and serve'))}</button>}
           </section>}
@@ -6207,7 +6207,7 @@ export default function Home() {
                   {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{bakeType==='pizza'?(fr?'Ajouter des pizzas (facultatif)':'Add pizzas (optional)'):(fr?'Ajouter des garnitures (facultatif)':'Add fillings (optional)')}</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
-                    {(()=>{const next=oneLineCta(`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
+                    {(()=>{const next=oneLineCta(`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
 
                   </BottomActions>}
                 </div>
@@ -6997,7 +6997,7 @@ export default function Home() {
                   {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{bakeType==='pizza'?(fr?'Ajouter des pizzas (facultatif)':'Add pizzas (optional)'):(fr?'Ajouter des garnitures (facultatif)':'Add fillings (optional)')}</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
-                    {(()=>{const next=oneLineCta(`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
+                    {(()=>{const next=oneLineCta(`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
 
                   </BottomActions>}
                 </div>

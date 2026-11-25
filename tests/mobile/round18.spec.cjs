@@ -63,7 +63,7 @@ for(const fr of [false,true]){
   test('"⋯" → Delete → "Removed · Undo" → Undo restores it',async({page})=>{
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await open(page,restarted(true),path);
-   const dots=page.getByRole('button',{name:L('Remove Lunch loaf','Supprimer Lunch loaf'),exact:true});
+   const dots=page.getByRole('button',{name:L('Options for Lunch loaf','Options pour Lunch loaf'),exact:true});
    await expect(dots).toBeVisible();
    const box=await dots.boundingBox();expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);
    await dots.tap();
@@ -72,7 +72,7 @@ for(const fr of [false,true]){
    await sheet.getByRole('button',{name:L('Delete from this device','Supprimer de cet appareil'),exact:true}).tap();
    await expect(sheet).toHaveCount(0);
    const removed=page.locator('[data-journal-removed="a"]');
-   await expect(removed).toContainText(L('Removed ·','Supprimée ·'));
+   await expect(removed).toContainText(L('Lunch loaf removed ·','Lunch loaf supprimée ·'));
    await expect(page.locator('[data-live-bake="a"]')).toHaveCount(0);
    expect(await journalIds(page)).toEqual(['b','c']);
    await removed.getByRole('button',{name:L('Undo: put back Lunch loaf','Annuler : remettre Lunch loaf'),exact:true}).tap();
