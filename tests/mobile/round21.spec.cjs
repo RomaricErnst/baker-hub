@@ -2,9 +2,9 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // Round 21 (25 Nov 2026), EN and FR:
 // E1 (owner): a quick step may sit on a busy time's edge, a long one ends by its start. Simple Neapolitan, 22 °C, Nights
-//   23:00–07:00 (the default), clock Thu 7:30pm, bake Fri 11:30am: shaping 10:45–11:00pm, the balls into the fridge at
-//   11:00pm (main put a fridge step at 11:00pm in the night and shaped at 10:30pm); no clash sheet, no busy tag, and no
-//   long step crosses 11:00pm.
+//   23:00–07:00 (the default), clock Thu 7:30pm, bake Fri 11:30am: the dough goes into the fridge at 11:00pm, on the
+//   night's edge (main counted a fridge step at 11:00pm as inside the night); no step inside the night, no busy tag. (Shaping that would
+//   cross 11:00pm moving is covered by tests/round21.test.cjs, the engine's own plans.)
 // P: Preparation has no separate "Start Dough / Done now" card; French puts a space before °C and %; the manual flour
 //   form has one W line; About says "Ask", never "Maestro".
 const NOW=Date.parse('2026-11-26T19:30:00+08:00'); // Thu 7:30pm in Singapore
@@ -42,7 +42,7 @@ for(const fr of [false,true]){
  test.describe(`round 21 (${lang})`,()=>{
   test.use({locale:fr?'fr-FR':'en-GB'});
 
-  test('E1: the balls go into the fridge at 11:00pm under 11pm–7am nights; shaping ends by 11:00pm; no clash',async({page})=>{
+  test('E1: the dough goes into the fridge at 11:00pm under 11pm–7am nights, no step inside the night, no clash',async({page})=>{
    test.setTimeout(120000);
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await open(page,fr);
@@ -58,11 +58,15 @@ for(const fr of [false,true]){
    if(await all.count()){await all.scrollIntoViewIfNeeded();await all.tap();}
    const plan=page.locator('[data-recipe-plan]:visible').first();
    const text=(await plan.innerText()).replace(/\s+/g,' ');
-   expect(text).toContain(clock(night.from,fr));        // the fridge step at 11:00pm, on the night's edge
-   expect(text).toContain(clock(night.from-15*60000,fr)); // shaping 10:45pm, ending at 11:00pm
+   // The dough goes into the fridge at 11:00pm, on the night's edge (main counted it inside the night: a clash sheet).
+   expect(text).toContain(`${clock(night.from,fr)} ${L('Dough into the fridge','Mettre la pâte au réfrigérateur')}`);
    await expect(plan.getByText(L(/busy time/,/indisponibilit/))).toHaveCount(0);
-   // The start is the automatic plan's (Thu 8:30pm): main read 8:15pm with shaping at 10:30pm.
-   expect(clock(s.startTime,fr)).toBe(L('8:30pm','20h30'));
+   // No step inside the night: every shown time after 11:00pm on Thursday is 7:00am or later on Friday.
+   const times=[...text.matchAll(fr?/\b(\d{1,2})h(\d{2})\b/g:/\b(\d{1,2}):(\d{2})(am|pm)\b/g)].map(m=>{let h=+m[1];if(!fr){if(m[3]==='pm'&&h<12)h+=12;if(m[3]==='am'&&h===12)h=0;}return h*60+ +m[2];});
+   expect(times.filter(m=>m>23*60||m<7*60)).toEqual([]);
+   // The automatic plan's knead: after 7:30pm and early enough that every long step ends by 11:00pm.
+   expect(s.startTime).toBeGreaterThan(NOW);
+   expect(s.startTime).toBeLessThan(night.from-2*3600000);
    await page.screenshot({path:test.info().outputPath(`e1-plan-${lang}.png`),fullPage:false});
    expect(errors).toEqual([]);
   });
@@ -86,7 +90,7 @@ for(const fr of [false,true]){
    // My choices: the kitchen reads « 22 °C » in French (a no-break space), "22°C" in English.
    await section(later,fr,L('My bake','Ma fournée'));
    const body=await later.locator('body').innerText();
-   if(fr){expect(body).not.toMatch(/\d°C/);expect(body).toMatch(/22 °C/);}else expect(body).toMatch(/22°C/);
+   if(fr){expect(body).not.toMatch(/\d°C/);expect(body).toMatch(/22\s°C/);}else expect(body).toMatch(/22°C/);
    await later.close();
    // About: the help box is "Ask" / « Demander », never "Maestro".
    await page.goto(fr?'/fr/about':'/about');

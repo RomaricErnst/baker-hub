@@ -897,14 +897,14 @@ function KitchenSlider({value,units,fr,onChange}:{value:number;units:UnitSystem;
   const stops=KITCHEN_ZONES.map(z=>`${z.color} ${pct(z.from-0.5)}% ${pct(z.to+0.5)}%`).join(',');
   const hint='hint' in zone?(fr?zone.hintFr:zone.hint):null;
   return <div data-kitchen-slider data-kitchen-zone={zone.id}>
-    <p style={{margin:'0 0 4px',fontSize:40,fontWeight:700,lineHeight:1.1,color:'var(--char)'}} aria-hidden="true">{cToDisplay(t,units)}{tempUnit(units)}</p>
+    <p style={{margin:'0 0 4px',fontSize:40,fontWeight:700,lineHeight:1.1,color:'var(--char)'}} aria-hidden="true">{displayTemp(t,units,fr?'fr':'en')}</p>
     {/* The zone is named once, in bold under the slider; this line carries only a hint. */}
     <p style={{margin:hint?'0 0 16px':'0 0 8px',fontSize:16,color:'var(--ash)',minHeight:hint?undefined:0}} aria-live="polite"><span className="bh-visually-hidden">{fr?zone.fr:zone.en}{hint?' · ':''}</span>{hint??''}</p>
     <div style={{position:'relative',height:44,margin:'8px 0'}}>
     <div aria-hidden="true" style={{position:'absolute',left:0,right:0,top:16,height:12,borderRadius:6,background:`linear-gradient(to right,${stops})`}}/>
     <input type="range" min={KITCHEN_MIN} max={KITCHEN_MAX} step={1} value={t}
       aria-label={fr?'Température là où la pâte repose':'Temperature where the dough rests'}
-      aria-valuetext={`${cToDisplay(t,units)}${tempUnit(units)} · ${fr?zone.fr:zone.en}`}
+      aria-valuetext={`${displayTemp(t,units,fr?'fr':'en')} · ${fr?zone.fr:zone.en}`}
       onChange={e=>onChange(Number(e.currentTarget.value))}
       className="bh-kitchen-range" style={{position:'absolute',inset:0,width:'100%',height:44,margin:0,background:'transparent'}}/>
     </div>
@@ -4576,7 +4576,7 @@ export default function Home() {
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, group: 'kitchen', chip: fr ? 'Frigo et eau' : 'Fridge & water', title: fr ? 'Dans votre cuisine' : 'In your kitchen',
       // This step sets the fridge; the kitchen temperature has its own screen.
-      value: `${fr ? 'Frigo' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`, prefilled: true,
+      value: `${fr ? 'Frigo' : 'Fridge'} ${displayTemp(fridgeTemp,units,fr?'fr':'en')}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, group: 'dough', chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType && !(enrichedDirectOnly && yeastType === 'sourdough') ? localName(YEAST_TYPES[yeastType]) : null,
@@ -4626,7 +4626,7 @@ export default function Home() {
     const pct=(v:number)=>formatPercent(Math.round(v*10)/10,locale);
     return fr?`${pct(h)} d’eau${salt!=null?` · ${pct(salt)} de sel`:''}`:`${pct(h)} water${salt!=null?` · ${pct(salt)} salt`:''}`;
   })();
-  const reviewKitchen = `${fr ? 'Réfrigérateur' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`;
+  const reviewKitchen = `${fr ? 'Réfrigérateur' : 'Fridge'} ${displayTemp(fridgeTemp,units,fr?'fr':'en')}`;
   const levainStyle = isLevainStyle(styleKey);
   const levainCustom = levainStyle && tab === 'custom' && yeastType === 'sourdough';
   // Simple sourdough: one "Your starter" screen between Kitchen and Bake time.
@@ -5005,7 +5005,7 @@ export default function Home() {
     const changed = now.map((v,i)=>JSON.stringify(v)!==JSON.stringify(before[i])?i:-1).filter(i=>i>=0);
     if (changed.length !== 1) return generic;
     const i = changed[0], old = before[i];
-    const temp = (c:number) => `${cToDisplay(c,units)}${tempUnit(units)}`;
+    const temp = (c:number) => `${displayTemp(c,units,fr?'fr':'en')}`;
     const named: Record<number, {what:(v:unknown)=>string; keep?:(v:unknown)=>{label:string; run:()=>void}}> = {
       2: {what: v => fr ? `la quantité : ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}` : `the quantity to ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}`,
           keep: v => ({label: fr ? `Garder ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}` : `Keep ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}`, run: () => setNumItems(Number(v))})},
@@ -5154,7 +5154,7 @@ export default function Home() {
   const bakeLinks:BakeLink[] = [
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
-    ...(!isUnleavened&&styleKey?[{label:fr?'Cuisine':'Kitchen',value:kitchenAnswered?`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`:null,onChoose:()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}]:[]),
+    ...(!isUnleavened&&styleKey?[{label:fr?'Cuisine':'Kitchen',value:kitchenAnswered?`${displayTemp(kitchenTemp,units,fr?'fr':'en')}`:null,onChoose:()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}]:[]),
     ...(simpleStarterScreen?[{label:fr?'Levain':'Starter',value:simpleStarterLabel,onChoose:openSimpleStarter}]:[]),
     ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,disabled:!styleKey||!qtyChosen,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(step=>({...stepLink(step),group:tab==='custom'&&step.group!=='plan'?'custom' as const:'basics' as const})):[]),
   ];
@@ -5959,7 +5959,7 @@ export default function Home() {
                 first-time baker onto a review screen. */}
             {setupOverview && (
               <SetupReview
-                kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
+                kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${displayTemp(kitchenTemp,units,fr?'fr':'en')}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
                 starterRow={simpleStarterScreen&&simpleStarterLabel?{value:simpleStarterLabel,onClick:()=>{captureEditReturn();openSimpleStarter();}}:undefined}
                 stale={protocolStale}
                 flow={simpleFlow}
@@ -6373,7 +6373,7 @@ export default function Home() {
                 first-time baker onto a review screen. */}
             {setupOverview && (
               <SetupReview
-                kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
+                kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${displayTemp(kitchenTemp,units,fr?'fr':'en')}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
                 stale={protocolStale}
                 flow={customFlow}
                 reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, ...(levainCustom ? (starterStepValue===null&&starterLocationAnswered?{8:starterLocation==='fridge'?(fr?'Frigo':'Fridge'):(fr?'Ambiante':'Room temperature')}:{}) : {8: prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType])}), 10:reviewDough, 9:reviewTiming}}
