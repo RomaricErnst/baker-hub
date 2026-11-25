@@ -69,7 +69,8 @@ test('finding 6: steps at the same time are one mention; Keep uses the recipe\'s
     'This plan has the take-out and shaping at 3:00am, the dough into the fridge at 3:15am.');
   assert.equal(N.nightStepsLine([{ id: 'cold-out', at: at(3) }, { id: 'divide', at: at(3) }], true), 'Ce planning a la sortie du frigo et le façonnage à 3h00.');
   assert.match(page, /const keptShown = yeastPctOverride !== undefined \? recipeRound\(yeastPctOverride \* conversion\)/);
-  assert.match(page, /busy:blocks\.some\(block=>\+e\.at>\+block\.from&&\+e\.at<\+block\.to\)/);
+  // Round 21 (rule E1): the busy tag reads the one edge rule (busyHit): a quick step at a busy time's start is not in it.
+  assert.match(page, /busy:blocks\.some\(block=>busyHit\(\{id:e\.key\?\?'',at:e\.at\},\+block\.from,\+block\.to\)\)/);
   assert.match(page, /!doughIsCalc&&<button type="button" data-ft-use-calculated-yeast/);
   assert.match(page, /prefOffsetH>autoPlan\.times\.prefHours\+0\.01/);
 });
@@ -99,8 +100,10 @@ test('findings 1, 2, 4: one plan from the current inputs, ranked by night weight
   // Finding 2: Nights on, a kept 0.151 % at lunch: nothing between 23:00 and 06:00 (round 16: fridge 11pm, shaping 3am).
   const kept = Y.entryPlan(0.151, input('2026-11-27T11:30:00'));
   assert.deepEqual(kept.nightSteps.filter(a => av.isDeepNight(a.at)), []);
-  // Finding 4: the one-trip shape is a candidate (entered amounts only): lunch 0.15 % shapes at the end of the warm bulk.
-  const trip = Y.entryPlan(0.15, input('2026-11-27T11:30:00'));
+  // Finding 4: the one-trip shape is a candidate (entered amounts only): 0.16 % at dinner shapes at the end of the warm bulk.
+  // Round 21 (E1): lunch 0.15 % (the example before) now has a proof fit with shaping ending at 23:00, the balls in at 23:00,
+  // kneaded at the calculated 20:15, which ranks first; the one-trip shape still wins elsewhere.
+  const trip = Y.entryPlan(0.16, input('2026-11-27T19:30:00'));
   assert.equal(trip.shape.oneTrip, true);
   const s = utils.buildSchedule(trip.times.start, trip.times.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, trip.shape, 'hot');
   assert.equal(utils.fridgeSpellCount(s), 1);

@@ -49,7 +49,7 @@ import { useReloadOnNewDeployment } from '../hooks/useReloadOnNewDeployment';
 import { noteJournalNavigation, pendingJournalRemoval, subscribeJournalRemoval, undoJournalRemoval } from '../lib/journalRemoval';
 import {commercialPrefermentWindow, commercialPrefermentPlanValid, commercialReadinessWindow, automaticCommercialPlan, earliestPrefermentBake, validateConfirmedBake, STYLE_FERM_DEFAULTS, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
-import { findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake, nightHandsOn, blocksForLaterBake } from '../utils/scheduleAvailability';
+import { busyHit, findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake, nightHandsOn, blocksForLaterBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -4369,7 +4369,10 @@ export default function Home() {
       setShowResults(true);
       setProtocolStale(false);
       setSessionSaved(!rb);
-      setSessionRestored(true);
+      // Bake again plans from today's inputs (round 21, round-19 finding 5): last week's start, shifted a week, was the
+      // plan of last week's clock (a same-evening start), and the picker trusted it as a restored session; the bake
+      // time's own plan (kept lead and all) is the automatic plan, as for a new bake.
+      setSessionRestored(!rb);
       setReviewMode(true);
       // Nav #2 — land the baker back on the tab they left (Recipe/Guide),
       // not a review-mode Setup they must decode. Rebakes start on Setup.
@@ -4384,7 +4387,7 @@ export default function Home() {
       setActiveStep(snap.styleKey ? snap.activeStep ?? snap.highestStep ?? 1 : 1); setHighestStep(snap.highestStep ?? 1);
       setAdvancedStep(snap.styleKey ? snap.advancedStep ?? snap.advancedHighestStep ?? 1 : 1); setAdvancedHighestStep(snap.advancedHighestStep ?? 1);
       setReviewMode(false); setSetupOverview(false); setShowResults(false);
-      setSessionSaved(!rb); setSessionRestored(true);
+      setSessionSaved(!rb); setSessionRestored(!rb);
       setTimeout(endRestore, 200);
     }
     if(!rb)restoreNavigation(snap);
@@ -5083,7 +5086,7 @@ export default function Home() {
     // The first row is the mix whenever no preferment or starter step leads: a mix under way (or recorded) is
     // not listed again at the minute of now (round 20: "8:45pm Start Dough" and "9:00pm Start Dough").
     const startRowIsMix=!firstStarterAction&&!(prefStartTime&&+prefStartTime===+firstRecipeAction);
-    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime&&!(startRowIsMix&&e.key==='mix')).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:blocks.some(block=>+e.at>+block.from&&+e.at<+block.to)&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&+e.at>+block.from&&+e.at<+block.to))}));
+    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime&&!(startRowIsMix&&e.key==='mix')).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:blocks.some(block=>busyHit({id:e.key??'',at:e.at},+block.from,+block.to))&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&busyHit({id:e.key??'',at:e.at},+block.from,+block.to)))}));
     // Round 13 (item 7): a night step is named once, in the night line (entryNightView), not again on its row.
     return steps;
   })();
@@ -5096,7 +5099,7 @@ export default function Home() {
   const planClashText=(()=>{
     const step=recipePlanSteps.find(row=>row.busy&&+row.at>Date.now()&&!coveredAt.has(+row.at));
     if(!step)return fr?'La suite du plan ne correspond plus à la levure de la pâte.':'The rest of the plan no longer suits the yeast in the dough.';
-    const night=blocks.some(block=>isNightBlock(block)&&+step.at>+block.from&&+step.at<+block.to);
+    const night=blocks.some(block=>isNightBlock(block)&&busyHit({id:step.key,at:step.at},+block.from,+block.to));
     const when=formatClock(step.at,locale);
     return fr?`${step.label} à ${when} tombe maintenant ${night?'pendant votre nuit':'pendant une indisponibilité'}.`
       :`${step.label} at ${when} now falls ${night?'in your night':'in a busy time'}.`;

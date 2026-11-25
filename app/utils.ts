@@ -3,7 +3,7 @@ import { formatDuration } from './utils/duration';
 import { starterBuild } from './utils/starterBuild';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { scheduledFoldMinutes } from './utils/scheduleFolds';
-import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, isFridgeRemovalCovered, newNightHandsOn, nightScore, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
+import { actionConflicts, busyHit, findAvailabilityConflicts, inClockWindow, isTimeBlocked, isFridgeRemovalCovered, newNightHandsOn, nightScore, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
 import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 import { yeastActivity, pathHeq, riseTarget, doseForHeq, yeastBudget, thermalTauH, type PathResult, type ThermalPhase } from './utils/yeastModel';
 // ══════════════════════════════════════════
@@ -1111,8 +1111,10 @@ function buildSchedulePhases(
     const earliestDivide = shapeFirst ? new Date(Math.ceil(+coldRetard1Start / 900000) * 900000)
       : new Date(coldRetard1Start.getTime() + minCold1H * 3600000);
     const latestDivide   = new Date(bakeTime.getTime() - (minCold2H + minFinalRT + preheatH) * 3600000);
+    // Rule E1: shaping (long) must end by a busy time's start; the balls go into the fridge (quick) at its end,
+    // which may be that start.
     const divideIsBlocked = (t: Date) => actionConflicts({ id: 'divide', at: t, end: new Date(+t + divideH * 3600000) }, relevantBlocks)
-      || isTimeBlocked(+t + divideH * 3600000, relevantBlocks);
+      || isTimeBlocked(+t + divideH * 3600000, relevantBlocks, true);
     // Cold time may be spent in portions for these developed pizza doughs.
     // Modernist Pizza Kitchen Manual pp.17,24,41 supports balling before cold
     // proof. Keep the existing bulk/folds and total cold budget. The 15-minute
@@ -1144,7 +1146,7 @@ function buildSchedulePhases(
           if (!relevantBlocks.length) { divideBallTime = scan; break; }
           const minExit = Math.max(+naturalExit, +scan + (divideH + minCold2H) * 3600000);
           for (let at = Math.ceil(minExit / 900000) * 900000; at <= maxExit; at += 900000) {
-            if (!isTimeBlocked(at, relevantBlocks)) { constrainedExit = new Date(at); break; }
+            if (!isTimeBlocked(at, relevantBlocks, true)) { constrainedExit = new Date(at); break; }
           }
           if (constrainedExit) { divideBallTime = scan; break; }
         }
@@ -1164,7 +1166,7 @@ function buildSchedulePhases(
         if (divideIsBlocked(scan)) continue;
         const minExit = Math.max(+naturalExit, +scan + (divideH + minCold2H) * 3600000);
         for (let at = Math.ceil(minExit / 900000) * 900000; at <= maxExit; at += 900000) {
-          if (!isTimeBlocked(at, relevantBlocks)) { constrainedExit = new Date(at); break; }
+          if (!isTimeBlocked(at, relevantBlocks, true)) { constrainedExit = new Date(at); break; }
         }
         availableDivide = new Date(scan);
         divideBallTime = new Date(scan);
@@ -1204,7 +1206,7 @@ function buildSchedulePhases(
     if (exitLeadMin !== undefined && Number.isFinite(exitLeadMin) && exitLeadMin > 0
       && (constrainedExit || !relevantBlocks.length) && !fromFridge) {
       const kept = Math.round((+eatTime - exitLeadMin * 60000) / 900000) * 900000;
-      if (exitFits(kept) && !isTimeBlocked(kept, relevantBlocks)) coldRetard2End = new Date(kept);
+      if (exitFits(kept) && !isTimeBlocked(kept, relevantBlocks, true)) coldRetard2End = new Date(kept);
     }
     // The exit still falls in busy time (no free quarter between the longest and the
     // shortest final proof). An exit the baker already arranged for this very bake is kept
@@ -1212,13 +1214,13 @@ function buildSchedulePhases(
     // workable exit, nearest the end of the busy time (18 Nov 2026 retention round 4:
     // 6:45 after a night ending at 7:00 for a 9:15 bake, not 4:15).
     // Only a plan that already has a real shaped cold spell: a window too short for one keeps its own handling.
-    if (!constrainedExit && relevantBlocks.length && isTimeBlocked(coldRetard2End, relevantBlocks)
+    if (!constrainedExit && relevantBlocks.length && isTimeBlocked(coldRetard2End, relevantBlocks, true)
       && plannedExit >= +coldRetard2Start + minCold2H * 3600000) {
       const arranged = availabilityBlocks.map(block => block.fridgeRemoval)
         .find(removal => removal && removal.bake === +eatTime && Number.isFinite(removal.at));
       let free: number | null = null;
       for (let at = Math.ceil(+naturalExit / 900000) * 900000; at <= maxExit; at += 900000) {
-        if (exitFits(at) && !isTimeBlocked(at, relevantBlocks)) { free = at; break; }
+        if (exitFits(at) && !isTimeBlocked(at, relevantBlocks, true)) { free = at; break; }
       }
       const latest = Math.floor(maxExit / 900000) * 900000;
       if (arranged && arranged.at % 900000 === 0 && arranged.at >= +coldRetard2Start + minCold2H * 3600000 && arranged.at <= maxExit) coldRetard2End = new Date(arranged.at);
@@ -1275,7 +1277,7 @@ function buildSchedulePhases(
       && !bridgesUnavailable(coldRetard2Start, coldRetard2End)) {
       const exit = r15(new Date(Math.max(+coldRetard2End, +eatTime - (restH + maxFinalH) * 3600000)));
       const proofFrom = new Date(+exit + restH * 3600000);
-      if (+exit > +coldRetard1Start && !isTimeBlocked(exit, relevantBlocks) && !divideIsBlocked(exit) && +proofFrom < +bakeTime) {
+      if (+exit > +coldRetard1Start && !isTimeBlocked(exit, relevantBlocks, true) && !divideIsBlocked(exit) && +proofFrom < +bakeTime) {
         const coldHours = (+exit - +r15(coldRetard1Start)) / 3600000;
         const proofH = Math.min(maxFinalH, Math.max(0, (+eatTime - +proofFrom) / 3600000));
         return accountScheduleTime({
@@ -1399,11 +1401,11 @@ function buildSchedulePhases(
 
   // Did the clamp leave the exit inside a block anyway? With work until 18:00
   // and a bake at 18:00 no exit can clear it — the dough must come out before
-  // it bakes. Exclusive edges, same convention as every other blocker test.
+  // it bakes. Rule E1: the take-out is a quick step, free on either edge.
   let coldExitConflict: ScheduleResult['coldExitConflict'] = null;
   {
     const exitMs = coldRetardEnd.getTime();
-    const hit = relevantBlocks.find(b => exitMs >= b.from.getTime() && exitMs < b.to.getTime());
+    const hit = relevantBlocks.find(b => busyHit({ id: 'cold-out', at: coldRetardEnd }, +b.from, +b.to));
     if (hit) {
       // Earliest bake whose exit clears the window: the block ends, then the
       // dough still needs its rest and proof. Rounded up to the quarter hour
@@ -1494,10 +1496,11 @@ type FinalProofMode = 'generic' | 'style' | 'styleRoom' | 'styleBulk';
  * block, the sleep preset) and the step falls outside every busy time they entered. */
 const NIGHT_FROM_H = 22, NIGHT_TO_H = 7;
 function nightActionIds(schedule: ScheduleResult, blocks: AvailabilityBlock[]): Set<string> {
+  // Rule E1 (busyHit): the night is read as a busy time, quick steps free on its edges, long steps ending by 22:00.
   const ownNight = blocks.some(block => block.label?.endsWith(' night'));
-  const free = (at: number) => ownNight && !blocks.some(block => at > +block.from && at < +block.to);
+  const free = (action: AvailabilityAction) => ownNight && !blocks.some(block => busyHit(action, +block.from, +block.to));
   return new Set((schedule.availabilityActions ?? [])
-    .filter(action => { const h = action.at.getHours(); return (h >= NIGHT_FROM_H || h < NIGHT_TO_H) && !free(+action.at); })
+    .filter(action => inClockWindow(action, NIGHT_FROM_H, NIGHT_TO_H) && !free(action))
     .map(action => action.id));
 }
 
@@ -1816,7 +1819,7 @@ function buildScheduleOnce(
     schedule.coldExitConflict = null;
   }
   if (finalRemoval?.fridgeRemovalBake !== undefined) {
-    const overlapping = availabilityBlocks.filter(block => +block.from <= +finalRemoval.at && +finalRemoval.at < +block.to);
+    const overlapping = availabilityBlocks.filter(block => busyHit(finalRemoval, +block.from, +block.to));
     schedule.fridgeRemovalArranged = overlapping.length > 0 && overlapping.every(block => isFridgeRemovalCovered(finalRemoval, block));
   }
   return schedule;
@@ -1940,7 +1943,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   };
   for (let step = 0; step <= 72 * 4; step++) {
     const bake = new Date(+eatTime + step * quarter);
-    if (isTimeBlocked(bake,availabilityBlocks) || isTimeBlocked(new Date(+bake - preheatMin * 60000),availabilityBlocks)) continue;
+    if (isTimeBlocked(bake,availabilityBlocks) || isTimeBlocked(new Date(+bake - preheatMin * 60000),availabilityBlocks,true)) continue;
     const candidate = searchAtBake(bake);
     if (candidate) return candidate;
   }
@@ -2299,7 +2302,7 @@ export function bakeFromFridgeOption(o: {
   const base = build(plain);
   if (!base.coldRetard2Start || !base.coldRetard2End || !base.rtWarmupStart) return null;
   const exit = base.coldRetard2End;
-  const holder = Math.max(0, plain.findIndex(block => +block.from <= +exit && +exit < +block.to));
+  const holder = Math.max(0, plain.findIndex(block => busyHit({ id: 'cold-out-2', at: exit }, +block.from, +block.to)));
   const marked = plain.map((block, index) => index === holder ? { ...block, bakeFromFridge: +o.bake } : block);
   const variant = build(marked);
   if (!variant.coldRetard2End || +variant.coldRetard2End !== +variant.preheatStart || variant.rtWarmupStart || variant.preparationInvalid) return null;
@@ -2331,11 +2334,11 @@ export function shortWarmupOption(o: {
   const build = (bake: Date, blocks: AvailabilityBlock[]) => buildSchedule(o.start, bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, sourdough, o.starterFactor ?? 1, undefined, o.planLadder);
   const base = build(o.bake, plain);
   if (!base.coldRetard2End || !base.rtWarmupStart || base.preparationInvalid) return null;
-  const holder = plain.findIndex(block => +block.from <= +base.coldRetard2End! && +base.coldRetard2End! < +block.to);
+  const holder = plain.findIndex(block => busyHit({ id: 'cold-out-2', at: base.coldRetard2End! }, +block.from, +block.to));
   if (holder < 0) return null;
   // The first free quarter at or after the end of that busy time (edges exclusive).
   let exit = Math.ceil(+plain[holder].to / 900000) * 900000;
-  for (let guard = 0; guard < 96 && isTimeBlocked(exit, plain); guard++) exit += 900000;
+  for (let guard = 0; guard < 96 && isTimeBlocked(exit, plain, true); guard++) exit += 900000;
   const warmH = o.kitchenTemp >= 30 ? 0.5 : 0.75;
   const bakeMs = Math.ceil(Math.max(exit + (warmH + 1) * 3600000, exit + warmH * 3600000 + o.preheatMin * 60000) / 900000) * 900000;
   if (bakeMs <= +o.bake || (o.before && bakeMs >= +o.before)) return null;

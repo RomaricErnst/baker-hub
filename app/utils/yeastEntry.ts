@@ -203,7 +203,7 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
   }
   type Key = [number, number, number];
   const keyOf = (night: AvailabilityAction[], start: number): Key =>
-    [night.filter(a => isDeepNight(a.at)).length, night.length, anchorMs === null ? 0 : Math.abs(start - anchorMs)];
+    [night.filter(a => isDeepNight(a)).length, night.length, anchorMs === null ? 0 : Math.abs(start - anchorMs)];
   const less = (a: Key, b: Key) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
   // Each knead's dough steps alone (a lower bound: the preferment adds steps), cheapest first.
   const raw: { t: number; at: number; key: Key }[] = [];

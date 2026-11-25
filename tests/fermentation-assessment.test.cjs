@@ -185,6 +185,13 @@ test('availability uses half-open boundaries and scheduled actions, not passive 
  assert.equal(hasActionConflict([new Date(+from+1)],blocks,now),true);
 });
 
+const minuteOf=t=>t.getHours()*60+t.getMinutes();
+const inNight=a=>{
+ const night=x=>x>=23*60||x<7*60;
+ if(a.end&&+a.end>+a.at){for(let t=+a.at;t<+a.end;t+=60000)if(night(minuteOf(new Date(t))))return true;return false;}
+ const x=minuteOf(a.at);
+ return /^(fold-|cold-|preheat$)/.test(a.id)?x>23*60||x<7*60:night(x);
+};
 test('two days of direct bakes favor waking hours within each style’s fermentation window',()=>{
  const {findFixedBakeSchedule}=require('../app/utils/scheduleEdit.ts');
  const {isOvernightPreparation}=require('../app/utils/scheduleAvailability.ts');
@@ -202,8 +209,9 @@ test('two days of direct bakes favor waking hours within each style’s fermenta
    methodValid:()=>true,now,blocks:[],kitchenTemp:22,preheatMin:45,mixerType:'hand',styleKey,numItems:4,preferDaytime:true};
   const plan=findFixedBakeSchedule(input);
   assert.ok(plan.found,styleKey+' '+bake);
-  const awake=t=>t.getHours()>=7&&t.getHours()<23;
-  const overnight=plan.candidate.schedule.availabilityActions.filter(a=>a.id!=='bake'&&(!awake(a.at)||(a.end&&!awake(new Date(+a.end-1)))));
+  // Round 21 (owner rule E1): a quick step (fold, fridge in/out, preheat) may sit on 23:00 or 07:00; a long one must end by
+  // 23:00 (a span overlaps the night, a point starting at 23:00 is in it).
+  const overnight=plan.candidate.schedule.availabilityActions.filter(a=>a.id!=='bake'&&inNight(a));
   assert.deepEqual(plan.candidate.schedule.availabilityActions.filter(isOvernightPreparation),overnight);
   const markup=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',timeZone:'Asia/Singapore',messages},
    React.createElement(Picker,{startTime:plan.candidate.times.start,eatTime:bake,blocks:[],preheatMin:45,styleKey,kitchenTemp:22,
@@ -221,7 +229,7 @@ test('two days of direct bakes favor waking hours within each style’s fermenta
    const hard=findFixedBakeSchedule({...input,blocks});
    if(hard.found){
     enrichedHard++;
-    for(const action of hard.candidate.schedule.availabilityActions)assert.ok(awake(action.at)&&(!action.end||awake(new Date(+action.end-1))));
+    for(const action of hard.candidate.schedule.availabilityActions)assert.ok(action.id==='bake'||!inNight(action),action.id+' '+action.at);
    }
   }
   checked++;

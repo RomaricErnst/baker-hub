@@ -38,33 +38,66 @@ export function isFridgeRemovalCovered(action: AvailabilityAction, block: Availa
     && arrangement.at === +action.at && arrangement.bake === action.fridgeRemovalBake;
 }
 
-export function isTimeBlocked(time: Date | number, blocks: AvailabilityPeriod[]): boolean {
+/** Owner rule E1 (25 Nov 2026), the one busy-time edge rule. A busy time is when the baker cannot touch the dough;
+ * times sit on the quarter-hour grid. QUICK hands-on steps (a few minutes: a fold, into or out of the fridge, the
+ * take-out, the preheat switched on, the starter into or out of the fridge) may sit exactly on a busy time's edge, at
+ * its start ("before bed") or at its end ("on waking"). LONG hands-on steps (Start Dough, Make Poolish/Biga, a feed with
+ * mixing, divide & shape, the bake) must END by its start (a step with a span: its end is exclusive) and may start at
+ * its end; a long step known only by its start counts as inside when it starts at the busy time's start. Everything
+ * inside stays forbidden. Every checker reads this: conflicts and clash sheets, the night rules (the 22:00–07:00
+ * night is a busy time to them), the sourdough solver, assessScheduleDraft, the entry-plan ranking and the night line. */
+const QUICK_ACTION = /^(?:folds?$|fold-\d|cold-(?:in|out)(?:-2)?$|preheat$|preferment-cold-(?:in|out)$|pref-(?:in|out)$|starter-(?:cold|fridge)|take-out)/;
+export const isQuickAction = (id: string): boolean => QUICK_ACTION.test(id);
+/** Does a hands-on step fall in the busy interval [from, to) under rule E1? */
+export function busyHit(action: Pick<AvailabilityAction,'id'|'at'|'end'>, from: number, to: number): boolean {
+  if (!(from < to)) return false;
+  const at = +action.at;
+  if (!Number.isFinite(at)) return false;
+  const end = action.end != null && Number.isFinite(+action.end) && +action.end > at ? +action.end : undefined;
+  if (end !== undefined) return at < to && from < end;
+  return isQuickAction(action.id) ? from < at && at < to : from <= at && at < to;
+}
+
+/** A moment in busy time. `quick`: the moment is a quick step (rule E1: its start edge is free too); else a long step's
+ * start (or the bake), which a busy time starting then holds. */
+export function isTimeBlocked(time: Date | number, blocks: AvailabilityPeriod[], quick = false): boolean {
   const at = +time;
-  return Number.isFinite(at) && blocks.some(b => +b.from < +b.to && +b.from <= at && at < +b.to);
+  return Number.isFinite(at) && blocks.some(b => busyHit({ id: quick ? 'cold-in' : 'mix', at: new Date(at) }, +b.from, +b.to));
 }
 
 export function actionConflicts(action: AvailabilityAction, blocks: AvailabilityPeriod[]): boolean {
   return findAvailabilityConflicts([action], blocks).length > 0;
 }
 
+/** The local-clock windows [fromH:00, toH:00) that can hold a step (the one before its day and its day's own), for
+ * the night rules: 22:00–07:00 is read as a busy time under rule E1. */
+function clockWindows(action:Pick<AvailabilityAction,'at'|'end'>,fromH:number,toH:number):Array<[number,number]> {
+  const out:Array<[number,number]>=[];
+  const last=action.end!=null&&+action.end>+action.at?new Date(+action.end):action.at;
+  for(let d=new Date(action.at.getFullYear(),action.at.getMonth(),action.at.getDate()-1);+d<=+last;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1)){
+    const from=new Date(d.getFullYear(),d.getMonth(),d.getDate(),fromH);
+    const to=new Date(d.getFullYear(),d.getMonth(),d.getDate()+(toH<=fromH?1:0),toH);
+    out.push([+from,+to]);
+  }
+  return out;
+}
+/** A step in the local-clock window fromH–toH (rule E1 edges). */
+export function inClockWindow(action:Pick<AvailabilityAction,'id'|'at'|'end'>,fromH:number,toH:number):boolean {
+  return Number.isFinite(+action.at)&&clockWindows(action,fromH,toH).some(([from,to])=>busyHit(action,from,to));
+}
 export function isOvernightPreparation(action:AvailabilityAction):boolean {
   if(action.id==='bake')return false;
-  const atNight=(stamp:Date)=>stamp.getHours()<7||stamp.getHours()>=23;
-  return atNight(action.at)||Boolean(action.end&&atNight(new Date(+action.end-1)));
+  return inClockWindow(action,23,7);
 }
 
-/** Hands-on steps that fall in the night (22:00–07:00 local) and that the baker did not declare free for
+/** Hands-on steps that fall in the night (22:00–07:00 local, rule E1 edges) and that the baker did not declare free for
  * (round 7 owner rule D4, as utils.ts nightActionIds): free means they entered their own night (a ' night'
- * block) and the step is outside every busy time. Used to keep a planner-chosen cool-spot biga (round 8 D1)
+ * block) and the step is outside every busy time (rule E1). Used to keep a planner-chosen cool-spot biga (round 8 D1)
  * from adding night steps. */
 export function newNightHandsOn(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):AvailabilityAction[] {
   const ownNight=blocks.some(block=>block.label?.endsWith(' night'));
-  const free=(at:number)=>ownNight&&!blocks.some(block=>at>+block.from&&at<+block.to);
-  return actions.filter(action=>{
-    if(action.id==='bake')return false;
-    const h=action.at.getHours();
-    return (h>=22||h<7)&&!free(+action.at);
-  });
+  const free=(action:AvailabilityAction)=>ownNight&&!blocks.some(block=>busyHit(action,+block.from,+block.to));
+  return actions.filter(action=>action.id!=='bake'&&inClockWindow(action,22,7)&&!free(action));
 }
 
 /** How heavy a plan's night steps are for an entered amount's ranking (round 13): each step between 23:00 and 06:00
@@ -72,22 +105,21 @@ export function newNightHandsOn(actions:AvailabilityAction[],blocks:Availability
  * which steps count (the preferment's start included when the caller passes it). */
 /** Round 17 (findings 5, 6): THE night of an entered amount's plan, its ranking and its line, the same with and
  * without the Nights chip: a hands-on step (never the bake) after 22:00 and before 07:00 local time, or inside the
- * baker's own night (a ' night' block). Edges are exclusive, as for busy times: a step at 22:00 or 07:00 is not one. */
-const minuteOfDay=(at:Date)=>at.getHours()*60+at.getMinutes()+at.getSeconds()/60;
+ * baker's own night (a ' night' block). Edges follow rule E1 (busyHit): a quick step at 22:00 or 07:00 is not one, a
+ * long step must end by 22:00 (or by the own night's start). */
 export function nightHandsOn(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):AvailabilityAction[] {
   const nights=blocks.filter(block=>block.label?.endsWith(' night'));
-  return actions.filter(action=>{
-    if(action.id==='bake')return false;
-    const m=minuteOfDay(action.at),t=+action.at;
-    return m>22*60||m<7*60||nights.some(block=>t>+block.from&&t<+block.to);
-  });
+  return actions.filter(action=>action.id!=='bake'&&(inClockWindow(action,22,7)||nights.some(block=>busyHit(action,+block.from,+block.to))));
 }
-/** A wake-up: after 23:00 and before 06:00 (exclusive edges). */
-export const isDeepNight=(at:Date)=>{const m=minuteOfDay(at);return m>23*60||m<6*60;};
+/** A wake-up: a step in 23:00–06:00 (rule E1 edges: a quick step at 23:00 or 06:00 is not one; a long one at 23:00 is). */
+export const isDeepNight=(at:Date|AvailabilityAction)=>{
+  const action=at instanceof Date?{id:'cold-in',at}:at;
+  return inClockWindow(action,23,6);
+};
 /** The ranking's night weight (owner O2): a step between 23:00 and 06:00 outweighs any number of shoulder steps. */
 export function nightScore(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):number {
   const steps=nightHandsOn(actions,blocks);
-  return steps.length+100*steps.filter(action=>isDeepNight(action.at)).length;
+  return steps.length+100*steps.filter(action=>isDeepNight(action)).length;
 }
 
 export function planActions(dough:AvailabilityAction[],method:AvailabilityAction[],completedMixAt?:number):AvailabilityAction[] {
@@ -113,9 +145,11 @@ export function findAvailabilityConflicts(
       if (!(+block.from < +block.to)) continue;
       if (isFridgeRemovalCovered(action, block)) continue;
       if (block.coveredActions?.some(item=>item.id===action.id&&item.at===+action.at&&item.end===(action.end?+action.end:undefined))) continue;
+      // Rule E1 (busyHit): a span overlaps (its end exclusive, the part already past ignored); a quick point step may
+      // sit on either edge; a long point step at the start is inside.
       const hit = hasSpan
-        ? Math.max(+action.at, now) < +block.to && +block.from < +action.end!
-        : +block.from <= +action.at && +action.at < +block.to;
+        ? busyHit({ id: action.id, at: new Date(Math.max(+action.at, now)), end: action.end }, +block.from, +block.to)
+        : busyHit(action, +block.from, +block.to);
       if (hit) result.push({ action, block });
     }
   }

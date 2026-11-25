@@ -46,15 +46,18 @@ const calc = (o, flourStrength) => {
 const current = o => { const c = calc(o); return { ...o, anchorH: c?.anchorH, nightAllowed: c?.nightIds ?? [] }; };
 const same = (a, b) => JSON.stringify(a && [a.times, a.shape, a.nightSteps.map(s => s.id + +s.at)]) === JSON.stringify(b && [b.times, b.shape, b.nightSteps.map(s => s.id + +s.at)]);
 
-test('O2: the calculated plan is derived from the current inputs (Thu 20:00 for Fri 11:30, Thu 20:30 for Fri 19:30)', () => {
-  assert.equal(hhmm(calc(b3('2026-11-27T11:30:00')).times.start), 'Thu 20:00');
-  assert.equal(calc(b3('2026-11-27T19:30:00')).anchorH, 23);
+// Round 21 (owner rule E1): shaping may end at 23:00 and the balls go into the fridge at 23:00, so both plans knead 15 min
+// later, nearer the style's centre (main: Thu 20:00 shaping 22:30–22:45, in 22:45; now 20:15, shaping 22:45–23:00, in 23:00).
+test('O2: the calculated plan is derived from the current inputs (Thu 20:15 for Fri 11:30, Thu 20:45 for Fri 19:30)', () => {
+  assert.equal(hhmm(calc(b3('2026-11-27T11:30:00')).times.start), 'Thu 20:15');
+  assert.equal(calc(b3('2026-11-27T19:30:00')).anchorH, 22.75);
   // Round 15b: the page's anchor is the picker's plan (one function, as the phone probe shows it): B3 with no amount,
   // default flour, the Thursday night the picker carries to the bake, bake Fri 7:30pm → Thu 8:30pm (the page's
-  // reconstruction read Fri 7:00am).
-  assert.equal(hhmm(calc(b3('2026-11-27T19:30:00', nights.slice(0, 1)), 1).times.start), 'Thu 20:30');
+  // reconstruction read Fri 7:00am). Round 21 (E1): 8:45pm, the dough into the fridge at the 11pm edge.
+  assert.equal(hhmm(calc(b3('2026-11-27T19:30:00', nights.slice(0, 1)), 1).times.start), 'Thu 20:45');
   // Covers an earlier plan put on the nights never move it.
-  const kept = Y.entryPlan(0.15, current(b3('2026-11-27T11:30:00')));
+  // Round 21 (E1): 0.15 % at lunch now ends shaping at 23:00 and needs no cover; 0.12 % still covers its night steps.
+  const kept = Y.entryPlan(0.12, current(b3('2026-11-27T11:30:00')));
   assert.ok(kept.blocks.some(b => b.coveredActions?.length), 'the lunch plan covers its night steps');
   assert.deepEqual(calc(b3('2026-11-27T19:30:00', kept.blocks)), calc(b3('2026-11-27T19:30:00')));
 });

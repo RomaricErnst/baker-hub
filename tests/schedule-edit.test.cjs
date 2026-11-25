@@ -59,7 +59,9 @@ test('midnight moves retain exact dates and warmup availability is checked',()=>
  const result=proposeScheduleEdit({...input,at:new Date('2030-04-02T23:45Z')});
  assert.equal(result.times.start.toISOString(),'2030-04-03T11:45:00.000Z');
  const at=new Date(+start-H);
- assert.equal(proposeScheduleEdit({...input,blocks:[{from:at,to:new Date(+at+60000),label:'Call'}]}).conflict,'preferment-cold-out');
+ // Round 21 (rule E1): the take-out is quick, free on a busy time's edge; a call around it blocks it, one starting at it does not.
+ assert.equal(proposeScheduleEdit({...input,blocks:[{from:new Date(+at-60000),to:new Date(+at+60000),label:'Call'}]}).conflict,'preferment-cold-out');
+ assert.notEqual(proposeScheduleEdit({...input,blocks:[{from:at,to:new Date(+at+60000),label:'Call'}]}).conflict,'preferment-cold-out');
 });
 
 test('a rejected preferment still previews all downstream dough actions',()=>{

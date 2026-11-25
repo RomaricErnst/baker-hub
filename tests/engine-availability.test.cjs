@@ -104,11 +104,14 @@ test('blocked late shaping moves earlier without sacrificing the second cold',()
  assert.ok(impossible.availabilityConflicts.some(c=>c.action.id==='divide'));
 });
 
-test('fridge return at a blocked boundary prevents accepting the preceding shaping slot',()=>{
+// Round 21 (owner rule E1): shaping is long and must END by the busy time's start; the fridge return is quick and may
+// sit exactly on it. Main shaped at 18:30 (the 22:30 return counted as inside); now shaping 22:15–22:30, balls in at 22:30.
+test('fridge return at a blocked boundary: shaping ends by the busy start, the return may sit on it',()=>{
  const i=input([block('27T22:30','27T22:45')]);
  const s=build(i);
  assert.equal(s.availabilityConflicts.length,0);
- assert.ok(+s.coldRetard2Start<+date('27T22:30'));
+ assert.ok(+s.coldRetard2Start<=+date('27T22:30'));
+ assert.equal(+s.divideBallTime+s.divisionMinutes*60000,+date('27T22:30'));
  assert.equal(+s.coldRetard2Start-+s.divideBallTime,s.divisionMinutes*60000);
  assert.equal(findAvailabilityConflicts(s.availabilityActions,i.availabilityBlocks).length,0);
 });
