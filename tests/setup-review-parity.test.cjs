@@ -40,7 +40,7 @@ test('first recipe action uses the current locale when a restored starter event 
  const {starterActionLabelFor}=require('../app/utils/starterBuild.ts');
  for(const [fr,expected] of [[true,'Rafraîchi avant pétrissage'],[false,'Pre-mix feed']]){
   const firstStarterAction={kind:'pre_mix',label:'Pre-mix Feed',time:new Date(0)};
-  const context={firstStarterAction,starterEvents:[firstStarterAction],shownStarterEvents:[firstStarterAction],fr,starterActionLabelFor};
+  const context={firstStarterAction,starterEvents:[firstStarterAction],shownStarterEvents:[firstStarterAction],guideStarterEvents:[firstStarterAction],fr,starterActionLabelFor};
   vm.runInNewContext(ts.transpileModule('const '+declaration('firstRecipeActionLabel')+';result=firstRecipeActionLabel;',{}).outputText,context);
   assert.equal(context.result,expected);
  }

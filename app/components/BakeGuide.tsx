@@ -1337,7 +1337,8 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
               {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
               {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
               {bold:recipe?.preferment?.cold ? (l === 'fr' ? `Placez au réfrigérateur jusqu’à ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Refrigerate until ${formatPlanTime(bgMixStart, _fmtLocale)}.`) : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatPlanTime(chillPoolishAt,l)}, puis placez le poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatPlanTime(chillPoolishAt,l)}, then refrigerate it.`) : !isPoolish ? (l === 'fr' ? `Laissez mûrir dans un endroit frais (16–18 °C) jusqu’à ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Let it ripen in a cool spot (16–18 °C) until ${formatPlanTime(bgMixStart, _fmtLocale)}.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
-                note:recipe?.preferment?.cold ? '' : (l === 'fr' ? `Pétrissage prévu : ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Main mix planned: ${formatPlanTime(bgMixStart, _fmtLocale)}.`)},
+                // The cool-spot biga's line already ends at the mix: said once (round 20).
+                note:recipe?.preferment?.cold || (!chillPoolishAt && !isPoolish) ? '' : (l === 'fr' ? `Pétrissage prévu : ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Main mix planned: ${formatPlanTime(bgMixStart, _fmtLocale)}.`)},
             ]} />
           </Section>
 
