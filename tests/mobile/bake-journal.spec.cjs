@@ -18,7 +18,8 @@ async function generate(page,fr,count=1){
  await bakeDate.fill(value);await bakeDate.blur();
  await page.getByRole('button',{name:fr?'Générer ma recette':'Generate my recipe',exact:true}).tap();
  // A second bake in the same oven at the same time is asked once (18 Nov 2026 retention round 3): keep it.
- if(count>1){await page.locator('[data-oven-keep]').tap();}
+ // (Round 20: the first bake may be behind, then there is no oven to share and no question.)
+ if(count>1){await page.waitForTimeout(1500);const keep=page.locator('[data-oven-keep]');if(await keep.count())await keep.tap();}
  await expect.poll(async()=>(await journal(page)).length).toBe(count);
 }
 async function openMyBakes(page,fr){

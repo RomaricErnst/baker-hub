@@ -414,7 +414,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  }
  await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).tap();
  await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('button',{name:bread?'Cuisson & service →':'Cuire les pizzas →',exact:true}).tap();
+ // Pizza: the standard bar's forward action (round 20), back to Cuisson & service.
+ await page.getByRole('button',{name:bread?'Cuisson & service →':/^(Retour à )?Cuisson & service →$/,exact:!bread||undefined}).filter({visible:true}).last().tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  if(bread)await expect(choices.getByRole('button',{name:'Guide de cuisson',exact:true})).toHaveAttribute('aria-pressed','true');else await expect(choices).toHaveCount(0);
  const serveLabel=bread?'Assembler mes sandwichs →':'Commencer la cuisson des pizzas →';
