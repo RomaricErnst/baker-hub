@@ -958,10 +958,11 @@ export default function RecipeOutput({
           )}
 
           {/* Filtered warnings */}
-          {filteredWarnings.map((w, i) => (
-            <InfoCard key={i} icon="" level="warn" title={t('recipeOutput.watchOut')}
-              body={t(`yeastWarnings.${w.key}`, w.params)} />
-          ))}
+          {/* One note, however many observations (round 20, item 10: two "Note" boxes stacked above the plan). */}
+          {filteredWarnings.length > 0 && (
+            <InfoCard icon="" level="warn" title={t('recipeOutput.watchOut')}
+              body={filteredWarnings.map(w => t(`yeastWarnings.${w.key}`, w.params)).join(' ')} />
+          )}
         </div>
       )}
 

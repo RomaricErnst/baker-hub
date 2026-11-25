@@ -12,7 +12,7 @@ test.use({timezoneId:'Europe/Paris',actionTimeout:20000});
 
 const L={
  en:{root:'/',bread:/^Bread/,kitchen:/^Temperature where the dough rests/,bakeLabel:'Bake date and time',generate:/^Generate my recipe/,choices:/My choices/,customize:'Customize my bake',
-  dough:'Edit : Fine-tune the dough',pref:'Edit : Preferment',yeast:'Edit : Yeast',why:'Why this value?',update:'Update recipe',back:'Back to Recipe',sum:'Style 68% · oven +3 → 71%',salt:'2.2',
+  dough:'Edit: Fine-tune the dough',pref:'Edit: Preferment',yeast:'Edit: Yeast',why:'Why this value?',update:'Update recipe',back:'Back to Recipe',sum:'Style 68% · oven +3 → 71%',salt:'2.2',
   water:'71%',plan:/^Your plan$/,direct:/^Direct dough/,instant:/^Instant dry yeast/},
  fr:{root:'/fr',bread:/^Pain/,kitchen:/^Température/,bakeLabel:'Date et heure de cuisson',generate:/^Générer ma recette/,choices:/Mes choix/,customize:'Personnaliser ma fournée',
   dough:'Modifier : Peaufiner la pâte',pref:'Modifier : Préferment',yeast:'Modifier : Levure',why:'Pourquoi cette valeur ?',update:'Mettre à jour la recette',back:'Retour à la recette',sum:'Style 68 % · four +3 → 71 %',salt:'2,2',

@@ -65,7 +65,7 @@ test('after the late feed, a reload, Change times and a Fine-tune edit keep the 
  await expect(page.getByText('The plan needs another available time')).toHaveCount(0);
  await expect(page.getByText(/Starter into the fridge/)).toHaveCount(0);
  await page.getByRole('button',{name:'Back to my choices',exact:false}).first().tap();
- await page.getByRole('button',{name:'Edit : Fine-tune the dough'}).tap();
+ await page.getByRole('button',{name:'Edit: Fine-tune the dough'}).tap();
  await expect(page.locator('[data-starter-override] input')).toHaveValue(String(PCT));
  // The hydration box (a decimal text box since round 9 S3; `input[type=number]` had become the starter % box).
  const hydration=page.getByRole('textbox',{name:/^Hydration/}).first();

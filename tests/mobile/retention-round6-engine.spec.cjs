@@ -39,7 +39,7 @@ test.describe('Priya: Customize after a Simple levain recipe',()=>{
   await page.getByRole('button',{name:/My choices/}).last().tap();
   await page.getByRole('button',{name:'Customize my bake'}).tap();
   // Priya's path: the bake time first (the plan now hangs off a provisional mix), then Update recipe.
-  await page.getByRole('button',{name:'Edit : Bake time'}).tap();
+  await page.getByRole('button',{name:'Edit: Bake time'}).tap();
   await expect(page.getByText('Tell us when your starter was last fed.')).toBeVisible();
   await expect(page.locator('[data-simple-decision]')).toHaveCount(0);
   await page.getByRole('button',{name:/Back to my choices/}).tap();

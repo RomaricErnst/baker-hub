@@ -9,7 +9,7 @@ import { roundToQuarter } from './units';
 function stepNoun(id: string, fr: boolean, preferment: 'poolish' | 'biga' | null, count: number): string {
   if (/^fold-\d+/.test(id)) return fr ? (count > 1 ? 'des rabats' : 'un rabat') : (count > 1 ? 'folds' : 'a fold');
   // The kneading's later parts (its finish, later batches) read as such when Start Dough itself is before 22:00.
-  if (/^mix-(finish|batch)/.test(id)) return fr ? 'la reprise du pétrissage' : 'resume kneading';
+  if (/^mix-(finish|batch)/.test(id)) return fr ? 'la fin du pétrissage' : 'the end of mixing';
   if (/^(mix|autolyse)/.test(id)) return fr ? 'le pétrissage' : 'Start Dough';
   if (id === 'divide' || id === 'roll') return fr ? 'le façonnage' : 'shaping';
   if (/^cold-in/.test(id)) return fr ? 'la pâte au frigo' : 'the dough into the fridge';

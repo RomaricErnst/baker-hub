@@ -180,15 +180,17 @@ export function writeExportedSteps(bakeId: string, steps: ExportedSteps) {
   } catch { /* storage unavailable: re-exports then simply cannot cancel */ }
 }
 
-export function buildPlanCalendar({ title, events, bakeAt, bakeLabel, bakeId, previous = {}, now = new Date(), url = 'https://www.bakerhub.app' }: {
+export function buildPlanCalendar({ title, events, bakeAt, bakeEnd, bakeLabel, bakeId, previous = {}, now = new Date(), url = 'https://www.bakerhub.app' }: {
   title: string; events: PlanCalendarEvent[]; bakeAt: Date; bakeLabel: string;
+  /** The end of the bake as the plan shows it ("7:30–8:30pm"); the Bake event lasts that long (round 20). */
+  bakeEnd?: Date | null;
   /** Stable for this bake, so a second export updates rather than duplicates. */
   bakeId?: string;
   /** Steps exported last time for this bake: those no longer in the plan are cancelled. */
   previous?: ExportedSteps;
   now?: Date; url?: string;
 }): string {
-  const all = quietCloseAlerts(mergeCloseEvents([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]));
+  const all = quietCloseAlerts(mergeCloseEvents([...events, { at: bakeAt, ...(bakeEnd && +bakeEnd > +bakeAt ? { end: bakeEnd } : {}), label: bakeLabel, key: 'bake' }]));
   const id = bakeId ?? stamp(bakeAt);
   // Seconds, so two exports in the same minute still count as an update.
   const sequence = Math.floor(+now / 1000) % 2000000000;

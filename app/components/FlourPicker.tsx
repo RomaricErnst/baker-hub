@@ -8,7 +8,6 @@ import { blendSuggestions } from '../lib/blendSuggestions';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
 import UnitInput from './UnitInput';
-import { parseDecimal } from '../utils/yeastEntry';
 
 // ── Crowd favourite IDs ───────────────────────────
 // One shortlist served every pizza style, so a New York baker was shown the
@@ -181,7 +180,8 @@ export type ManualFlourBlend = FlourBlend & {
 export function manualFlourSelection(blend: FlourBlend, type: FlourKey, name: string, wText: string, proteinText: string, locale: string): ManualFlourBlend | null {
   const w = wText.trim() === '' ? undefined : Number(wText);
   // A decimal in either separator (round 20: FR « 11,5 » became 115 in a number box).
-  const protein = proteinText.trim() === '' ? undefined : parseDecimal(proteinText);
+  const typed = proteinText.trim().replace(/\s/g, '').replace(',', '.');
+  const protein = typed === '' ? undefined : /^\d+\.?\d*$|^\.\d+$/.test(typed) ? Number(typed) : NaN;
   if (w !== undefined && (!Number.isFinite(w) || w < 1 || w > 500)) return null;
   if (protein !== undefined && (!Number.isFinite(protein) || protein < 1 || protein > 30)) return null;
   const selectedW = w ?? FLOUR_DATA[type].w;

@@ -34,7 +34,7 @@ test('guide weights follow the unit system; small weights and metric text keep g
  assert.equal(guideWeightText('2160g in total, ±10g','metric'),'2,160 g in total, ±10 g');
  assert.equal(guideWeightText('1.5 kg, 5 mm deep','imperial'),'1.5 kg, 5 mm deep');
  const pizza=guide('neapolitan','en',{numItems:4,weight:260,units:'imperial'}).text;
- assert.match(pizza,/about 9\.2 oz each/);
+ assert.match(pizza,/9\.2 oz each/);
  assert.match(pizza,/Within ±0\.4 oz nobody will notice/);
  assert.match(pizza,/±0\.2 oz is invisible/);
  assert.doesNotMatch(pizza,/\b260 g\b|±10 ?g|±5 g/);

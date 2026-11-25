@@ -501,7 +501,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, forward, busyRow,
               <span style={{ display: 'block', fontSize: '12px', color: 'var(--smoke)', marginBottom: '5px' }}>{row.label}</span>
               <strong style={{ fontSize: '14px', lineHeight: 1.5, fontWeight: 600 }}>{row.value}</strong>
             </div>
-            <button onClick={row.onClick} aria-label={`${fr ? 'Modifier' : 'Edit'} : ${row.label}`} style={{ minWidth:44, minHeight: '44px', border: 'none', background: 'none', color: 'var(--terra)', font: 'inherit', fontSize: '13px', cursor: 'pointer', padding: '8px 0 8px 8px' }}>{fr ? 'Modifier' : 'Edit'}</button>
+            <button onClick={row.onClick} aria-label={fr ? `Modifier : ${row.label}` : `Edit: ${row.label}`} style={{ minWidth:44, minHeight: '44px', border: 'none', background: 'none', color: 'var(--terra)', font: 'inherit', fontSize: '13px', cursor: 'pointer', padding: '8px 0 8px 8px' }}>{fr ? 'Modifier' : 'Edit'}</button>
           </div>
         ))}
       </div>
@@ -5062,7 +5062,7 @@ export default function Home() {
     const events=planCalendarEvents(Date.now()-60000);
     const title=bakeName||bakeAutoTitle;
     const previous=readExportedSteps(planCalendarId);
-    downloadPlanCalendar(buildPlanCalendar({title,events,bakeAt:eatTime,bakeLabel:bakeCalendarLabel,bakeId:planCalendarId,previous}),'baker-hub-plan.ics');
+    downloadPlanCalendar(buildPlanCalendar({title,events,bakeAt:eatTime,bakeEnd:recipeBakeEnd,bakeLabel:bakeCalendarLabel,bakeId:planCalendarId,previous}),'baker-hub-plan.ics');
     writeExportedSteps(planCalendarId,exportedSteps(events,eatTime,bakeCalendarLabel));
     setCalendarExports(v=>v+1);
   }
@@ -6725,11 +6725,11 @@ export default function Home() {
                     const prefIsCalc = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&Math.round(prefEntered*conversion*1000)===Math.round(calcYeast.pref.pct*conversion*1000);
                     const helper = entryIssue||prefIssue||entryNight||(pref&&prefYeastClearedLine(pref)) ? null : pref
                       ? (prefEntered!==undefined&&yeastPctOverride!==undefined
-                        ? (lessDough&&lessPref?(fr?'Chacun suit sa quantité : moins de levure, pousse plus longue.':'Each follows its amount: less yeast, a longer rise.'):(fr?'Chacun suit sa quantité.':'Each follows its amount.'))
+                        ? (lessDough&&lessPref?(fr?'Horaires recalculés pour ces doses : moins de levure, pousse plus longue.':'Times recalculated for these amounts: less yeast, a longer rise.'):(fr?'Horaires recalculés pour ces doses.':'Times recalculated for these amounts.'))
                         : prefEntered!==undefined
-                        ? (lessPref?(fr?`${pref==='biga'?'La biga suit':'Le poolish suit'} sa quantité : moins de levure, ${pref==='biga'?'biga':'poolish'} plus long${pref==='biga'?'ue':''}.`:`The ${prefName} follows its amount: less yeast, a longer ${prefName}.`):(fr?`${pref==='biga'?'La biga suit':'Le poolish suit'} sa quantité.`:`The ${prefName} follows its amount.`))
+                        ? (lessPref?(fr?`Horaires recalculés pour cette dose : moins de levure, ${pref==='biga'?'biga':'poolish'} plus long${pref==='biga'?'ue':''}.`:`Times recalculated for this amount: less yeast, a longer ${prefName}.`):(fr?'Horaires recalculés pour cette dose.':'Times recalculated for this amount.'))
                         : yeastPctOverride!==undefined
-                        ? (lessDough?(fr?'La pâte finale suit sa quantité : moins de levure, pousse plus longue.':'The final dough follows its amount: less yeast, longer rise.'):(fr?'La pâte finale suit sa quantité.':'The final dough follows its amount.'))
+                        ? (lessDough?(fr?'Horaires recalculés pour cette dose : moins de levure, pousse plus longue.':'Times recalculated for this amount: less yeast, a longer rise.'):(fr?'Horaires recalculés pour cette dose.':'Times recalculated for this amount.'))
                         : (fr?`Nous les calculons pour votre planning. Saisissez les vôtres, les horaires suivent ; ${pref==='biga'?'celle de la biga':'celle du poolish'} est en % de sa propre farine.`:`We calculate both for your plan. Enter your own and the timing follows; the ${prefName} amount is a % of its own flour.`))
                       : yeastPctOverride!==undefined
                       ? (lessDough?(fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.'):(fr?'Les horaires suivent cette quantité.':'Your timing follows this amount.'))

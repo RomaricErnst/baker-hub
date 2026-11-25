@@ -1,12 +1,14 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
 const {utils}=require('./load-production.cjs');
+const {recordedYeastFits}=require('../app/utils/bakeExecution.ts');
+const {YEAST_DOSE_B}=require('../app/utils/yeastModel.ts');
 const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 let helper;function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='madeFormulaMatches')helper=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
 const code=ts.transpileModule(helper,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
 const H=3600000,start=new Date('2030-04-02T08:00Z'),bake=new Date('2030-04-03T10:00Z');
 for(const styleKey of ['neapolitan','baguette','pan'])for(const method of ['none','poolish','biga'])test(`${styleKey} ${method}: remaining-time validation respects the weighed formula`,()=>{
- const context={mixExecution:undefined,prefTempForBalance:undefined,calculateRecipe:utils.calculateRecipe,styleKey,ovenType:'home_oven_standard',numItems:4,itemWeight:260,kitchenTemp:22,humidity:'normal',fridgeTemp:5,yeastType:'instant',mixerType:'hand',manualHydration:undefined,manualOil:undefined,manualSugar:undefined,flourChosen:false,flourBlend:undefined,priorityOverride:undefined,prefermentFlourPct:20,manualSalt:undefined,targetDoughTemp:undefined,flourInFridge:false,wastePct:undefined,wasteAllowance:undefined /* round 7: the page passes the effective allowance; none here, as the weighed recipe below */,feedToMixH:undefined,measuredFlourTemp:undefined,measuredPrefermentTemp:undefined,totalFlourTarget:undefined};
+ const context={mixExecution:undefined,prefTempForBalance:undefined,calculateRecipe:utils.calculateRecipe,styleKey,ovenType:'home_oven_standard',numItems:4,itemWeight:260,kitchenTemp:22,humidity:'normal',fridgeTemp:5,yeastType:'instant',mixerType:'hand',manualHydration:undefined,manualOil:undefined,manualSugar:undefined,flourChosen:false,flourBlend:undefined,priorityOverride:undefined,prefermentFlourPct:20,manualSalt:undefined,targetDoughTemp:undefined,flourInFridge:false,wastePct:undefined,wasteAllowance:undefined /* round 7: the page passes the effective allowance; none here, as the weighed recipe below */,feedToMixH:undefined,measuredFlourTemp:undefined,measuredPrefermentTemp:undefined,totalFlourTarget:undefined,recordedYeastFits,YEAST_DOSE_B};
  vm.createContext(context);vm.runInContext(code,context);
  const schedule=utils.buildSchedule(start,bake,[],22,45,'hand',styleKey,4);
  const hours=method==='biga'?48:method==='poolish'?18:0;
@@ -20,4 +22,13 @@ for(const styleKey of ['neapolitan','baguette','pan'])for(const method of ['none
  if(!recipe.protocolIssue&&styleKey!=='pan')assert.equal(context.madeFormulaMatches(fact,shifted,{prefHours:hours}),method!=='none','a weighed direct dough cannot be green with old yeast; a made preferment stays valid');
  if(recipe.preferment){const wrongDose={...fact,recipe:{...recipe,preferment:{...recipe.preferment,prefYeastGrams:recipe.preferment.prefYeastGrams+1}}};assert.equal(context.madeFormulaMatches(wrongDose,schedule,{prefHours:hours}),false,'dose comparison applies even when the existing model clamps its recommendation');}
  assert.deepEqual(fact.recipe,recipe,'checking never changes the used ingredients');
+});
+
+// Round 20 (critical 3): a dough mixed 25 minutes off the plan keeps a plan whose dose is within the readiness band.
+test('a mixed dough fits a plan whose yeast is within the readiness band, not a third-decimal match',()=>{
+ assert.ok(recordedYeastFits(1.2,1.2,YEAST_DOSE_B));
+ assert.ok(recordedYeastFits(1.2,1.25,YEAST_DOSE_B),'4 % more yeast called for: budget 0.96');
+ assert.ok(recordedYeastFits(1.2,1.1,YEAST_DOSE_B),'8 % less: budget 1.08');
+ assert.ok(!recordedYeastFits(1.2,1.5,YEAST_DOSE_B),'25 % more: budget 0.82');
+ assert.ok(!recordedYeastFits(1.2,0.9,YEAST_DOSE_B),'25 % less: budget 1.28');
 });

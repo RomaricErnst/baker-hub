@@ -545,12 +545,12 @@ test('one selected editor keeps linked times visible and Cancel restores both',a
  const prefBefore=await row(plan,'pref').getAttribute('data-at');
  await enter(plan,'mix','2026-09-25T22:00');
  await expect(row(plan,'pref')).toHaveAttribute('data-at',prefBefore);
- await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment inchangé');
+ await expect(plan.locator('.bh-linked-feedback')).toContainText('Poolish inchangé');
  // Use a future morning: an evening edit can legitimately keep preferment
  // at the earliest future slot instead of moving it before the fixed clock.
  await enter(plan,'mix','2026-09-26T07:15');
  await expect(row(plan,'pref')).not.toHaveAttribute('data-at',prefBefore);
- await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment recalé');
+ await expect(plan.locator('.bh-linked-feedback')).toContainText('Poolish déplacé');
  await expect(confirm(plan)).toBeEnabled();
  await expect(plan.locator('.bh-key-window[aria-busy="true"]')).toHaveCount(0);
  // Selecting another row moves the sole editor without discarding the draft.

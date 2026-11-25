@@ -11,8 +11,10 @@ export function fToC(f: number): number {
 // Rounds: stored °C can be a solver float (the enthalpy DDT model returns
 // e.g. 10.350770172523642) and a baker sets water by thermometer, not by
 // twelve decimal places. cToF already rounds, so imperial never showed it.
-export function displayTemp(c: number, units: UnitSystem): string {
-  return units === 'imperial' ? `${cToF(c)}°F` : `${Math.round(c)}°C`;
+/** "22°C"; in French « 22 °C » (a no-break space before the unit, round 20) when a locale is given. */
+export function displayTemp(c: number, units: UnitSystem, locale?: string): string {
+  const gap = locale?.startsWith('fr') ? '\u00a0' : '';
+  return units === 'imperial' ? `${cToF(c)}${gap}°F` : `${Math.round(c)}${gap}°C`;
 }
 export function tempUnit(units: UnitSystem): string {
   return units === 'imperial' ? '°F' : '°C';

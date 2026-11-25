@@ -1873,7 +1873,7 @@
     "fridgeWarm": "Your fridge is at {temp}°C. Fermentation continues in the fridge; check the dough’s rise before the next step.",
     "osmoticStress": "Sugar and fat slow this dough a little: allow more time if it has not risen enough.",
     "doseFloorRT": "At {temp}°C this batch is small enough that {hours}h at room temperature needs less yeast than a 0.1 g scale can weigh, so the amount is rounded up and the dough will run ahead of the plan. About {dosable}h is the longest window this quantity can be dosed for — or make a larger batch, or add a cold phase.",
-    "fermentationBudget": "At this bake time the dough will be {direction, select, earlier {ready a little early ({percent}% risen)} other {a little behind ({percent}% risen)}}. Check its rise before baking."
+    "fermentationBudget": "At this bake time the dough will be {direction, select, earlier {ready a little ahead of time} other {a little behind time}}. Check its rise before baking."
   },
   "journal": {
     "myBakes": "My bakes",

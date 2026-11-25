@@ -79,7 +79,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await sections(L(/^My bake/,/^Ma fournée/));
  await expect(page.getByRole('heading',{level:1,name:L('Review my choices','Revoir mes choix'),exact:true})).toBeVisible();
  await expect(page.locator('[data-my-bake-plan]')).toHaveCount(0);
- await page.getByRole('button',{name:L('Edit : Bake time','Modifier : Heure de cuisson'),exact:true}).tap();
+ await page.getByRole('button',{name:L('Edit: Bake time','Modifier : Heure de cuisson'),exact:true}).tap();
  await expect(time).toBeVisible();
  await expect(page.getByText(L('See all hands-on steps','Voir toutes les interventions')).filter({visible:true})).toHaveCount(0);
  // The edit returns to where the baker came from (Baking & serving here).
@@ -93,7 +93,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await page.locator('[data-mode-switch]').tap();
  await expect(page.getByRole('heading',{level:1,name:L('Review my choices','Revoir mes choix'),exact:true})).toBeVisible();
  await expect(page.getByRole('heading',{name:L('How would you like to set up your recipe?','Comment définir votre recette ?')})).toHaveCount(0);
- await expect(page.getByRole('button',{name:L('Edit : Flour','Modifier : Farine'),exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:L('Edit: Flour','Modifier : Farine'),exact:true})).toBeVisible();
  await expect(page.locator('[data-mode-switch]')).toHaveText(L('Use the recommended settings','Revenir aux réglages conseillés'));
  expect(errors).toEqual([]);
 });

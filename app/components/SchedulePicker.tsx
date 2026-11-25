@@ -9347,7 +9347,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           :preview?.schedule?.batchTimingConflict?(isFr?`Le premier lot nécessite un rabat à ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, avant la fin des pétrissées à ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Réduisez la quantité de cette fournée en respectant la capacité du pétrin.`:`The first batch needs a fold at ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, before mixing finishes at ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Reduce this bake’s quantity within your mixer’s capacity.`)
           :preview?.schedule?.bulkConflict?(isFr?`Repos avant mise au froid trop court : il manque ${preview.schedule.bulkConflict.missingMin} min. Avancez le pétrissage.`:`Rest before refrigeration is short by ${preview.schedule.bulkConflict.missingMin} min. Start mixing earlier.`)
           :preview?.schedule?.coldExitConflict?(isFr?`La sortie du réfrigérateur tombe pendant ${preview.schedule.coldExitConflict.blockLabel}. Déplacez la cuisson ou cette indisponibilité.`:`Taking the dough out overlaps ${preview.schedule.coldExitConflict.blockLabel}. Move the bake or this unavailable period.`)
-          :preview&&!preview.valid?(isFr?'Aucun créneau trouvé dans la fenêtre prévue. Ajustez ce départ.':'No slot found within the supported window. Adjust this start.'):null;
+          :preview&&!preview.valid?(isFr?'Aucun horaire ne convient à toutes les étapes. Essayez une cuisson plus tardive.':'No time fits all steps. Try a later bake time.'):null;
         const applyTimes=(start:Date,bake:Date,offset:number,appliedBlocks:AvailabilityBlock[]=repairBlocks)=>{
           acceptedBakeRef.current=+bake;
           hasManuallyDragged.current=true;setHasDragged(true);setRecommendedHBF(null);
@@ -9512,8 +9512,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
 
         const adjustment=dirty&&editingRow==='mix'&&hasPrefActive&&!activeOverrides.prefLocked
           ? <>{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour
-              ? (isFr?'Préferment inchangé à ':'Preferment unchanged at ')
-              : (isFr?'Préferment recalé à ':'Preferment moved to ')}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour?(isFr?' — compatible avec ce pétrissage.':' — compatible with this mixing time.'):'.'}</>
+              // The preferment by its name (round 20: « Préferment recalé à » read as jargon).
+              ? (isFr?(prefermentType==='biga'?'Biga inchangée à ':'Poolish inchangé à '):(prefermentType==='biga'?'Biga unchanged at ':'Poolish unchanged at '))
+              : (isFr?(prefermentType==='biga'?'Biga déplacée à ':'Poolish déplacé à '):(prefermentType==='biga'?'Biga moved to ':'Poolish moved to '))}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour?(isFr?' — compatible avec ce pétrissage.':' — compatible with this mixing time.'):'.'}</>
           :dirty&&editingRow!=='mix'&&+times.start!==+pendingStart?<>{isFr?'Pétrissage recalé à ':'Mixing moved to '}{fmtCardDT(times.start,isFr)}.</>:null;
         const batchConflict=(isSourdough?starterPreview?.validation.schedule:preview?.schedule)?.batchTimingConflict;
         // Simple resolves clashes in its one decision card above the plan.

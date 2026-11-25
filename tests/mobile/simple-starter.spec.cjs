@@ -81,7 +81,7 @@ test('simple starter screen: Previous goes back to the kitchen, and the review l
  if(await trigger.getAttribute('aria-expanded')!=='true')await trigger.tap();
  await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button',{name:/^My bake/}).first().tap();
  await expect(page.getByRole('heading',{name:'Review my choices',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Edit : Your starter',exact:true}).tap();
+ await page.getByRole('button',{name:'Edit: Your starter',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Where is your starter now?'})).toBeVisible();
  await expect(page.getByRole('button',{name:'In the fridge',exact:true})).toHaveAttribute('aria-pressed','true');
 });
