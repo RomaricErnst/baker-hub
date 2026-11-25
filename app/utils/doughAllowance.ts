@@ -12,3 +12,10 @@ export function effectiveWastePct(set: number | undefined): number {
 export function restoredWastePct(saved: unknown): number | undefined {
   return typeof saved === 'number' && Number.isFinite(saved) ? saved : undefined;
 }
+
+/** One ball or loaf as the baker asked for it: the total dough less the bowl allowance, divided by the count
+ *  (round 20: the shape step said "about 264 g each" beside the Recipe's "5 × 260 g"). */
+export function pieceWeightG(totalDough: number, count: number, wastePct?: number): number {
+  const allowance = typeof wastePct === 'number' && wastePct > 0 ? 1 + wastePct / 100 : 1;
+  return totalDough / allowance / Math.max(1, count);
+}

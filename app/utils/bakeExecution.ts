@@ -9,6 +9,20 @@ import {mixNearPeak, preMixPeakAfterMove, preMixRiseH} from './starterPeak';
 export const RECORDED_ON_PLAN_MS=15*60_000;
 export function recordedOnPlan(at:number,plannedAt:number){return Number.isFinite(at)&&Number.isFinite(plannedAt)&&Math.abs(at-plannedAt)<=RECORDED_ON_PLAN_MS;}
 
+/** The yeast already in a mixed dough still fits a candidate plan when the plan's own dose for it is within the
+ * readiness band of what went in (round 20, critical 3): the model's budget = (used / needed)^(1/b) between 0.9
+ * and 1.1, the ±10 % band every entered amount and readiness window uses. A mix recorded 25 minutes early or late
+ * then keeps a plan with the remaining steps re-timed from the recorded mix; it was refused on a third-decimal
+ * difference ("The rest of the plan needs new times." and "No slot found" in the editor). Other ingredients stay
+ * exact: they are weighed, not timed. */
+export const RECORDED_YEAST_BAND={min:0.9,max:1.1};
+export function recordedYeastFits(usedG:number|undefined,neededG:number|undefined,doseExponent:number):boolean{
+  if(usedG===undefined||neededG===undefined)return usedG===neededG;
+  if(!(usedG>0)||!(neededG>0))return Math.abs((usedG??0)-(neededG??0))<0.0005;
+  const budget=Math.pow(usedG/neededG,1/doseExponent);
+  return budget>=RECORDED_YEAST_BAND.min-1e-9&&budget<=RECORDED_YEAST_BAND.max+1e-9;
+}
+
 /** A clock crossing a planned time is never evidence that ingredients were used. */
 export interface BakeExecution {
   method: 'none' | 'poolish' | 'biga';

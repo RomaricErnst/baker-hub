@@ -73,7 +73,7 @@ export function RemovedUndo({ entry, onUndo }: { entry: JournalEntry; onUndo: ()
   const locale = useLocale();
   return (
     <div role="status" data-journal-removed={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 48, padding: '0 4px 0 14px', border: '1px dashed var(--border)', borderRadius: 12, color: 'var(--smoke)', fontSize: 15 }}>
-      <span>{t('removed')} ·</span>
+      <span>{t('removed', { name: journalTitle(entry, locale) })} ·</span>
       <button type="button" data-journal-undo onClick={onUndo} aria-label={t('undoLabel', { name: journalTitle(entry, locale) })}
         style={{ minHeight: 44, minWidth: 44, padding: '0 10px', border: 'none', background: 'transparent', color: 'var(--char)', font: 'inherit', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>{t('undo')}</button>
     </div>
@@ -187,6 +187,8 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const nextWeek = current.eatTime != null ? new Date(current.eatTime + 7 * 86400000) : null;
   const nextWeekLabel = nextWeek ? nextWeek.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
   const noteChanged = note !== current.note;
+  // A bake still to come offers neither the rating nor Bake again (round 20, item 7): both belong after the bake.
+  const future = current.eatTime != null && current.eatTime > Date.now();
 
   return createPortal(
     <>
@@ -216,7 +218,7 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
             {startAt != null && <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>{t('startAt', { date: formatBakeDateTime(new Date(startAt), locale) })}</p>}
             {current.eatTime != null && <p style={{ margin: '0 0 8px', fontSize: 15 }}>{t('bakeAt', { date: formatBakeDateTime(new Date(current.eatTime), locale) })}</p>}
             <p style={{ margin: 0, fontSize: 13, color: 'var(--ash)' }}>{t('beforeBakeNote')}</p>
-            <button type="button" data-rate-now onClick={() => setRateNow(true)} style={{ minHeight: 44, padding: 0, border: 'none', background: 'transparent', color: 'var(--terra)', font: 'inherit', fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}>{t('rateNow')}</button>
+            {!future && <button type="button" data-rate-now onClick={() => setRateNow(true)} style={{ minHeight: 44, padding: 0, border: 'none', background: 'transparent', color: 'var(--terra)', font: 'inherit', fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}>{t('rateNow')}</button>}
           </div>
           </> : <>
           <div style={divider} />
@@ -287,7 +289,7 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
             {/* Right after the bake, opening it again is not the next thing to do: Bake again leads (18 Nov 2026
                 retention round 4). Delete is always there: it has an Undo (round 18). */}
             {inProgress && <button type="button" onClick={() => { onResume(current); onClose(); }} style={beforeOven ? { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 } : secondary}>{t('resume')}</button>}
-            <button type="button" onClick={() => { onRebake(current); onClose(); }} style={beforeOven ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')} →</button>
+            {!future && <button type="button" onClick={() => { onRebake(current); onClose(); }} style={beforeOven ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')} →</button>}
             {signedIn && onSaveToAccount && !current.accountEventId && <>
               <button type="button" disabled={savingAccount} aria-busy={savingAccount} onClick={() => void saveToAccount()} style={secondary}>{savingAccount ? t('savingToAccount') : t('saveToAccount')}</button>
               <p style={{ margin: 0, fontSize: 12, color: 'var(--smoke)' }}>{t('saveToAccountNote')}</p>

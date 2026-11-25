@@ -44,7 +44,9 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
     const fmt=(at:number)=>statusTime(at,now,fr);
   const noun=method==='none'?(fr?'la pâte':'the dough'):method==='biga'?(fr?'la biga':'the biga'):(fr?'le poolish':'the poolish');
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};
-  const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed)&&parsed<=now;
+  // The tap's own clock (round 20): `now` is the page's 30-second clock, which a phone's throttled timers
+  // can leave minutes behind; "Mixed now" at 9:50 recorded an earlier minute.
+  const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed)&&parsed<=Math.max(now,Date.now());
   return <section className="bh-start-status" aria-label={fr?'Préparation de la fournée':'Bake preparation'}>
     {execution?(preparing?<>
       <p><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong></p>
@@ -57,17 +59,17 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
         <p><strong>{method==='none'?(fr?'C’est l’heure de pétrir':'Time to mix the dough'):(fr?`C’est l’heure de préparer ${noun}`:`Time to make ${noun}`)}</strong></p>
         <div className="bh-start-actions"><button type="button" style={STATUS_ANSWER} onClick={onNext}>{fr?'Je commence →':'Start now →'}</button><button type="button" style={STATUS_BUTTON} onClick={()=>onMade(plannedAt)}>{fr?'Déjà fait':'Already done'}</button></div>
       </>:<>
-      <p><strong>{method==='none'?(status==='unconfirmed'?(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?'):(fr?'Pétrir la pâte':'Mix the dough')):status==='unconfirmed'?(fr?`Avez-vous préparé ${noun} ?`:`Have you made ${noun}?`):(fr?`Préparer ${noun}`:`Make ${noun}`)}</strong></p>
+      <p><strong>{method==='none'?(status==='unconfirmed'?(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?'):(fr?'Pétrir la pâte':'Start Dough')):status==='unconfirmed'?(fr?`Avez-vous préparé ${noun} ?`:`Have you made ${noun}?`):(fr?`Préparer ${noun}`:`Make ${noun}`)}</strong></p>
       <div className="bh-start-actions">
         {/* FR: "Oui, à 19h00" the same day, "Oui, le ven. 20 nov. · 19h00" another day (18 Nov 2026 retention round 3). */}
         {status==='unconfirmed'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(plannedAt)}>{fr?(new Date(plannedAt).toDateString()===new Date(now).toDateString()?'Oui, à':'Oui, le'):'Yes, at'} {fmt(plannedAt)}</button>}
-        {preparing&&status==='planned'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(now)}>{method==='none'?(fr?'Pétrie maintenant':'Mixed now'):(fr?'Préparé maintenant':'Made now')}</button>}
+        {preparing&&status==='planned'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(Date.now())}>{method==='none'?(fr?'Terminé maintenant':'Done now'):(fr?'Préparé maintenant':'Made now')}</button>}
         {status==='unconfirmed'&&<button type="button" style={STATUS_BUTTON} onClick={onNotYet}>{fr?'Pas encore · Actualiser le plan':'Not yet · Update plan'}</button>}
       </div>
       <button type="button" className="bh-start-link" onClick={()=>setDifferent(!different)}>{fr?'À une autre heure ?':'Different time?'}</button>
       {!preparing&&<button type="button" className="bh-start-link" onClick={onRecipe}>{fr?'Voir la recette':'View recipe'}</button>}
       </>}
     </>}
-    {different&&<div className="bh-start-actions"><label>{method==='none'?(fr?'Heure du pétrissage':'Mixing time'):(fr?'Heure réelle':'Actual time')}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/></label><button type="button" style={STATUS_BUTTON} disabled={!valid} onClick={()=>{onMade(parsed);setDifferent(false);}}>{fr?'Enregistrer':'Set time'}</button>{!execution&&<button type="button" style={STATUS_BUTTON} onClick={()=>{onMade(now);setDifferent(false);}}>{fr?'Maintenant':'Now'}</button>}</div>}
+    {different&&<div className="bh-start-actions"><label>{method==='none'?(fr?'Heure du pétrissage':'Mixing time'):(fr?'Heure réelle':'Actual time')}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/></label><button type="button" style={STATUS_BUTTON} disabled={!valid} onClick={()=>{onMade(parsed);setDifferent(false);}}>{fr?'Enregistrer':'Set time'}</button>{!execution&&<button type="button" style={STATUS_BUTTON} onClick={()=>{onMade(Date.now());setDifferent(false);}}>{fr?'Maintenant':'Now'}</button>}</div>}
   </section>;
 }

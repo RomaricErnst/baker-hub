@@ -52,7 +52,7 @@ test('planned mixing uses one completed action, without a separate start or fini
  for(const fr of [false,true]){
   assert.equal(render({fr,method:'none',plannedAt:NOW+30*60000+1,preparing:true}), '');
   const html=render({fr,method:'none',plannedAt:NOW+30*60000,preparing:true});
-  assert.equal((html.match(fr?/Pétrie maintenant/g:/Mixed now/g)||[]).length,1);
+  assert.equal((html.match(fr?/Terminé maintenant/g:/Done now/g)||[]).length,1);
   assert.doesNotMatch(html,/Start mixing|Finish mixing|Commencer le pétrissage|Terminer le pétrissage|Yes, at|Oui, le/);
  }
 });

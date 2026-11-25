@@ -15,10 +15,10 @@ import SelectionCoverage from './SelectionCoverage';
 
 // Word units need a space and a FR translation — raw join produced "5leaves".
 const UNIT_LABELS: Record<string, { en: string; fr: string }> = {
-  g: { en: 'g', fr: 'g' },
-  ml: { en: 'ml', fr: 'ml' },
+  g: { en: ' g', fr: ' g' },
+  ml: { en: ' ml', fr: ' ml' },
   leaves: { en: ' leaves', fr: ' feuilles' },
-  pcs: { en: ' pcs', fr: ' pcs' },
+  pcs: { en: '', fr: '' },
   pinch: { en: ' pinch', fr: ' pincée' },
   sprigs: { en: ' sprigs', fr: ' brins' },
   tbsp: { en: ' tbsp', fr: ' c.à.s.' },

@@ -3,6 +3,8 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // Bake journal on this device, signed out: a generated bake appears under
 // "My bakes"; rating and note survive a reload; delete is immediate, with Undo (round 18).
 const journal=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journal_v1')||'[]'));
+// Round 20 (item 7): a bake still to come offers no rating and no Bake again; these tests move the bake into the past.
+const bakedTwoHoursAgo=(page,id)=>page.evaluate(id=>{const rows=JSON.parse(localStorage.getItem('bh_journal_v1')||'[]');for(const row of rows)if(row.id===id)row.eatTime=Date.now()-2*3600000;localStorage.setItem('bh_journal_v1',JSON.stringify(rows));},id);
 async function generate(page,fr,count=1){
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
@@ -44,10 +46,16 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in 鈥
 
  const sheet=page.getByRole('dialog',{name:fr?'Fourn茅e du journal':'Bake journal entry'});
  await expect(sheet.getByText(fr?'Enregistr茅 sur cet appareil uniquement.':'Saved on this device only.',{exact:true})).toBeVisible();
- // Before the bake the entry shows the plan; rating is one tap away.
+ // Before the bake the entry shows the plan; nothing to rate yet and no Bake again (round 20, item 7).
  await expect(sheet.locator('[data-journal-plan]')).toBeVisible();
  await expect(sheet.getByText(fr?'Comment s鈥檈st pass茅e votre cuisson ?':'How did it turn out?',{exact:true})).toHaveCount(0);
- await sheet.locator('[data-rate-now]').tap();
+ await expect(sheet.locator('[data-rate-now]')).toHaveCount(0);
+ await expect(sheet.getByRole('button',{name:fr?/^Refaire la semaine suivante/:/^Bake again next week/})).toHaveCount(0);
+ await sheet.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).tap();
+ await bakedTwoHoursAgo(page,first.id);
+ await page.reload();
+ await openMyBakes(page,false);
+ await menu.locator(`[data-journal-entry="${first.id}"]`).tap();
  await expect(sheet.getByText(fr?'Comment s鈥檈st pass茅e votre cuisson ?':'How did it turn out?',{exact:true})).toBeVisible();
  await sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true}).tap();
  await expect(sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true})).toHaveAttribute('aria-pressed','true');
@@ -70,7 +78,7 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in 鈥
  await expect(sheet).toHaveCount(0);
  expect(await journal(page)).toEqual([]);
  const removed=menu.locator(`[data-journal-removed="${first.id}"]`);
- await expect(removed).toContainText(fr?'Supprim茅e 路':'Removed 路');
+ await expect(removed).toContainText(fr?/Pizza du soir supprim茅e 路|supprim茅e 路/:/Pizza night removed 路|removed 路/);
  // It was the bake on screen: its draft goes with it, and Undo brings both back.
  expect(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBeNull();
  await removed.locator('[data-journal-undo]').tap();
@@ -97,8 +105,12 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  await openMyBakes(page,false);
  await page.locator(`[data-journal-entry="${entry.id}"]`).tap();
  const sheet=page.getByRole('dialog',{name:'Bake journal entry'});
- // Before the bake the entry shows the plan; photos are one tap away.
- await sheet.locator('[data-rate-now]').tap();
+ // After the bake the entry takes photos (a bake still to come offers no rating, round 20).
+ await sheet.getByRole('button',{name:'Close',exact:true}).tap();
+ await bakedTwoHoursAgo(page,entry.id);
+ await page.reload();
+ await openMyBakes(page,false);
+ await page.locator(`[data-journal-entry="${entry.id}"]`).tap();
  // A small PNG chosen from the device: downscaled to JPEG and kept in IndexedDB.
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQI12P8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==','base64');
  await sheet.locator('input[type=file]').setInputFiles({name:'crumb.png',mimeType:'image/png',buffer:png});

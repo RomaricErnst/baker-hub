@@ -71,7 +71,7 @@ for(const lang of ['en','fr']){
    await expect(resume).toBeVisible({timeout:20000});await resume.tap();
    await section(page,fr,fr?'Préparation':'Preparation');
    const back=page.getByRole('button',{name:fr?/Retour à la vue d’ensemble|Vue d’ensemble/:/Overview/});
-   const mixed=page.getByRole('button',{name:fr?'Pétrie maintenant':'Mixed now',exact:true});
+   const mixed=page.getByRole('button',{name:fr?'Terminé maintenant':'Done now',exact:true});
    if(!(await mixed.count())&&await back.count())await back.first().tap();
    await mixed.first().tap();
    await expect.poll(async()=>(await stored(page))?.mixExecution??(await stored(page))?.execution,{timeout:10000}).toBeTruthy();

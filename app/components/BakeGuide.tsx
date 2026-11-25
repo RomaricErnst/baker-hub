@@ -17,6 +17,7 @@ import { foldActionLabel } from '../utils/scheduleAvailability';
 import { type ScheduleResult, formatPlanTime, finalProofWindow } from '../utils';
 import { breadCoolingRange } from '../utils/servingTime';
 import { buildMaestroContext } from '../utils/maestroContext';
+import { pieceWeightG } from '../utils/doughAllowance';
 import { askToken, dropAskToken } from '../lib/askToken';
 import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
@@ -1877,7 +1878,7 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
             ) : panGuide ? <Steps items={panGuide.shaping[l]} /> : (
               <>
                 <Steps items={[
-                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids${recipe?.totalDough ? ` (environ ${displayWeight(Math.round(recipe.totalDough / Math.max(1,numItems)),u,l)} chacun)` : ''}` : `Weigh dough and divide into ${numItems} equal pieces${recipe?.totalDough ? ` (about ${displayWeight(Math.round(recipe.totalDough / Math.max(1,numItems)),u,l)} each)` : ''}`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
+                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids${recipe?.totalDough ? ` (${displayWeight(Math.round(pieceWeightG(recipe.totalDough, numItems, recipe.wastePct)),u,l)} chacun ; le reste est pour le bol)` : ''}` : `Weigh dough and divide into ${numItems} equal pieces${recipe?.totalDough ? ` (${displayWeight(Math.round(pieceWeightG(recipe.totalDough, numItems, recipe.wastePct)),u,l)} each; the rest is for the bowl)` : ''}`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
                   ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
                   ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
                 ]} />

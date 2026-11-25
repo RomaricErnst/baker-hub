@@ -7,7 +7,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import StarterFeedStatus from '../components/StarterFeedStatus';
 import BakeStartStatus from '../components/BakeStartStatus';
-import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAcceptedPlan, acceptedPlanMove, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, shiftStarterPlanAfterFeed, recordedOnPlan, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
+import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAcceptedPlan, acceptedPlanMove, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, shiftStarterPlanAfterFeed, recordedOnPlan, recordedYeastFits, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
+import { YEAST_DOSE_B } from '../utils/yeastModel';
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
@@ -791,7 +792,7 @@ function StepPage({ flow, id, children, nextOverride, backOverride }: { flow: St
 // Timing lives in Preparation, not on the recipe: the first action, the bake,
 // and — in Simple, where it was assumed rather than asked — the kitchen
 // temperature the times depend on.
-function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,assumedKitchen,calendarOutdated,clash,nightLine,onAdjustTiming,onAddToCalendar}:{calendarOutdated?:boolean;clash?:boolean;nightLine?:React.ReactNode;fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;helperAt?:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void;onAddToCalendar?:()=>void}){
+function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,assumedKitchen,calendarOutdated,clash,clashText,nightLine,onAdjustTiming,onAddToCalendar}:{calendarOutdated?:boolean;clash?:boolean;clashText?:string;nightLine?:React.ReactNode;fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;helperAt?:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void;onAddToCalendar?:()=>void}){
   // The start and bake times are the page's line under its title; this keeps what acts on them.
   void startLabel; void startAt; void bakeAt;
   return <section data-preparation-timing aria-label={fr?'Horaires':'Timing'} style={{margin:'0 0 8px'}}>
@@ -799,7 +800,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
     {assumedKitchen}
     {/* A recorded step (mixed early, poolish late) that leaves the rest of the plan unworkable: said here, where
         the baker is, with Adjust timing beside it; the bake-day guide stays open (17 Nov 2026 retention round 2). */}
-    {clash && <p data-plan-clash role="status" style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'La suite du plan demande de nouveaux horaires.':'The rest of the plan needs new times.'}</p>}
+    {clash && <p data-plan-clash role="status" style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{clashText}</p>}
     {nightLine}
     {calendarOutdated && <p data-calendar-outdated style={{margin:'8px 0 0',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>{fr?'Les étapes ont changé depuis votre ajout à l’agenda. Ajoutez le plan à nouveau pour le mettre à jour.':'The steps have changed since you added this plan to your calendar. Add it again to update it.'}</p>}
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
@@ -1074,7 +1075,7 @@ export default function Home() {
   const [execution,setExecution]=useState<BakeExecution|undefined>();
   const [replanRequested,setReplanRequested]=useState(false);
   const [executionClock,setExecutionClock]=useState(()=>Date.now());
-  useEffect(()=>{const refresh=()=>setExecutionClock(Date.now());const timer=setInterval(refresh,30000);window.addEventListener('focus',refresh);return()=>{clearInterval(timer);window.removeEventListener('focus',refresh);};},[]);
+  useEffect(()=>{const refresh=()=>setExecutionClock(Date.now());const visible=()=>{if(document.visibilityState==='visible')refresh();};const timer=setInterval(refresh,30000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',visible);return()=>{clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',visible);};},[]);
   const [timingOverrides, setTimingOverrides] = useState<TimingOverrides>({});
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [yeastType, setYeastType] = useState<YeastType | null>(null);
@@ -2907,8 +2908,12 @@ export default function Home() {
       &&same(calculated.preferment.prefWater,fact.recipe.preferment.prefWater)
       &&same(calculated.preferment.prefYeastGrams,fact.recipe.preferment.prefYeastGrams);
     const used=mixedRecipe??mixExecution?.recipe??fact.recipe;
+    // The dough is mixed: its yeast is in the bowl. A plan fits when that yeast is within the readiness band of
+    // what the plan would call for (round 20, `recordedYeastFits`); the weighed ingredients stay exact.
     return ['flour','water','salt','oil','sugar'].every(key=>same(calculated[key as 'flour'],used[key as 'flour']))
-      &&same(calculated.yeast?.convertedGrams,used.yeast?.convertedGrams);
+      &&(mixExecution||fact.method==='none'||mixedRecipe
+        ?recordedYeastFits(used.yeast?.convertedGrams,calculated.yeast?.convertedGrams,YEAST_DOSE_B)
+        :same(calculated.yeast?.convertedGrams,used.yeast?.convertedGrams));
   }
   // A tap ("Step done", "Yes, at …", "Already done") records the plan's time and states none; only a time the
   // baker gives ("Different time?") is shown and moves the plan (18 Nov 2026 retention round 4, owner's design).
@@ -5071,7 +5076,10 @@ export default function Home() {
     // (18 Nov 2026 retention round 4: the pre-mix feed vanished from Your plan at 8:31).
     const dueFeed=yeastType==='sourdough'?overdueStarterFeed(starterEvents,[],Date.now(),+startTime):undefined;
     const from=Math.min(Date.now(),dueFeed?+dueFeed.time:Infinity)-60000;
-    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:blocks.some(block=>+e.at>+block.from&&+e.at<+block.to)&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&+e.at>+block.from&&+e.at<+block.to))}));
+    // The first row is the mix whenever no preferment or starter step leads: a mix under way (or recorded) is
+    // not listed again at the minute of now (round 20: "8:45pm Start Dough" and "9:00pm Start Dough").
+    const startRowIsMix=!firstStarterAction&&!(prefStartTime&&+prefStartTime===+firstRecipeAction);
+    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime&&!(startRowIsMix&&e.key==='mix')).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:blocks.some(block=>+e.at>+block.from&&+e.at<+block.to)&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&+e.at>+block.from&&+e.at<+block.to))}));
     // Round 13 (item 7): a night step is named once, in the night line (entryNightView), not again on its row.
     return steps;
   })();
@@ -5079,6 +5087,16 @@ export default function Home() {
   // (a feed, the preferment, the mix) has moved the plan without the clash sheet: a step still to come in a
   // busy period the baker has not agreed to cover is the one clash line (18 Nov 2026 retention).
   const preparationBusy=(starterFeedRecords.length>0||!!execution||!!mixExecution)&&recipePlanSteps.some(step=>step.busy&&+step.at>Date.now()&&!coveredAt.has(+step.at));
+  // The clash line names the step and why (round 20): "Dough into the fridge at 11:15pm now falls in your night."
+  // The generic sentence is left for a remaining plan the dough's yeast no longer fits.
+  const planClashText=(()=>{
+    const step=recipePlanSteps.find(row=>row.busy&&+row.at>Date.now()&&!coveredAt.has(+row.at));
+    if(!step)return fr?'La suite du plan ne correspond plus à la levure de la pâte.':'The rest of the plan no longer suits the yeast in the dough.';
+    const night=blocks.some(block=>isNightBlock(block)&&+step.at>+block.from&&+step.at<+block.to);
+    const when=formatClock(step.at,locale);
+    return fr?`${step.label} à ${when} tombe maintenant ${night?'pendant votre nuit':'pendant une indisponibilité'}.`
+      :`${step.label} at ${when} now falls ${night?'in your night':'in a busy time'}.`;
+  })();
   // A plan already in the calendar whose steps have since moved (any step, not only
   // Start Dough or the bake): the card says so once, where the button is.
   const calendarOutdated = (()=>{
@@ -5549,7 +5567,7 @@ export default function Home() {
                 if (row.entry.id === currentJournalId() && pendingSession?.recipeGenerated) { const own = loadSession(); acceptCurrentSessionStorage(); if (own) { applySession(own); return; } }
                 void openJournalEntry(row.entry, false);
               }}><span style={{minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis'}}>{text}</span>{when && <>{' '}<span data-live-time style={{flexShrink: 0}}>{when}</span></>}<span aria-hidden="true" style={{flexShrink: 0, marginLeft: 'auto'}}>→</span></button>
-              <button type="button" data-live-more={row.entry.id} aria-label={fr ? `Supprimer ${rowName}` : `Remove ${rowName}`} onClick={() => setJournalEntryRequest({ id: row.entry.id, n: Date.now() })}
+              <button type="button" data-live-more={row.entry.id} aria-label={fr ? `Options pour ${rowName}` : `Options for ${rowName}`} onClick={() => setJournalEntryRequest({ id: row.entry.id, n: Date.now() })}
                 style={{flex: '0 0 44px', minWidth: 44, minHeight: 48, padding: 0, border: 'none', background: 'transparent', color: 'var(--smoke)', font: 'inherit', fontSize: 20, lineHeight: 1, cursor: 'pointer'}}><span aria-hidden="true">⋯</span></button></div>];
           })}
           {pendingOver && pendingSession?.styleKey && (() => { const cta = oneLineCta(`${pendingSession.bakeName || bakeTitleName(pendingSession.bakeType ?? null, pendingSession.styleKey ?? null, pendingSession.numItems, pendingSession.eatTime ? new Date(pendingSession.eatTime).getHours() : undefined, fr, styleDisplayName(pendingSession.styleKey as StyleKey))} · ${fr ? 'Refaire' : 'Bake again'}`); return <button type="button" data-live-again className={cta.className} aria-label={cta['aria-label']} style={{...SECONDARY_CTA, minHeight: 48, justifyContent: 'space-between', textAlign: 'left'}} onClick={bakePendingAgain}>{cta.children}</button>; })()}
@@ -6120,7 +6138,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{fr?'La suite du plan demande de nouveaux horaires.':'The rest of the plan needs new times.'}</p>}
+                          {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{planClashText}</p>}
                           {entryNightView('recipe')}
                           {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
@@ -6195,7 +6213,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash||preparationBusy} nightLine={entryNightView('preparation')} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
+                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash||preparationBusy} clashText={planClashText} nightLine={entryNightView('preparation')} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>tickStarterFeed(event,true)} onStarterUnfed={event=>tickStarterFeed(event,false)} starterFedTimes={starterFedTimes}
@@ -6908,7 +6926,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{fr?'La suite du plan demande de nouveaux horaires.':'The rest of the plan needs new times.'}</p>}
+                          {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{planClashText}</p>}
                           {entryNightView('recipe')}
                           {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
@@ -6983,7 +7001,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash||preparationBusy} nightLine={entryNightView('preparation')} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
+                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash||preparationBusy} clashText={planClashText} nightLine={entryNightView('preparation')} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>tickStarterFeed(event,true)} onStarterUnfed={event=>tickStarterFeed(event,false)} starterFedTimes={starterFedTimes}

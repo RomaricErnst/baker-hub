@@ -2263,6 +2263,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
   const [pendingEatTime, setPendingEatTime] = useState<Date>(eatTime ?? new Date());
   const [pendingStart, setPendingStart] = useState(startTime);
+  // A recorded mix is the plan's mix (round 20, critical 3): the picker's start follows it, so the editor,
+  // Preparation and the Recipe plan the remaining steps from the same fixed time. A picker mounted before the
+  // record kept the planned start and every edit then failed the recorded-mix check ("No slot found").
+  const recordedMixMs=completedMixAt??(execution?.method==='none'?execution.actualAt:undefined);
+  if(recordedMixMs!==undefined&&+pendingStart!==recordedMixMs)setPendingStart(new Date(recordedMixMs));
   // eatTimeSet: false on first visit until baker picks a date
   const [eatTimeSet, setEatTimeSet] = useState(alreadySet);
   // startComputed: false until engine runs at least once; true on return-to-edit

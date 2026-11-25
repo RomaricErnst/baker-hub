@@ -2,6 +2,7 @@
 // question box, so both ask with the same facts. Only computed values, rounded the way the recipe shows
 // them: a raw float ("0.7451489999999998g") would be repeated back to the baker as fact.
 import type { RecipeResult, ScheduleResult } from '../utils';
+import { pieceWeightG } from './doughAllowance';
 
 /** Grams the way the recipe card writes them: two significant figures under 10 g, whole grams above. */
 export function maestroGrams(g: number): string {
@@ -36,7 +37,7 @@ export function buildMaestroContext({ recipe, schedule, styleKey, numItems, hydr
 
   const dough: string[] = [];
   dough.push(`style ${styleKey ?? 'unknown'}`);
-  dough.push(`${numItems} × ${Math.round((recipe.totalDough ?? 0) / Math.max(1, numItems))}g pieces`);
+  dough.push(`${numItems} × ${Math.round(pieceWeightG(recipe.totalDough ?? 0, numItems, recipe.wastePct))}g pieces`);
   dough.push(`total flour ${totalFlour}g`);
   dough.push(`hydration ${Math.round(hydration)}%`);
   if (recipe.salt != null && totalFlour > 0) dough.push(`salt ${Math.round(recipe.salt)}g (${(recipe.salt / totalFlour * 100).toFixed(1)}%)`);
