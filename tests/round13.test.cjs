@@ -165,7 +165,9 @@ test('item 7: small texts and displays', () => {
   // A kept night step is named once, in the night line, not again on its row.
   // Round 15: the night line (kept or not) names those steps once.
   // Round 21 (rule E1): the busy tag reads the one edge rule (busyHit).
-  assert.match(page, /busy:blocks\.some\(block=>busyHit\(\{id:e\.key\?\?'',at:e\.at\},\+block\.from,\+block\.to\)\)&&!\(entryNight&&coveredAt\.has\(\+e\.at\)/);
+  // Round 23: one function for every row, the first included (planRowBusy).
+  assert.match(page, /busy:planRowBusy\(e\.key\?\?'',e\.at\)/);
+  assert.match(page, /return blocks\.some\(block=>busyHit\(\{id:key,at\},\+block\.from,\+block\.to\)\)&&!\(entryNight&&coveredAt\.has\(\+at\)/);
   // The plan begins at the starter's take-out (Preparation header and the Recipe's steps); the header is on the quarter hour.
   // Round 20 (item 4): the guide's starter events (a shared jar's feed included), on the shown quarter hour.
   assert.match(page, /guideStarterEvents\.filter\(e=>!e\.isPast && e\.kind!=='last_fed' && e\.kind!=='known_peak'\)\.map\(e=>\+starterStepShownTime\(e\)\)/);

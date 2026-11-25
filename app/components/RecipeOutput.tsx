@@ -312,7 +312,9 @@ function StarterPrepCard({
       <div data-starter-amount style={{fontSize:16,fontWeight:600,color:'var(--char)'}}>
         {/* What is left in the jar after the dough takes its share (17 Nov review: "keep 22 g" of a 150 g build). */}
         {/* Round 15 (item 5): it says where the rest stays (a shared jar read "keep the rest" as the dough's). */}
-        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · ` : `${sourdough.starterGramsMid} g of starter for the dough · `}{(()=>{const line=jarRestLine(isFr, `${starterLeft} g`, !!sharedStarterFeed);return line.charAt(0).toLowerCase()+line.slice(1);})()}
+        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · ` : `${sourdough.starterGramsMid} g of starter for the dough · `}{/* With a shared feed, what stays after both bakes (round 23, item 3; the Levain row says it with jarRestLine). */}{sharedStarterFeed
+          ? (isFr ? `après les deux fournées, il reste ${starterLeft} g dans le bocal` : `after both bakes, ${starterLeft} g stays in the jar`)
+          : (isFr ? `gardez le reste dans le bocal (${starterLeft} g) pour la prochaine fois` : `keep the rest in the jar (${starterLeft} g) for next time`)}
       </div>
 
       {/* Scheduled timeline */}

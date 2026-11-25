@@ -27,7 +27,7 @@ export default function BottomActions({ children, className = '' }: { children: 
     sync();
     const observer = new ResizeObserver(sync);
     observer.observe(element);
-    return () => { observer.disconnect(); requestAnimationFrame(syncBottomBar); };
+    return () => { observer.disconnect(); if (typeof requestAnimationFrame === 'function') requestAnimationFrame(syncBottomBar); };
   }, []);
   return <div ref={slot} className="bh-step-action-slot">
     <div ref={bar} className={`bh-step-actions${className ? ` ${className}` : ''}`}>{withBackLabel(children)}</div>

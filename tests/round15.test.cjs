@@ -111,7 +111,7 @@ test('item 5: no filled button in a yeast statement ("Use X%" is secondary); the
   assert.match(output, /Keep the rest in the jar \(\$\{grams\}\) for next time/);
   assert.match(output, /Gardez le reste dans le bocal \(\$\{grams\}\) pour la prochaine fois/);
   assert.match(output, /After both bakes, \$\{grams\} stays in the jar/);
-  assert.match(output, /jarRestLine\(isFr, `\$\{starterLeft\} g`, !!sharedStarterFeed\)/);
+  assert.match(output, /after both bakes, \$\{starterLeft\} g stays in the jar/);
   assert.match(output, /jarRestLine\(locale === 'fr', wStr\(starterLeft\), !!sharedStarterFeed\)/);
 });
 

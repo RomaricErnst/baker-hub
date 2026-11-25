@@ -143,6 +143,8 @@ export default function ClimatePicker({
                   key={option.value}
                   type="button"
                   aria-pressed={active}
+                  // A name that does not depend on the disclosure's rendering (round 23: read as unnamed buttons).
+                  aria-label={`${fr ? option.fr : option.en}, ${fr ? option.range.replace(/(\d)%/, '$1\u202f%') : option.range}`}
                   onClick={() => onChange(kitchenTemp, option.value, fridgeTemp)}
                   style={{ ...controlStyle(), minHeight: 44, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`, background: active ? 'var(--warm)' : 'var(--paper)', fontSize: 16, textAlign: 'left' }}
                 >

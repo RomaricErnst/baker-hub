@@ -488,6 +488,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
       <div style={{ display: 'flex', gap: '8px' }}>
         <input
           id={`ask-${stepId}`}
+          aria-label={l === 'fr' ? 'Une question sur cette étape ?' : 'A question about this step?'}
           maxLength={500}
           value={q}
           onChange={e => setQ(e.target.value)}
@@ -503,6 +504,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           type="button"
           onClick={ask}
           disabled={!canAsk}
+          aria-label={l === 'fr' ? 'Demander' : 'Ask'}
           style={{
             background: '#2B2420', color: '#F0EBE0', border: 'none',
             borderRadius: '12px', padding: '12px 16px', minHeight: '44px', fontSize: '14px',

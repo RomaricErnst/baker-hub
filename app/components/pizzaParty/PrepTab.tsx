@@ -162,7 +162,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
 
   // Split into early (get ahead) and flexible
   const earlyStations = ['cool', 'time'];
-  const flexStations = ['board', 'grate', 'drain', 'herbs'];
+  const flexStations = ['board', 'chop', 'grate', 'drain', 'herbs'];
 
   const byStation: Record<string, PrepTask[]> = {};
   tasks.forEach(task => {
