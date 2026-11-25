@@ -788,7 +788,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             </span>
             {blend.w1Source && (
               <span style={{ fontFamily:'var(--font-ui)', fontSize: '11px', color:'var(--smoke)' }}>
-                {W_SOURCE_LABEL(locale)[blend.w1Source]}
+                {/* A scan's estimate is kept as an estimate (round 23, item 5): said so, not "typical for this type". */}
+                {blend.w1Source === 'typical' && blend.flour1 && blend.wOverride != null && blend.wOverride !== FLOUR_DATA[blend.flour1]?.w
+                  ? (locale === 'fr' ? 'estimée d’après la photo' : 'estimated from the photo')
+                  : W_SOURCE_LABEL(locale)[blend.w1Source]}
               </span>
             )}
           </div>
