@@ -1675,7 +1675,6 @@ export default function Home() {
     const types = ['pointerdown', 'keydown', 'focusin', 'input'];
     for (const type of types) window.addEventListener(type, onBakerInput, true);
     return () => { for (const type of types) window.removeEventListener(type, onBakerInput, true); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function applySession(session: SessionData) {

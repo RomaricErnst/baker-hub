@@ -71,7 +71,8 @@ test('finding 6: steps at the same time are one mention; Keep uses the recipe\'s
   assert.match(page, /const keptShown = yeastPctOverride !== undefined \? recipeRound\(yeastPctOverride \* conversion\)/);
   // Round 21 (rule E1): the busy tag reads the one edge rule (busyHit): a quick step at a busy time's start is not in it.
   assert.match(page, /busy:blocks\.some\(block=>busyHit\(\{id:e\.key\?\?'',at:e\.at\},\+block\.from,\+block\.to\)\)/);
-  assert.match(page, /!doughIsCalc&&<button type="button" data-ft-use-calculated-yeast/);
+  // Round 21 (P): nor beside a night line whose Use weighs the calculated amount.
+  assert.match(page, /!doughIsCalc&&!nightUseIsCalc&&<button type="button" data-ft-use-calculated-yeast/);
   assert.match(page, /prefOffsetH>autoPlan\.times\.prefHours\+0\.01/);
 });
 

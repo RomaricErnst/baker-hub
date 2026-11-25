@@ -4,7 +4,7 @@ const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 function declaration(name){let found;function visit(n){if(ts.isVariableDeclaration(n)&&n.name.getText(tree)===name)found=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);assert.ok(found);return found;}
 test('summary reports each chosen flour with its actual two or three slot ratio',()=>{
- const context={flourBlend:{flour1:'one',flour2:'two',flour3:'three',ratio1:70,ratio2:20,brandProduct:'First brand',customFlour2Name:'Second brand',customFlour3Name:'Third brand'},FLOUR_DATA:{one:{name:'Generic'},two:{name:'Second'},three:{name:'Third'}},localName:x=>x.name};
+ const context={flourBlend:{flour1:'one',flour2:'two',flour3:'three',ratio1:70,ratio2:20,brandProduct:'First brand',customFlour2Name:'Second brand',customFlour3Name:'Third brand'},FLOUR_DATA:{one:{name:'Generic'},two:{name:'Second'},three:{name:'Third'}},localName:x=>x.name,locale:'en',formatPercent:require('../app/utils/units.ts').formatPercent};
  const code=ts.transpileModule('const '+declaration('flourSummary')+'; result=flourSummary();', {}).outputText;
  vm.runInNewContext(code,context);assert.equal(context.result,'70% First brand + 20% Second brand + 10% Third brand');
  context.flourBlend.flour3=null;vm.runInNewContext('{'+code+'}',context);assert.equal(context.result,'70% First brand + 30% Second brand');
