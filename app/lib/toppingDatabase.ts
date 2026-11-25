@@ -92,15 +92,15 @@ const ING: Record<string, Ingredient> = {
   fiordilatte: {
     id: 'fior_di_latte', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Fior di latte', fr: 'Fior di latte' },
-    prepNote: { en: 'Slice 5mm, drain on paper towel 30 min before baking', fr: 'Trancher à 5mm, égoutter sur papier 30 min avant cuisson', timing: 30 },
+    prepNote: { en: 'Slice 5 mm, drain on paper towel 30 min before baking', fr: 'Trancher à 5 mm, égoutter sur papier 30 min avant cuisson', timing: 30 },
     prepNoteByStyle: {
       newyork: { en: 'For NY style, low-moisture mozzarella is preferred. If using fresh fior di latte: dice small and drain very well — excess moisture makes NY crust soggy.', fr: 'Pour le style NY, la mozzarella faible humidité est préférable. Si vous utilisez de la fior di latte fraîche : couper en petits dés et bien égoutter.', timing: 10 },
       pan:     { en: 'Dice small for pan style — needs to melt into the thick base. Low-moisture preferred. Press to edges for frico crust.', fr: 'Couper en petits dés pour le style pan — doit fondre dans la base épaisse. Faible humidité préférable. Pousser jusqu\'aux bords pour la croûte frico.', timing: 5 },
     },
-    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '5mm slices or tear — drained', noteFR: 'tranches 5mm ou déchirer — bien égoutté' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '5 mm slices or tear — drained', noteFR: 'tranches 5 mm ou déchirer — bien égoutté' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
     hardToFind: true,
-    goodEnough: { name: { en: 'Fresh mozzarella ball (any brand)', fr: 'Boule de mozzarella fraîche (toute marque)' }, note: { en: 'Slice 5mm and drain on paper towel. The difference from fior di latte is minimal for most home ovens.', fr: 'Trancher à 5mm et égoutter sur papier. La différence avec la fior di latte est minime pour la plupart des fours domestiques.' } },
+    goodEnough: { name: { en: 'Fresh mozzarella ball (any brand)', fr: 'Boule de mozzarella fraîche (toute marque)' }, note: { en: 'Slice 5 mm and drain on paper towel. The difference from fior di latte is minimal for most home ovens.', fr: 'Trancher à 5 mm et égoutter sur papier. La différence avec la fior di latte est minime pour la plupart des fours domestiques.' } },
     compromise: { name: { en: 'Low-moisture mozzarella block', fr: 'Mozzarella en bloc faible humidité' }, note: { en: 'No draining needed but loses the fresh milky character. Melts more evenly.', fr: 'Pas besoin d\'égoutter mais perd le caractère lacté frais. Fonte plus uniforme.' } },
     localSwap: {
       singapore: {
@@ -467,11 +467,11 @@ const ING: Record<string, Ingredient> = {
   thinPotato: {
     id: 'thin_potato', category: 'veg', bakeOrder: 'before',
     name: { en: 'Thinly sliced potato', fr: 'Pomme de terre en fines tranches' },
-    prepNote: { en: 'Slice 2mm — no pre-cooking for mid/low oven. High oven: blanch 2 min first.', fr: 'Trancher à 2mm — pas de précuisson four moyen. Four très chaud : blanchir 2 min.', timing: 10 },
+    prepNote: { en: 'Slice 2 mm — no pre-cooking for mid/low oven. High oven: blanch 2 min first.', fr: 'Trancher à 2 mm — pas de précuisson four moyen. Four très chaud : blanchir 2 min.', timing: 10 },
     prepNoteByStyle: {
-      roman: { en: 'For Pizza Romana: slice paper-thin (2mm) and pre-roast 10 min at 200°C before topping — the thin crispy base cannot handle raw potato moisture.', fr: 'Pour la Pizza Romana : trancher très finement (2mm) et pré-rôtir 10 min à 200 °C avant de garnir — la base fine et croustillante ne supporte pas l\'humidité de la pomme de terre crue.', timing: 10 },
+      roman: { en: 'For Pizza Romana: slice paper-thin (2 mm) and pre-roast 10 min at 200°C before topping — the thin crispy base cannot handle raw potato moisture.', fr: 'Pour la Pizza Romana : trancher très finement (2 mm) et pré-rôtir 10 min à 200 °C avant de garnir — la base fine et croustillante ne supporte pas l\'humidité de la pomme de terre crue.', timing: 10 },
     },
-    qtyPerPizza: { amount: 150, unit: 'g', noteEN: 'sliced 2mm', noteFR: 'tranché à 2mm' },
+    qtyPerPizza: { amount: 150, unit: 'g', noteEN: 'sliced 2 mm', noteFR: 'tranché à 2 mm' },
   },
 
   mushrooms: {
@@ -893,7 +893,7 @@ const ING: Record<string, Ingredient> = {
   pearSlices: {
     id: 'pear_slices', category: 'veg', bakeOrder: 'before',
     name: { en: 'Thin pear slices', fr: 'Tranches fines de poire' },
-    prepNote: { en: 'Slice 3mm, fan over base', fr: 'Trancher à 3mm, disposer en éventail' },
+    prepNote: { en: 'Slice 3 mm, fan over base', fr: 'Trancher à 3 mm, disposer en éventail' },
     qtyPerPizza: { amount: 1, unit: 'pcs' },
   },
 
@@ -929,7 +929,7 @@ const ING: Record<string, Ingredient> = {
   andouille: {
     id: 'andouille', category: 'meat', bakeOrder: 'before',
     name: { en: 'Andouille sausage (sliced)', fr: 'Andouille (en tranches)' },
-    prepNote: { en: 'Slice 3mm — distinctive smoky flavour', fr: 'Trancher à 3mm — goût fumé distinctif' },
+    prepNote: { en: 'Slice 3 mm — distinctive smoky flavour', fr: 'Trancher à 3 mm — goût fumé distinctif' },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
     hardToFind: true,
     goodEnough: { name: { en: 'Smoked sausage or chorizo', fr: 'Saucisse fumée ou chorizo' } },
@@ -1118,9 +1118,9 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Guanciale (cured pork cheek)', fr: 'Guanciale (joue de porc séchée)' },
     prepNote: { en: 'Slice thin — renders and crisps beautifully', fr: 'Trancher finement — fond et croustille parfaitement' },
     prepNoteByStyle: {
-      neapolitan: { en: 'Slice paper-thin (1–2mm) — at 450°C it crisps in under 90 seconds. Too thick and it won\'t render in time.', fr: 'Trancher très finement (1–2mm) — à 450 °C il croustille en moins de 90 secondes. Trop épais, il ne fondra pas à temps.', timing: 3 },
-      pan:        { en: 'Slice 3–4mm — the lower temperature (230°C) and longer bake give fat time to render. Thicker slices stay juicy.', fr: 'Trancher à 3–4mm — la température plus basse (230 °C) et la cuisson plus longue laissent le temps au gras de fondre. Les tranches plus épaisses restent juteuses.', timing: 3 },
-      roman:      { en: 'Slice 2–3mm — medium thickness works well for the intermediate oven temperature.', fr: 'Trancher à 2–3mm — l\'épaisseur moyenne convient à la température de four intermédiaire.', timing: 3 },
+      neapolitan: { en: 'Slice paper-thin (1–2 mm) — at 450°C it crisps in under 90 seconds. Too thick and it won\'t render in time.', fr: 'Trancher très finement (1–2 mm) — à 450 °C il croustille en moins de 90 secondes. Trop épais, il ne fondra pas à temps.', timing: 3 },
+      pan:        { en: 'Slice 3–4 mm — the lower temperature (230°C) and longer bake give fat time to render. Thicker slices stay juicy.', fr: 'Trancher à 3–4 mm — la température plus basse (230 °C) et la cuisson plus longue laissent le temps au gras de fondre. Les tranches plus épaisses restent juteuses.', timing: 3 },
+      roman:      { en: 'Slice 2–3 mm — medium thickness works well for the intermediate oven temperature.', fr: 'Trancher à 2–3 mm — l\'épaisseur moyenne convient à la température de four intermédiaire.', timing: 3 },
     },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: '6–8 thin slices', noteFR: '6–8 tranches fines' },
     hardToFind: true,
@@ -4406,7 +4406,7 @@ export const PIZZAS: Pizza[] = [
       {
         id: 'fior_di_latte', category: 'cheese', bakeOrder: 'before',
         name: { en: 'Fior di latte (or fresh mozzarella)', fr: 'Fior di latte (ou mozzarella fraîche)' },
-        prepNote: { en: 'Slice 5mm, drain 30 min. Scatter on pistachio cream before baking.', fr: 'Trancher à 5mm, égoutter 30 min. Disperser sur la crème pistache avant cuisson.', timing: 30 },
+        prepNote: { en: 'Slice 5 mm, drain 30 min. Scatter on pistachio cream before baking.', fr: 'Trancher à 5 mm, égoutter 30 min. Disperser sur la crème pistache avant cuisson.', timing: 30 },
         qtyPerPizza: { amount: 80, unit: 'g' },
         hardToFind: true,
         goodEnough: { name: { en: 'Fresh mozzarella ball', fr: 'Boule de mozzarella fraîche' } },
@@ -4500,7 +4500,7 @@ export const PIZZAS: Pizza[] = [
       {
         id: 'fior_di_latte', category: 'cheese', bakeOrder: 'before',
         name: { en: 'Fior di latte (or fresh mozzarella)', fr: 'Fior di latte (ou mozzarella fraîche)' },
-        prepNote: { en: 'Slice 5mm, drain 30 min. Arrange around the edge — leave center clear for the egg.', fr: 'Trancher à 5mm, égoutter 30 min. Disposer en bordure — laisser le centre libre pour l\'œuf.', timing: 30 },
+        prepNote: { en: 'Slice 5 mm, drain 30 min. Arrange around the edge — leave center clear for the egg.', fr: 'Trancher à 5 mm, égoutter 30 min. Disposer en bordure — laisser le centre libre pour l\'œuf.', timing: 30 },
         qtyPerPizza: { amount: 80, unit: 'g' },
         hardToFind: true,
         goodEnough: { name: { en: 'Fresh mozzarella ball', fr: 'Boule de mozzarella fraîche' } },
@@ -4579,7 +4579,7 @@ export const PIZZAS: Pizza[] = [
       {
         id: 'fior_di_latte', category: 'cheese', bakeOrder: 'before',
         name: { en: 'Fior di latte (or fresh mozzarella)', fr: 'Fior di latte (ou mozzarella fraîche)' },
-        prepNote: { en: 'Slice 5mm, drain 30 min before baking. Distribute evenly.', fr: 'Trancher à 5mm, égoutter 30 min avant cuisson. Distribuer uniformément.', timing: 30 },
+        prepNote: { en: 'Slice 5 mm, drain 30 min before baking. Distribute evenly.', fr: 'Trancher à 5 mm, égoutter 30 min avant cuisson. Distribuer uniformément.', timing: 30 },
         qtyPerPizza: { amount: 100, unit: 'g' },
         hardToFind: true,
         goodEnough: { name: { en: 'Fresh mozzarella ball', fr: 'Boule de mozzarella fraîche' } },

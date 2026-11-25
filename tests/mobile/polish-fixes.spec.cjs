@@ -34,8 +34,10 @@ test('a biga that cannot be ready offers direct dough or a later bake',async({pa
  }
  await page.getByRole('button',{name:/^Biga/}).filter({visible:true}).first().tap();
  const note=page.locator('[data-preferment-too-close]');
- await expect(note).toContainText(/^A biga needs about \d+h before baking; your bake is in \d+h\./);
- await expect(fwd(page)).toBeDisabled();
+ // Round 23 (item 9): the hours are named where they go (the biga, then the dough), and the way on stays open in
+ // setup (the bake time's sheet asks the clash once).
+ await expect(note).toContainText(/^(A biga needs about \d+\s?h|The biga (in the fridge|in a cool spot) \(\d+\s?h\), then the dough \(\d+\s?h\): about \d+\s?h) before baking; your bake is in \d+\s?h\./);
+ await expect(fwd(page)).toBeEnabled();
  await note.locator('[data-preferment-fallback="none"]').tap();
  await expect(note).toHaveCount(0);
  await expect(fwd(page)).toBeEnabled();

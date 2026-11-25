@@ -114,7 +114,7 @@ for(const lang of ['en','fr']){
    const loafCard=await starterCard(page,fr);
    const both=fr?/Rafraîchir 1:1:1 pour les deux fournées · \d+\s*g\s*:\s*\d+\s*g pour les pizzas, \d+\s*g pour/:/Feed 1:1:1 for both bakes · \d+\s*g: \d+\s*g for the pizzas, \d+\s*g for/;
    await expect(loafCard.locator('[data-starter-feed-line]').filter({hasText:both})).toHaveCount(1);
-   const keepOf=async card=>(await card.locator('[data-starter-amount]').first().innerText()).match(/\((\d+)\s*g\)/)[1];
+   const keepOf=async card=>(await card.locator('[data-starter-amount]').first().innerText()).match(/(\d+)\s*g (?:stays in the jar|dans le bocal)/)[1]; // round 23: "after both bakes, N g stays in the jar"
    const loafKeep=await keepOf(loafCard);
    // The jar still serves the pizzas: no "return it to the fridge" line under a shared feed.
    await expect(loafCard.getByText(fr?/remettez-le au frigo/:/return it to the fridge/)).toHaveCount(0);

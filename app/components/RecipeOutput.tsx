@@ -221,7 +221,13 @@ function InfoCard({
 
 
 // ── Starter prep card ─────────────────────────
-type SharedFeedNote = { at: number; line: string; seed: number; flour: number; water: number; ratio: number; keep: number };
+type SharedFeedNote = { at: number; line: string; seed: number; flour: number; water: number; ratio: number; keep: number; otherName?: string };
+/** The jar's rest after the dough takes its levain; with a shared feed, after both bakes (round 23, item 3). */
+function jarRestLine(fr: boolean, grams: string, shared: boolean): string {
+  return shared
+    ? (fr ? `Après les deux fournées, il reste ${grams} dans le bocal` : `After both bakes, ${grams} stays in the jar`)
+    : (fr ? `Gardez le reste dans le bocal (${grams}) pour la prochaine fois` : `Keep the rest in the jar (${grams}) for next time`);
+}
 function StarterPrepCard({
   sourdough, feedTime, feed2Time, fridgeOutTime, starterEvents = [], sharedStarterFeed, mixingTime,
   starterPeakTime, planningMode, usingPeak2,
@@ -306,7 +312,7 @@ function StarterPrepCard({
       <div data-starter-amount style={{fontSize:16,fontWeight:600,color:'var(--char)'}}>
         {/* What is left in the jar after the dough takes its share (17 Nov review: "keep 22 g" of a 150 g build). */}
         {/* Round 15 (item 5): it says where the rest stays (a shared jar read "keep the rest" as the dough's). */}
-        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · gardez le reste dans le bocal (${starterLeft} g) pour la prochaine fois` : `${sourdough.starterGramsMid} g of starter for the dough · keep the rest in the jar (${starterLeft} g) for next time`}
+        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · ` : `${sourdough.starterGramsMid} g of starter for the dough · `}{(()=>{const line=jarRestLine(isFr, `${starterLeft} g`, !!sharedStarterFeed);return line.charAt(0).toLowerCase()+line.slice(1);})()}
       </div>
 
       {/* Scheduled timeline */}
@@ -523,14 +529,15 @@ export default function RecipeOutput({
   const smallDoseShown = !!yeastInfo && !hasPref && !!(yeastInfo.hitMinFloor || needsPrecision || dilutionTip);
   // Fresh yeast is weighed on a kitchen scale: whole grams from 10 g.
   const freshEquivalent = (grams:number) => grams >= 10 ? `${Math.round(grams)} g` : formatYeastDose(grams,locale);
-  const yeastAlternatives = yeastInfo && mode==='simple' && yeastInfo.yeastType==='instant' ? (locale==='fr' ? `ou ${freshEquivalent(yeastInfo.grams*3)} de levure fraîche` : `or ${freshEquivalent(yeastInfo.grams*3)} fresh yeast`) : null;
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
         const idyPart = !isInstant ? (locale==='fr' ? `= ${formatYeastDose(yeastInfo.grams, locale)} de levure sèche instantanée` : `= ${formatYeastDose(yeastInfo.grams, locale)} instant dry yeast`) : null;
         const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `ou ${freshEquivalent(yeastInfo.grams*3)} de levure fraîche` : `or ${freshEquivalent(yeastInfo.grams*3)} fresh yeast`) : null;
-        // With a small-dose section below, the other yeasts are listed there.
-        return [smallDoseShown ? null : alternatives, smallDoseShown ? yeastSpoon : measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
+        // One rule (round 23, item 10): the spoon, then the fresh-yeast equivalent, on the yeast's own line on every
+        // bake ("≈ ⅓ tsp · or 3.1 g fresh yeast"); it was first, so the spoon read as the fresh yeast's, and it moved
+        // into the small-dose help on some bakes.
+        return [smallDoseShown ? yeastSpoon : measureHint(yeastSpoon,needsPrecision), alternatives, idyPart].filter(Boolean).join(' · ') || undefined;
       })()
     : undefined;
 
@@ -587,7 +594,6 @@ export default function RecipeOutput({
             })()}
           </div>) : null;
   const smallDoseBody = yeastInfo ? (<div data-small-dose style={{display:'flex',flexDirection:'column',gap:10,marginTop:6}}>
-          {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
           {/* One neutral note (14 Nov 2026 audit: a yellow and a blue box beside the amount). */}
           {(needsPrecision || yeastInfo.hitMinFloor || dilutionTip) && <div data-weigh-note style={{background:'var(--cream)',borderRadius:12,padding:'12px 14px',display:'flex',flexDirection:'column',gap:10,fontSize:13,lineHeight:1.55,color:'var(--ash)'}}>
             {yeastInfo.hitMinFloor && !needsPrecision && <p style={{margin:0}}>{t('recipeOutput.precisionScaleMin')}</p>}
@@ -679,10 +685,16 @@ export default function RecipeOutput({
       }
       case 'preferment': return <IngRow key={key} highlight label={prefermentType === 'biga' ? (locale === 'fr' ? 'Toute la biga' : 'All the biga') : (locale === 'fr' ? `Tout le ${prefName.toLowerCase()}` : `All the ${prefName.toLowerCase()}`)} grams={wStr(Math.round(row.grams))} advancedPct={pctOf(row.grams)} />;
       case 'starter':
-        if (stage.key === 'levain') return <IngRow key={key} label={locale === 'fr' ? 'Levain de votre pot' : 'Starter from your jar'} grams={wStr(row.grams)} sub={locale === 'fr' ? `Levain liquide · 100 % d’hydratation · rafraîchi 1:${feedRatio ?? 1}:${feedRatio ?? 1}` : `Liquid starter · 100% hydration · feed 1:${feedRatio ?? 1}:${feedRatio ?? 1}`} />;
+        if (stage.key === 'levain') {
+          // A shared feed builds this levain at the jar's ratio, and says with which bake (round 23, item 3: the
+          // follower read "feed 1:1:1" over 19 / 76 / 76 g, which is 1:4:4).
+          const r = sharedStarterFeed?.ratio ?? feedRatio ?? 1;
+          const withOther = sharedStarterFeed?.otherName ? (locale === 'fr' ? ` · en commun avec ${sharedStarterFeed.otherName}` : ` · shared with ${sharedStarterFeed.otherName}`) : '';
+          return <IngRow key={key} label={locale === 'fr' ? 'Levain de votre pot' : 'Starter from your jar'} grams={wStr(row.grams)} sub={locale === 'fr' ? `Levain liquide · 100 % d’hydratation · rafraîchi 1:${r}:${r}${withOther}` : `Liquid starter · 100% hydration · feed 1:${r}:${r}${withOther}`} />;
+        }
         // The levain's % is the % it was sized from (round 9, S4): its grams are rounded to 5 g, so grams ÷ flour moved
         // with the flour's weight (15.9 % Manitoba, 16.5 % all-purpose) though no flour changes the starter.
-        return <IngRow key={key} highlight label={locale === 'fr' ? 'Levain' : 'Levain'} grams={wStr(row.grams)} advancedPct={custom && sourdough ? pctStr(levainPlannedPct(sourdough)) : pctOf(row.grams)} sub={locale === 'fr' ? `Gardez le reste dans le bocal (${wStr(starterLeft)}) pour la prochaine fois` : `Keep the rest in the jar (${wStr(starterLeft)}) for next time`} />;
+        return <IngRow key={key} highlight label={locale === 'fr' ? 'Levain' : 'Levain'} grams={wStr(row.grams)} advancedPct={custom && sourdough ? pctStr(levainPlannedPct(sourdough)) : pctOf(row.grams)} sub={jarRestLine(locale === 'fr', wStr(starterLeft), !!sharedStarterFeed)} />;
     }
   };
   const chillAt = stagedPref && mixingTime ? poolishCoolingAt(mixingTime, result) : null;

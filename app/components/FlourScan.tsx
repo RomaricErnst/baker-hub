@@ -17,7 +17,7 @@ export function validScannedValues(w: number, protein: number) {
 }
 
 interface FlourScanProps {
-  onResult: (result: { w: number; protein: number; name: string }) => void;
+  onResult: (result: { w: number; protein: number; name: string; wOnBag?: boolean; proteinOnBag?: boolean }) => void;
   onCancel: () => void;
 }
 

@@ -38,7 +38,7 @@ const SUBTITLES:Record<string,{en:string;fr:string}> = {
  */
 export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,contextLabel,stepLabel,steps,recipeReady=true,summary,nextStep,headline,bakeTimeSet=false}:{
   contextLabel?:string;active:BakeDestination;fr:boolean;onChange:(destination:BakeDestination)=>void;top?:number;
-  recipeMeal?:{label:string;recipeLabel?:string;active:boolean;selected:boolean;onChoose:()=>void};
+  recipeMeal?:{label:string;recipeLabel?:string;active:boolean;selected:boolean;chosen?:string;onChoose:()=>void};
   /** The setup step on screen, shown after the section name. */
   stepLabel?:string;
   /** My bake's answers, listed under it in the sheet while it is the current part. */
@@ -100,7 +100,8 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   const parts:Part[]=[
     {key:'batch',label:name('batch'),sub:fr?SUBTITLES.batch.fr:SUBTITLES.batch.en,current:section==='batch'&&!recipeMeal?.active,locked:false,done:recipeReady,go:()=>onChange('batch')},
     {key:'recipe',label:recipeMeal?.recipeLabel??name('recipe'),sub:fr?SUBTITLES.recipe.fr:SUBTITLES.recipe.en,current:section==='recipe'&&!recipeMeal?.active,locked:!recipeReady,done:recipeReady,go:()=>onChange('recipe')},
-    ...(recipeMeal?[{key:'meal',label:recipeMeal.label,sub:fr?SUBTITLES.meal.fr:SUBTITLES.meal.en,current:recipeMeal.active,locked:false,optional:true,done:recipeMeal.selected,go:recipeMeal.onChoose}]:[]),
+    // "Optional" only while nothing is picked (round 23, item 11); then what is picked ("3 of 4 chosen").
+    ...(recipeMeal?[{key:'meal',label:recipeMeal.label,sub:recipeMeal.selected&&recipeMeal.chosen?recipeMeal.chosen:fr?SUBTITLES.meal.fr:SUBTITLES.meal.en,current:recipeMeal.active,locked:false,optional:!recipeMeal.selected,done:recipeMeal.selected,go:recipeMeal.onChoose}]:[]),
     {key:'shopping',label:name('shopping'),sub:fr?SUBTITLES.shopping.fr:SUBTITLES.shopping.en,current:section==='shopping',locked:!recipeReady,go:()=>onChange('shopping')},
     {key:'protocol',label:name('protocol'),sub:fr?SUBTITLES.protocol.fr:SUBTITLES.protocol.en,current:section==='protocol',locked:!recipeReady,go:()=>onChange('protocol')},
     {key:'service',label:name('service'),sub:fr?SUBTITLES.service.fr:SUBTITLES.service.en,current:section==='service',locked:!recipeReady,go:()=>onChange('service')},

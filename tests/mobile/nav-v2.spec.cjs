@@ -439,7 +439,7 @@ test('fillings chosen after the Recipe lead on to Shopping without changing the 
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
- await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Liste de courses →',exact:true}).tap();
+ await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Courses et prépa →',exact:true}).tap(); // round 23: as the Recipe's forward button
  await expect(page.locator('.bh-navigator-current')).toContainText('Liste de courses');
  await expect(page.getByRole('button',{name:'Retour aux garnitures',exact:true}).filter({visible:true})).toHaveCount(1);
  const after=await stored(page);

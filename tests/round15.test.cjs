@@ -107,9 +107,12 @@ test('items 1 and 5: one Use/Keep line in Fine-tune, the time editor, the Recipe
 test('item 5: no filled button in a yeast statement ("Use X%" is secondary); the jar keep line says where the rest stays', () => {
   for (const attr of ['data-use-suggested-pref-yeast', 'data-use-minimum-yeast', 'data-use-calculated-pref-yeast', 'data-ft-use-calculated-yeast'])
     for (const m of page.matchAll(new RegExp(`<button[^>]*${attr}[^>]*>`, 'g'))) assert.doesNotMatch(m[0], /bh-apply-plan/, attr);
-  assert.match(output, /keep the rest in the jar \(\$\{starterLeft\} g\)/);
-  assert.match(output, /gardez le reste dans le bocal \(\$\{starterLeft\} g\)/);
-  assert.match(output, /Keep the rest in the jar \(\$\{wStr\(starterLeft\)\}\)/);
+  // Round 23 (item 3): one helper for the card and the Levain row; a shared jar says "after both bakes".
+  assert.match(output, /Keep the rest in the jar \(\$\{grams\}\) for next time/);
+  assert.match(output, /Gardez le reste dans le bocal \(\$\{grams\}\) pour la prochaine fois/);
+  assert.match(output, /After both bakes, \$\{grams\} stays in the jar/);
+  assert.match(output, /jarRestLine\(isFr, `\$\{starterLeft\} g`, !!sharedStarterFeed\)/);
+  assert.match(output, /jarRestLine\(locale === 'fr', wStr\(starterLeft\), !!sharedStarterFeed\)/);
 });
 
 test('item 3: one window check per storage; a statement quotes the band edge that storage missed', () => {

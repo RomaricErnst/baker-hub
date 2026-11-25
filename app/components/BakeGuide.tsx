@@ -313,11 +313,13 @@ function shownDuration(number: number, time: Date | undefined, duration: number 
 }
 
 // A recorded time, changed where it is shown (the strip above Preparation said it a second time).
+// "Different time?" on a tap recorded at the plan's time opens on now, to 5 minutes (round 23, item 8: it opened on the
+// planned time, which the baker had just said was not when they did it); a time the baker gave opens on itself.
 function DoneTimeEditor({at,fr,stated,onChange}:{at:number;fr:boolean;stated:boolean;onChange:(at:number)=>void}){
   const [value,setValue]=useState<string|null>(null);
   const local=(ms:number)=>{const d=new Date(ms);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);};
   const link={minHeight:44,padding:'10px 0',border:0,background:'transparent',font:'inherit',fontSize:15,color:D.terra,textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'} as const;
-  if(value===null)return <p data-done-time style={{margin:'-8px 0 8px'}}><button type="button" style={link} onClick={()=>setValue(local(stated?at:Math.min(Date.now(),at)))}>{stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button></p>;
+  if(value===null)return <p data-done-time style={{margin:'-8px 0 8px'}}><button type="button" style={link} onClick={()=>setValue(local(stated?at:Math.min(Date.now(),at)<Date.now()-5*60000?Math.floor(Date.now()/300000)*300000:Math.min(Date.now(),at)))}>{stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button></p>;
   const parsed=+new Date(value),valid=!!value&&Number.isFinite(parsed);
   return <p data-done-time style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'center',margin:'-8px 0 8px'}}>
     <input type="datetime-local" aria-label={fr?'Heure réelle':'Actual time'} value={value} onChange={e=>setValue(e.target.value)} style={{minHeight:44}}/>
@@ -433,6 +435,23 @@ function LearnLink({ term, label, onOpen, showSparkle = false }: {
   );
 }
 
+/** The question box's example, for the step it is on (round 23: "My dough is sticky…" sat on the preheat and the
+ *  pizza card too). */
+export function askPlaceholder(stepId: string, fr: boolean): string {
+  const id = stepId.toLowerCase();
+  const pick = (en: string, f: string) => fr ? f : en;
+  if (id === 'preheat' || id === 'pizza_maestro') return pick('Is my oven hot enough?', 'Mon four est-il assez chaud ?');
+  if (id === 'bake') return pick('How do I know it is baked?', 'Comment savoir s’il est cuit ?');
+  if (id === 'bulk') return pick('Has it risen enough?', 'A-t-elle assez levé ?');
+  if (id === 'proof') return pick('Is it ready to bake?', 'Est-elle prête à cuire ?');
+  if (id === 'shape') return pick('It tears when I shape it…', 'Elle se déchire au façonnage…');
+  if (id === 'cool') return pick('Can it stay longer in the fridge?', 'Peut-elle rester plus longtemps au frigo ?');
+  if (id === 'starter') return pick('My starter is not rising…', 'Mon levain ne monte pas…');
+  if (id === 'poolish') return pick('Is my poolish ready?', 'Mon poolish est-il prêt ?');
+  if (id === 'biga') return pick('Is my biga ready?', 'Ma biga est-elle prête ?');
+  return pick('My dough is sticky…', 'Ma pâte colle…');
+}
+
 // ── Ask Maestro — a question about this step, in words (24 Nov 2026 round 18: photo verdicts were wrong
 // too often to keep, so Maestro reads no photos). ─────────
 export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
@@ -473,7 +492,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           value={q}
           onChange={e => setQ(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') ask(); }}
-          placeholder={l === 'fr' ? 'Ma pâte colle…' : 'My dough is sticky…'}
+          placeholder={askPlaceholder(stepId, l === 'fr')}
           style={{
             flex: 1, border: `1px solid ${D.border}`, borderRadius: '8px', minHeight: 44, boxSizing: 'border-box',
             padding: '8px 12px', fontSize: '16px', fontFamily: 'var(--font-ui)',

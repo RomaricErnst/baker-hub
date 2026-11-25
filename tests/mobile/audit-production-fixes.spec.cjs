@@ -71,7 +71,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
    await page.getByRole('button',{name:/^Margherita(?: · \d+)?$/}).getByRole('button',{name:/^\+/}).tap();
  }
  // Plan both, then buy: the toppings step leads on to the Shopping list.
- await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Liste de courses →',exact:true}).tap();
+ await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Courses et prépa →',exact:true}).tap(); // round 23: as the Recipe's forward button
  await expect(page.locator('.bh-navigator-current')).toContainText('Liste de courses');
  const checkbox=page.getByRole('checkbox').first();
  await checkbox.check();await expect(checkbox).toBeChecked();

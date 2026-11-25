@@ -9,6 +9,8 @@ import { createClient } from '@/app/lib/supabase/client';
 import { uploadPhoto, ALLOWED_MIME_TYPES } from '@/app/lib/photoUpload';
 import type { User } from '@supabase/supabase-js';
 import { useRef } from 'react';
+import BottomActions from '../BottomActions';
+import { BackLabel } from '../BackLabel';
 import PizzaPlaceholder from '../PizzaPlaceholder';
 import { AskMaestro } from '../BakeGuide';
 import SelectionCoverage from './SelectionCoverage';
@@ -178,6 +180,9 @@ interface BakeTabProps extends CompletionActions {
   sessionSaved?: boolean;
   onBakedQtysChange?: (qtys: Record<string, number>) => void;
   initialDoneCounts?: Record<string, number>;
+  /** The standard bottom bar's way back (round 23, item 12: the cooking screen was the only one without it). */
+  onBack?: () => void;
+  backLabel?: string;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -221,7 +226,7 @@ const BAKE_FAQ: Array<{ q: { en: string; fr: string }; a: { en: string; fr: stri
   },
 ];
 
-export default function BakeTab({ maestroContext, selectedPizzas, plannedPizzaCount, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
+export default function BakeTab({ onBack, backLabel, maestroContext, selectedPizzas, plannedPizzaCount, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -1075,6 +1080,9 @@ export default function BakeTab({ maestroContext, selectedPizzas, plannedPizzaCo
           </>
         );
       })()}
+      {onBack && backLabel && <BottomActions>
+        <button type="button" className="bh-back-action" data-cook-back onClick={onBack}><BackLabel text={backLabel}/></button>
+      </BottomActions>}
     </div>
   );
 }

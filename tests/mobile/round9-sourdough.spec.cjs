@@ -73,9 +73,10 @@ for(const lang of ['en','fr']){
    const line=card.locator('[data-starter-feed-line]').filter({hasText:fr?/pour les deux fournées/:/for both bakes/});
    await expect(line).toHaveText(fr?/pour Pain au levain \(sam\. 9h00\), .* pour Pain au levain \(sam\. 10h00\)$/i:/for Pain au levain \(Sat 9:00am\), .* for Pain au levain \(Sat 10:00am\)$/);
    // One "keep the rest": the card's and the final dough's Levain row give the same amount.
-   const cardKeep=(await page.locator('[data-starter-amount]').innerText()).match(/\((\d+)\s*g\)/)[1];
+   // Round 23 (item 3): a shared jar says what stays after both bakes.
+   const cardKeep=(await page.locator('[data-starter-amount]').innerText()).match(fr?/après les deux fournées, il reste (\d+)\s*g dans le bocal/:/after both bakes, (\d+)\s*g stays in the jar/)[1];
    const stages=await page.locator('[data-recipe-stages]').first().innerText();
-   expect(stages.match(fr?/Gardez le reste dans le bocal \((\d+)\s*g\)/:/Keep the rest in the jar \((\d+)\s*g\)/)[1]).toBe(cardKeep);
+   expect(stages.match(fr?/Après les deux fournées, il reste (\d+)\s*g dans le bocal/:/After both bakes, (\d+)\s*g stays in the jar/)[1]).toBe(cardKeep);
    await card.scrollIntoViewIfNeeded();
    await shot(page,`r9-feed-line-${lang}`);
   });

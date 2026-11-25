@@ -115,7 +115,9 @@ test('P: the clash sentence names the step and its time; Preparation has no sepa
   const picker = read('app/components/SchedulePicker.tsx');
   assert.doesNotMatch(picker, /Cet horaire ne laisse pas le bon temps à la pâte/);
   assert.match(picker, /tomberait \$\{fmtCardDT\(at,true\)\}, une heure déjà passée/);
-  assert.match(picker, /ne laisse pas à la pâte le temps qu’il lui faut avant la cuisson de/);
+  // Round 23: the short form ("Biga à ven. 19h30 : trop peu de temps pour cuire à 15h30.").
+  assert.match(picker, /\$\{short\} à \$\{day\} : trop peu de temps pour cuire à/);
+  assert.match(picker, /\$\{short\} at \$\{day\} leaves too little time for a/);
   require('./load-production.cjs');
   const React = require('react'), { renderToStaticMarkup } = require('react-dom/server');
   const Status = require('../app/components/BakeStartStatus.tsx').default;
@@ -139,7 +141,7 @@ test('P: one pair on the night line; one line under the manual flour; Ask, never
 
 test('F1: the editor\'s sticky Apply bar never covers a control scrolled into view', () => {
   const css = read('app/globals.css');
-  assert.match(css, /#schedule-anchor-panel\[data-open\] :is\(input,select,button,label,summary\):not\(\.bh-apply-plan\) \{ scroll-margin-bottom:112px; \}/);
+  assert.match(css, /#schedule-anchor-panel\[data-open\] :is\(input,select,button,label,summary\):not\(\.bh-apply-plan\) \{ scroll-margin-bottom:calc\(112px \+ var\(--bh-bottom-bar,0px\)\); \}/); // round 23: above the phone's bottom bar too
   // A baker's input ends the restore window: an edit typed early is an edit (the round8/round9-yeast flakes).
   assert.match(read('app/[locale]/page.tsx'), /const types = \['pointerdown', 'keydown', 'focusin', 'input'\];/);
 });

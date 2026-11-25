@@ -52,7 +52,7 @@ export function planActionLabel(id: string, fr: boolean, opts: LabelOpts = {}): 
   const names: Record<string, [string, string]> = {
     autolyse: ['Autolyse : mélanger farine et eau', 'Autolyse: combine flour and water'],
     mix: ['Pétrir la pâte', 'Start Dough'],
-    'mix-finish': ['Reprendre le pétrissage', 'Resume kneading'],
+    'mix-finish': ['Fin du pétrissage', 'Finish mixing'],
     'cold-in': ['Mettre la pâte au réfrigérateur', 'Dough into the fridge'],
     'cold-out': ['Sortir la pâte du réfrigérateur', 'Take the dough out of the fridge'],
     divide: opts.panStyle ? ['Diviser et presser dans les moules', 'Divide and press into the pans']

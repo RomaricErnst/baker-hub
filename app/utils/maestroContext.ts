@@ -18,9 +18,39 @@ function maestroHours(h: number): string {
   return String(Math.round(h * 4) / 4);
 }
 
+type ScheduleTimes = Pick<ScheduleResult, 'totalColdHours' | 'totalRTHours'> & Partial<Pick<ScheduleResult,
+  'bulkFermStart' | 'bakeStart' | 'coldRetardStart' | 'coldRetardEnd' | 'coldRetard1Start' | 'coldRetard1End' | 'coldRetard2Start' | 'coldRetard2End'>>;
+
+/** "2 h 45 min", "16 h 30 min", "4 h": a span to the quarter hour. */
+function span(ms: number): string {
+  const q = Math.max(0, Math.round(ms / 900000)), h = Math.floor(q / 4), m = (q % 4) * 15;
+  return h && m ? `${h} h ${m} min` : h ? `${h} h` : `${m} min`;
+}
+
+/** The dough's phases from the mix to the bake, in the order they happen, with their real lengths (round 23,
+ *  item 6: "17h cold; 6h room-temp" was read back as "17 hours cold first, then 6 hours at room temperature",
+ *  for a plan of 2 h 45 at room temperature, 16 h 30 in the fridge, then 4 h out before the bake). */
+export function maestroPhases(schedule: ScheduleTimes | null | undefined): string | null {
+  const start = schedule?.bulkFermStart ? +schedule.bulkFermStart : NaN, end = schedule?.bakeStart ? +schedule.bakeStart : NaN;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return null;
+  const pairs: [Date | null | undefined, Date | null | undefined][] = [[schedule!.coldRetard1Start, schedule!.coldRetard1End], [schedule!.coldRetard2Start, schedule!.coldRetard2End]];
+  if (!pairs.some(([a, b]) => a && b)) pairs.push([schedule!.coldRetardStart, schedule!.coldRetardEnd]);
+  const spells = pairs.filter((p): p is [Date, Date] => !!p[0] && !!p[1] && +p[1] > +p[0]).map(([a, b]) => [Math.max(start, +a), Math.min(end, +b)] as const)
+    .filter(([a, b]) => b > a).sort((x, y) => x[0] - y[0]);
+  const parts: string[] = [];
+  let at = start;
+  for (const [a, b] of spells) {
+    if (a > at) parts.push(`room temperature ${span(a - at)}`);
+    parts.push(`fridge ${span(b - Math.max(a, at))}`);
+    at = Math.max(at, b);
+  }
+  if (end > at) parts.push(spells.length ? `room temperature ${span(end - at)} before the bake` : `room temperature ${span(end - at)}`);
+  return `from mixing to baking, in this order: ${parts.join(', then ')}`;
+}
+
 export interface MaestroContextInput {
   recipe: RecipeResult | null | undefined;
-  schedule?: Pick<ScheduleResult, 'totalColdHours' | 'totalRTHours'> | null;
+  schedule?: ScheduleTimes | null;
   styleKey?: string | null;
   numItems: number;
   hydration: number;
@@ -47,8 +77,12 @@ export function buildMaestroContext({ recipe, schedule, styleKey, numItems, hydr
   if (recipe.blendProfile?.displayName) dough.push(`flour: ${recipe.blendProfile.displayName}`);
 
   const sched: string[] = [];
-  if (coldH > 0) sched.push(`${coldH}h cold (fridge) ferment`);
-  if (rtH > 0) sched.push(`${rtH}h room-temp ferment`);
+  const phases = maestroPhases(schedule);
+  if (phases) sched.push(phases);
+  else {
+    if (rtH > 0) sched.push(`${rtH}h at room temperature in all`);
+    if (coldH > 0) sched.push(`${coldH}h in the fridge in all`);
+  }
   sched.push(`kitchen ${Math.round(kitchenTemp)}°C`);
   if (recipe.waterTemp != null) sched.push(`target water temp ${Math.round(recipe.waterTemp)}°C`);
 

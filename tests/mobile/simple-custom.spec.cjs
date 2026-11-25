@@ -120,7 +120,8 @@ for(const locale of ['fr','en']){
   const help=page.locator('[data-yeast-help]:visible').first();
   await expect(help.locator('summary')).toHaveText(fr?/^comment la peser ▾/:/^how to weigh it ▾/);
   await help.locator('summary').tap();
-  await expect(help.locator('[data-yeast-alternatives]')).toContainText(fr?/^ou .* de levure fraîche$/:/^or .* fresh yeast$/);
+  // Round 23 (item 10): the fresh-yeast equivalent is on the yeast's own line, after the spoon, on every bake.
+  await expect(help.locator('xpath=..')).toContainText(fr?/≈ .* · ou [\d,]+\s?g de levure fraîche/:/≈ .* · or [\d.]+\s?g fresh yeast/);
   await page.locator('.bh-recipe-next:visible').getByRole('button',{name:fr?'Mes choix':'My choices'}).tap();await page.getByRole('button',{name:/^(Edit: |Modifier : )(Quantity|Quantité)$/}).tap();
   await quantity.fill('3');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();

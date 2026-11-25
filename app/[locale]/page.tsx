@@ -830,7 +830,7 @@ function PreheatTimeEditor({fr,at,bakeAt,baseMin,onApply}:{fr:boolean;at:Date;ba
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,bakeEnd,steps,editable=[],editing=null,onEditTime,editor,notice,notes,beforeRow,startIsKey,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;bakeEnd?:Date|null;steps:{key:string;at:Date;label:string;busy?:boolean}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;notes?:Record<string,string>;beforeRow?:{key:string;node:React.ReactNode}|null;
+function RecipePlanCard({fr,locale,startAt,startLabel,startKey,startBusy=false,bakeAt,bakeEnd,steps,editable=[],editing=null,onEditTime,editor,notice,notes,beforeRow,startIsKey,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;startBusy?:boolean;bakeAt:Date;bakeEnd?:Date|null;steps:{key:string;at:Date;label:string;busy?:boolean}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;notes?:Record<string,string>;beforeRow?:{key:string;node:React.ReactNode}|null;
   /** Key stages only (round 7): the plan's first action is one of them; omitted shows every step. */
   startIsKey?:boolean;moreLabel?:string|null;onMore?:()=>void}){
   const [allSteps,setAllSteps]=useState(false);
@@ -848,7 +848,7 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,bakeEnd,st
     {(()=>{
       const round5=(d:Date)=>new Date(Math.round(+d/900000)*900000);
       // The first step is a row like the others, under its day; the baker's own times are the tappable ones.
-      const all=[{key:startKey??'start',at:round5(startAt),label:startLabel ?? (fr?'Commencer':'Start'),bake:false,own:true},...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false,own:false,busy:!!step.busy})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true,own:false}].sort((a,b)=>+a.at-+b.at||(a.own?-1:b.own?1:0));
+      const all=[{key:startKey??'start',at:round5(startAt),label:startLabel ?? (fr?'Commencer':'Start'),bake:false,own:true,busy:startBusy},...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false,own:false,busy:!!step.busy})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true,own:false}].sort((a,b)=>+a.at-+b.at||(a.own?-1:b.own?1:0));
       const rows:{key:string;keys:string[];at:Date;labels:string[];bake:boolean;own:boolean;busy?:boolean}[]=[];
       for(const item of all){const last=rows[rows.length-1];const busy='busy' in item&&!!item.busy;if(last&&+last.at===+item.at&&!item.bake&&!last.bake&&!item.own&&!last.own&&!editable.includes(item.key)&&!editable.includes(last.key)){last.labels.push(item.label);last.keys.push(item.key);last.busy=last.busy||busy;}else rows.push({key:item.key,keys:[item.key],at:item.at,labels:[item.label],bake:item.bake,own:item.own,busy});}
       // The key stages only (round 7, owner): the preferment or the levain build, the mix, the bake, and any
@@ -1366,7 +1366,8 @@ export default function Home() {
   // Pizzas/Fillings are optional (round 20, owner): the Recipe goes on to shopping and offers them as one row;
   // the selection screen has no top "Dough only? Skip" link, its bottom button says it.
   const fillingsSkipLabel:string|undefined=undefined;
-  const fillingsDoneLabel=fillingsReturn?.forward?(hasFillings?(locale==='fr'?'Liste de courses →':'Shopping list →'):(locale==='fr'?'Sans garniture →':bakeType==='pizza'?'Skip toppings →':'Skip fillings →')):fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à la préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
+  // Round 23 (item 11): once something is picked it reads as the Recipe's own forward button, "Shopping & prep →".
+  const fillingsDoneLabel=fillingsReturn?.forward?(hasFillings?(locale==='fr'?'Courses et prépa →':'Shopping & prep →'):(locale==='fr'?'Sans garniture →':bakeType==='pizza'?'Skip toppings →':'Skip fillings →')):fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à la préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
   // Late toppings from Preparation or Baking & serving: the normal pair, the return on the left
   // ("‹ Preparation") and the shopping list on the right (16 Nov 2026 design review).
   const fillingsForward=recipeGenerated&&fillingsReturn&&!fillingsReturn.forward&&(fillingsReturn.destination==='protocol'||fillingsReturn.destination==='service')?{
@@ -2523,7 +2524,7 @@ export default function Home() {
   const guideStarterEvents = starterEventsWithSharedFeed(shownStarterEvents, sharedStarter, Date.now(), sharedStarterPair?.other?.events as StarterEvent[]|undefined);
   // The other bake's recorded feeds of the jar's steps count here too (a tick in one bake is done in the other).
   const jarRecords = carriedJarRecords(sharedStarter, sharedStarterPair?.other) as StarterFeedRecord[];
-  const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,locale==='fr',g=>displayWeight(g,units,locale),(own,other)=>twinBakeWhen(own,[other],locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio,keep:sharedStarter.keep} : null;
+  const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,locale==='fr',g=>displayWeight(g,units,locale),(own,other)=>twinBakeWhen(own,[other],locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio,keep:sharedStarter.keep,otherName:sharedStarter.leads?sharedStarter.second.name:sharedStarter.first.name} : null;
   // Flour is authoritative in this mode. Keep equipment and portion displays
   // aligned with the canonical formula, including enriched ingredients/yeast.
   const flourModeRecipe = tab==='custom' ? advancedRecipe : recipe;
@@ -3451,6 +3452,26 @@ export default function Home() {
     }
     setStarterPlanResetKey(k=>k+1);
   }
+  // One jar, a second bake (round 23, item 3): the starter's state is already known from the other bake under way
+  // that uses the same jar (its Simple answer, its last feed), so the question is not asked again. Read only while
+  // the question is pending; the other bake's mix must still be ahead.
+  function jarStarterOfOtherBake():{answer:'counter'|'fridge';lastFedTime?:number;lastFedAge?:string|null;lastFeedRatio?:number}|null{
+    const own=journalId??currentJournalId();
+    try{for(const row of liveJournalBakes()){
+      const other=row.entry;const ses=other.session;
+      if(row.rate||other.id===own||ses.yeastType!=='sourdough'||ses.startTime==null||!(ses.startTime>Date.now()))continue;
+      const answer=ses.simpleStarterAnswer==='fridge'||ses.simpleStarterAnswer==='counter'?ses.simpleStarterAnswer
+        :ses.planningMode==='last_fed'&&ses.lastFedTime!=null?(ses.starterLocation==='fridge'?'fridge':ses.starterLocation==='rt'?'counter':null):null;
+      if(!answer)continue;
+      return {answer,lastFedTime:ses.lastFedTime??undefined,lastFedAge:ses.lastFedAge,lastFeedRatio:ses.lastFeedRatio};
+    }}catch{}
+    return null;
+  }
+  function adoptJarStarter(jar:NonNullable<ReturnType<typeof jarStarterOfOtherBake>>){
+    applySimpleStarterAnswer(jar.answer);
+    if(jar.lastFedTime!=null){setLastFedTime(new Date(jar.lastFedTime));if(jar.lastFedAge)setLastFedAge(jar.lastFedAge as typeof lastFedAge);}
+    if(jar.lastFeedRatio)setLastFeedRatio(jar.lastFeedRatio as typeof lastFeedRatio);
+  }
   function chooseMode(key: 'simple' | 'custom') {
     const profile = styleKey ? getBreadProtocol(styleKey) : undefined;
     const ordinaryOven = bakeType === 'bread' ? 'standard_bread' : 'home_oven_standard';
@@ -3791,7 +3812,11 @@ export default function Home() {
     const later=tooCloseLater?.later?.bake??null;
     // The hours stated are the ones the plan needs when a later bake is found.
     const shownH=(type:'biga'|'poolish')=>type===prefermentType&&later?(+later-Date.now())/3600000:needH(type);
-    return {needH:shownH,leftH,poolishFits,later,laterNight:tooCloseLater?.later?.nightSteps??[],laterDay:tooCloseLater?.laterDay?.bake??null,coolFits:!!tooCloseLater?.coolAtBake};
+    // Where the hours go, from the plan found (round 23, item 9: "A biga needs about 20 h" beside the cool spot's
+    // "12 to 20 h" read as a contradiction; the 20 h were the biga's 12 h and the dough's 8 h after it).
+    const found=tooCloseLater?.later;
+    const split=found&&!tooCloseLater?.coolAtBake?{where:(prefermentType==='biga'?(found.inFridge?'fridge':'cool'):(found.inFridge?'fridge':'room')) as 'fridge'|'cool'|'room',prefH:found.prefHours,doughH:(+found.bake-+found.start)/3600000}:null;
+    return {needH:shownH,leftH,poolishFits,later,laterNight:found?.nightSteps??[],laterDay:tooCloseLater?.laterDay?.bake??null,coolFits:!!tooCloseLater?.coolAtBake,split};
   }
 
   function chooseYeast(yt: YeastType) {
@@ -4640,6 +4665,8 @@ export default function Home() {
   const starterLocationAnswered = confirmed('starterLocation',starterLocation) || !!simpleStarterAnswer;
   const starterMatureAnswered = confirmed('starterMature',String(starterMature));
   const simpleStarterPending = simpleStarterScreen && !simpleStarterAnswer && !starterStateDescribed;
+  // The jar's state from the other bake that uses it (round 23, item 3): the question is then not asked again.
+  const jarStarter = simpleStarterPending && !recipeGenerated ? jarStarterOfOtherBake() : null;
   // Custom with a levain preferment (pizza, or a bread whose method is chosen):
   // the same Starter step as the levain breads, just before Bake time.
   const levainPrefCustom = !levainStyle && tab === 'custom' && yeastType === 'sourdough' && prefermentType === 'levain';
@@ -5064,7 +5091,9 @@ export default function Home() {
     const panStyle=!!styleKey&&isPanPizzaStyle(styleKey);
     // Only key steps, one alert each (see planCalendar.ts).
     const events:PlanCalendarEvent[]=keyPlanEvents(schedule?.availabilityActions??[],fr,{singleLoaf,panStyle,from})
-      .map(event=>sharedOven&&event.key==='preheat'?{...event,at:new Date(sharedOven.at),label:sharedOven.title}:event).filter(event=>+event.at>=from);
+      .map(event=>sharedOven&&event.key==='preheat'?{...event,at:new Date(sharedOven.at),label:sharedOven.title}:event)
+      // The preheat lasts until the bake, as the plan's preheat does (round 23, item 12: the .ics event lasted 10 min).
+      .map(event=>event.key==='preheat'&&eatTime&&+eatTime>+event.at?{...event,end:new Date(+eatTime)}:event).filter(event=>+event.at>=from);
     if(prefStartTime&&+prefStartTime>=from&&yeastType!=='sourdough')events.push({key:'preferment',at:prefStartTime,label:prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish')});
     if(yeastType==='sourdough'){
       const counts:Record<string,number>={};
@@ -5103,18 +5132,32 @@ export default function Home() {
     // The first row is the mix whenever no preferment or starter step leads: a mix under way (or recorded) is
     // not listed again at the minute of now (round 20: "8:45pm Start Dough" and "9:00pm Start Dough").
     const startRowIsMix=!firstStarterAction&&!(prefStartTime&&+prefStartTime===+firstRecipeAction);
-    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime&&!(startRowIsMix&&e.key==='mix')).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:blocks.some(block=>busyHit({id:e.key??'',at:e.at},+block.from,+block.to))&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&busyHit({id:e.key??'',at:e.at},+block.from,+block.to)))}));
+    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime&&!(startRowIsMix&&e.key==='mix')).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:planRowBusy(e.key??'',e.at)}));
     // Round 13 (item 7): a night step is named once, in the night line (entryNightView), not again on its row.
     return steps;
   })();
+  // The busy tag of a plan row, one rule (E1, `busyHit`) for every row (round 23, item 2: the plan's FIRST row, Priya's
+  // starter take-out at 11:15pm inside her night, is drawn apart from the steps and had no tag).
+  function planRowBusy(key:string,at:Date):boolean {
+    return blocks.some(block=>busyHit({id:key,at},+block.from,+block.to))&&!(entryNight&&coveredAt.has(+at)&&blocks.some(block=>isNightBlock(block)&&busyHit({id:key,at},+block.from,+block.to)));
+  }
+  // The first row's step: its own key (a starter step's, the preferment, the mix), as the calendar names it.
+  const recipeStartBusyKey=(()=>{
+    if(!recipeGenerated||!eatTime||!schedule)return null;
+    const atStart=planCalendarEvents(+firstRecipeAction-60000).filter(e=>+e.at===+firstRecipeAction);
+    const keys=atStart.length?atStart.map(e=>e.key??''):[+startTime===+firstRecipeAction?'mix':''];
+    return keys.find(key=>planRowBusy(key,firstRecipeAction))??null;
+  })();
+  const recipeStartBusy=recipeStartBusyKey!==null;
   // Preparation runs the Recipe's busy check (recipePlanSteps' "during a busy time") once a recorded fact
   // (a feed, the preferment, the mix) has moved the plan without the clash sheet: a step still to come in a
   // busy period the baker has not agreed to cover is the one clash line (18 Nov 2026 retention).
-  const preparationBusy=(starterFeedRecords.length>0||!!execution||!!mixExecution)&&recipePlanSteps.some(step=>step.busy&&+step.at>Date.now()&&!coveredAt.has(+step.at));
+  const preparationBusy=(starterFeedRecords.length>0||!!execution||!!mixExecution)&&(recipePlanSteps.some(step=>step.busy&&+step.at>Date.now()&&!coveredAt.has(+step.at))||(recipeStartBusy&&+firstRecipeAction>Date.now()&&!coveredAt.has(+firstRecipeAction)));
   // The clash line names the step and why (round 20): "Dough into the fridge at 11:15pm now falls in your night."
   // The generic sentence is left for a remaining plan the dough's yeast no longer fits.
   const planClashText=(()=>{
-    const step=recipePlanSteps.find(row=>row.busy&&+row.at>Date.now()&&!coveredAt.has(+row.at));
+    const startRow=recipeStartBusy&&+firstRecipeAction>Date.now()&&!coveredAt.has(+firstRecipeAction)?{key:recipeStartBusyKey??'',at:firstRecipeAction,label:firstRecipeActionLabel}:undefined;
+    const step=startRow??recipePlanSteps.find(row=>row.busy&&+row.at>Date.now()&&!coveredAt.has(+row.at));
     if(!step)return fr?'La suite du plan ne correspond plus à la levure de la pâte.':'The rest of the plan no longer suits the yeast in the dough.';
     const night=blocks.some(block=>isNightBlock(block)&&busyHit({id:step.key,at:step.at},+block.from,+block.to));
     const when=formatClock(step.at,locale);
@@ -5185,6 +5228,14 @@ export default function Home() {
   // Pizzas: the tally rides in the sticky "Your bake" bar, so it stays in view down the catalogue
   // and over the keyboard at no extra height (25 Nov 2026; a sticky tally row cost 44 px at 320×568).
   const pizzaTallyN=Object.values(pizzaPartyQtys).reduce((sum,q)=>sum+Math.max(0,q),0);
+  // What is picked, said where the choice is offered (round 23, item 11): the Recipe's row and the navigator read
+  // "Pizzas · 3 of 4 chosen" once pizzas are picked, "Add pizzas (optional)" / "Optional" only while none are.
+  const mealChosenLabel=!hasFillings?undefined:bakeType==='pizza'&&pizzaTallyN>0
+    ?(fr?`${pizzaTallyN} sur ${numItems} choisie${pizzaTallyN>1?'s':''}`:`${pizzaTallyN} of ${numItems} chosen`)
+    :(fr?'Garnitures choisies':'Fillings chosen');
+  const fillingsRowLabel=hasFillings
+    ?(bakeType==='pizza'?`Pizzas · ${mealChosenLabel}`:mealChosenLabel)
+    :bakeType==='pizza'?(fr?'Ajouter des pizzas (facultatif)':'Add pizzas (optional)'):(fr?'Ajouter des garnitures (facultatif)':'Add fillings (optional)');
   const pizzaTally=browsingFillings&&bakeType==='pizza'&&pizzaTallyN>0&&(qtyChosen||!!recipeGenerated)
     ?(fr?`${pizzaTallyN} sur ${numItems} choisie${pizzaTallyN>1?'s':''}`:`${pizzaTallyN} of ${numItems} chosen`):undefined;
   const compactBakeContext = recipeGenerated && !browsingFillings && ['shopping','protocol','service'].includes(destination);
@@ -5210,7 +5261,7 @@ export default function Home() {
   })();
   const journeySummary = recipeGenerated&&eatTime ? `${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · ${formatBakeDateTime(eatTime,locale)}` : undefined;
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={stickTop}
-    recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{
+    recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,chosen:mealChosenLabel,active:browsingFillings,onChoose:()=>{
       // From Preparation or Baking & serving, late toppings return to the exact step the baker was on.
       // Elsewhere one Pizzas bar however you arrive (16 Nov 2026 review): after the recipe it is the
       // journey step (‹ Recipe · Shopping list →); before it, back to My bake and on to the recipe.
@@ -5882,7 +5933,7 @@ export default function Home() {
               <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);if(kitchenAnswered||recipeGenerated)confirmSetting('climate',c);}}/>
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{setBatchView('quantity');scrollToStepTop();}}><BackLabel text={fr?'Étape précédente':'Previous step'}/></button>
-                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{const changed=!kitchenAnswered||recipeGenerated;confirmSetting('climate',kitchenTemp);if(recipeGenerated){setPlanReplanPending(true);finishSetupEdit();}else{if(changed)setPlanReplanPending(true);if(simpleStarterScreen){setBatchView('starter');scrollToStepTop();}else openBakeTimeInputs();}}}>{recipeGenerated?setupReturnLabel:simpleStarterScreen?(fr?'Votre levain →':'Your starter →'):(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{const changed=!kitchenAnswered||recipeGenerated;confirmSetting('climate',kitchenTemp);if(recipeGenerated){setPlanReplanPending(true);finishSetupEdit();}else{if(changed)setPlanReplanPending(true);if(simpleStarterScreen&&!jarStarter){setBatchView('starter');scrollToStepTop();}else{if(jarStarter)adoptJarStarter(jarStarter);openBakeTimeInputs();}}}}>{recipeGenerated?setupReturnLabel:simpleStarterScreen&&!jarStarter?(fr?'Votre levain →':'Your starter →'):(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
             </> : batchView==='starter' ? <>
               <h1 className="bh-page-title">{fr?'Où est votre levain en ce moment ?':'Where is your starter now?'}</h1>
               <div role="group" aria-label={fr?'Où est votre levain en ce moment ?':'Where is your starter now?'} data-simple-starter style={{display:'grid',gap:12,marginTop:8}}>
@@ -5904,7 +5955,7 @@ export default function Home() {
               {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label className="bh-seed-toggle"><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label>{addSeeds && <p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p>}</div>}
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{if(recipeGenerated)backToSetupChoices();else {setBatchView('style');scrollToStepTop();}}}>{recipeGenerated?(fr?'Retour à mes choix':'Back to my choices'):(fr?'Étape précédente':'Previous step')}</button>
-                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else if(kitchenAnswered&&simpleStarterPending){setBatchView('starter');scrollToStepTop();}else if(isUnleavened||kitchenAnswered)openBakeTimeInputs();else{setBatchView('kitchen');scrollToStepTop();}}}>{recipeGenerated?setupReturnLabel:kitchenAnswered&&simpleStarterPending?(fr?'Votre levain →':'Your starter →'):isUnleavened||kitchenAnswered?(fr?'Heure de cuisson →':'Bake time →'):(fr?'Cuisine →':'Kitchen →')}</button></BottomActions>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else if(kitchenAnswered&&simpleStarterPending&&!jarStarter){setBatchView('starter');scrollToStepTop();}else if(isUnleavened||kitchenAnswered){if(jarStarter)adoptJarStarter(jarStarter);openBakeTimeInputs();}else{setBatchView('kitchen');scrollToStepTop();}}}>{recipeGenerated?setupReturnLabel:kitchenAnswered&&simpleStarterPending&&!jarStarter?(fr?'Votre levain →':'Your starter →'):isUnleavened||kitchenAnswered?(fr?'Heure de cuisson →':'Bake time →'):(fr?'Cuisine →':'Kitchen →')}</button></BottomActions>
             </>}
           </section>}
 
@@ -6168,7 +6219,7 @@ export default function Home() {
                           />
                           {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{planClashText}</p>}
                           {entryNightView('recipe')}
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} startBusy={recipeStartBusy} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -6229,7 +6280,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
 
                   {/* Pizzas/Fillings are a choice, not a station (round 20, owner): one secondary row. */}
-                  {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{bakeType==='pizza'?(fr?'Ajouter des pizzas (facultatif)':'Add pizzas (optional)'):(fr?'Ajouter des garnitures (facultatif)':'Add fillings (optional)')}</button>}
+                  {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{fillingsRowLabel}</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
                     {(()=>{const next=oneLineCta(`${(fr?'Courses et prépa':'Shopping & prep')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
@@ -6319,6 +6370,7 @@ export default function Home() {
                   selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionForward={fillingsForward} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}
                   onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
+                  onCookBack={()=>openDestination('protocol')} cookBackLabel={fr?'Retour à la préparation':'Back to Preparation'}
                   active={companionVisible}
                   doughConfigured={recipeGenerated}
                   onHasSelection={setPizzasConfirmed}
@@ -6459,7 +6511,7 @@ export default function Home() {
 
             {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
             {showPrefermentChoice && (
-              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!prefermentChosen||prefermentTooClose() ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(8))?.chip ?? (fr?'Suivant':'Next'))} →</button> : undefined}>
+              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!prefermentChosen||(recipeGenerated&&prefermentTooClose()) ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(8))?.chip ?? (fr?'Suivant':'Next'))} →</button> : undefined}>
                 <PrefermentPicker
                   selected={prefermentChosen ? prefermentType : null}
                   chooseMethod
@@ -6498,13 +6550,16 @@ export default function Home() {
                   // or after the bake time) left the baker on a plan starting in the past. Say so
                   // here and offer what fits: the poolish, then direct dough, or a later bake.
                   const close=prefermentTooClose();if(!close||prefermentType==='none'||prefermentType==='levain')return null;
-                  const {needH,leftH,poolishFits,later,laterNight,laterDay,coolFits}=close;
+                  const {needH,leftH,poolishFits,later,laterNight,laterDay,coolFits,split}=close;
                   const name=prefermentType==='biga'?'biga':'poolish';
                   const hours=(h:number)=>formatDuration(Math.max(1,Math.round(h)),locale);
                   const choose=(pt:PrefermentType)=>{choosePreferment(pt);confirmSetting('method',pt);setPlanReplanPending(true);};
                   const btn={minHeight:44,padding:'10px 14px',border:'1px solid var(--border)',borderRadius:10,background:'var(--warm)',color:'var(--char)',fontSize:15,cursor:'pointer',textAlign:'left'} as const;
                   return <div data-preferment-too-close role="status" style={{marginTop:16,padding:'14px 16px',borderRadius:12,background:'var(--cream)',display:'grid',gap:10}}>
-                    <p style={{margin:0,fontSize:15,lineHeight:1.5}}>{fr?`${prefermentType==='biga'?'Une biga':'Un poolish'}${coolFits?' au frigo':''} demande environ ${hours(needH(prefermentType))} avant la cuisson ; il en reste ${hours(Math.max(0,leftH))}.`:`A ${name}${coolFits?' in the fridge':''} needs about ${hours(needH(prefermentType))} before baking; your bake is in ${hours(Math.max(0,leftH))}.`}</p>
+                    <p style={{margin:0,fontSize:15,lineHeight:1.5}}>{split?(fr
+                      ?`${prefermentType==='biga'?'La biga':'Le poolish'} ${split.where==='cool'?'au frais':split.where==='fridge'?'au frigo':'à température ambiante'} (${hours(split.prefH)}), puis la pâte (${hours(split.doughH)}) : environ ${hours(split.prefH+split.doughH)} avant la cuisson ; il en reste ${hours(Math.max(0,leftH))}.`
+                      :`The ${name} ${split.where==='cool'?'in a cool spot':split.where==='fridge'?'in the fridge':'at room temperature'} (${hours(split.prefH)}), then the dough (${hours(split.doughH)}): about ${hours(split.prefH+split.doughH)} before baking; your bake is in ${hours(Math.max(0,leftH))}.`)
+                      :fr?`${prefermentType==='biga'?'Une biga':'Un poolish'}${coolFits?' au frigo':''} demande environ ${hours(needH(prefermentType))} avant la cuisson ; il en reste ${hours(Math.max(0,leftH))}.`:`A ${name}${coolFits?' in the fridge':''} needs about ${hours(needH(prefermentType))} before baking; your bake is in ${hours(Math.max(0,leftH))}.`}</p>
                     {coolFits&&<button type="button" data-preferment-fallback="cool" style={btn} onClick={()=>{setBigaStorage('cool');setPrefGoesInFridgeState(false);confirmSetting('method','biga');setPlanReplanPending(true);}}>{fr?'Garder la biga, dans un endroit frais à 16–18 °C':'Keep the biga, in a cool spot at 16–18 °C'}</button>}
                     {poolishFits&&<button type="button" data-preferment-fallback="poolish" style={btn} onClick={()=>choose('poolish')}>{fr?'Faire un poolish':'Make a poolish instead'}</button>}
                     <button type="button" data-preferment-fallback="none" style={btn} onClick={()=>choose('none')}>{fr?'Pâte directe, sans préferment':'Direct dough, no preferment'}</button>
@@ -6626,7 +6681,8 @@ export default function Home() {
                     // Entered in the baker's own yeast; stored as IDY so a yeast change keeps the timing.
                     const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
                     // Until the Custom plan exists the amount is "Set after timing", never another plan's.
-                    const planReady = recipeGenerated || customPlanSeen;
+                    // Round 23 (item 12): Fine-tune that creates the recipe has its planner mounted, so the amount is known there too.
+                    const planReady = recipeGenerated || customPlanSeen || fineTuneFinishes;
                     // A poolish or biga (round 7): its own yeast (% of its flour) and the final dough's, each
                     // "Auto" until the baker types; under one "Yeast · instant dry" line so each label stays short.
                     const pref = prefermentType==='poolish'||prefermentType==='biga' ? prefermentType as FlourPreferment : null;
@@ -6962,7 +7018,7 @@ export default function Home() {
                           />
                           {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{planClashText}</p>}
                           {entryNightView('recipe')}
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} startBusy={recipeStartBusy} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -7023,7 +7079,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
 
                   {/* Pizzas/Fillings are a choice, not a station (round 20, owner): one secondary row. */}
-                  {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{bakeType==='pizza'?(fr?'Ajouter des pizzas (facultatif)':'Add pizzas (optional)'):(fr?'Ajouter des garnitures (facultatif)':'Add fillings (optional)')}</button>}
+                  {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{fillingsRowLabel}</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
                     {(()=>{const next=oneLineCta(`${(fr?'Courses et prépa':'Shopping & prep')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
@@ -7113,6 +7169,7 @@ export default function Home() {
                   selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionForward={fillingsForward} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}
                   onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
+                  onCookBack={()=>openDestination('protocol')} cookBackLabel={fr?'Retour à la préparation':'Back to Preparation'}
                   active={companionVisible}
                   doughConfigured={recipeGenerated}
                   onHasSelection={setPizzasConfirmed}

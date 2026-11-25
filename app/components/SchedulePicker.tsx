@@ -7266,10 +7266,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const conflictNames: Record<string, [string, string]> = {
     ...Object.fromEntries(Array.from({length:Math.max(0,mixingBatches-1)},(_,i)=>[
       [`mix-batch-${i+2}`, [`Pétrissée ${i+2}`,`Mix batch ${i+2}`]],
-      [`mix-finish-batch-${i+2}`, [`Reprendre le pétrissage du lot ${i+2}`,`Resume kneading batch ${i+2}`]],
+      [`mix-finish-batch-${i+2}`, [`Fin du pétrissage du lot ${i+2}`,`Finish mixing batch ${i+2}`]],
     ]).flat()) as Record<string,[string,string]>,
     autolyse: ['Autolyse · farine et eau', 'Autolyse · combine flour and water'],
-    mix: ['Pétrir la pâte', 'Start Dough'], 'mix-finish': ['Reprendre le pétrissage', 'Resume kneading'],
+    mix: ['Pétrir la pâte', 'Start Dough'], 'mix-finish': ['Fin du pétrissage', 'Finish mixing'],
     poach: ['Pochage', 'Poaching'], roll: ['Abaisse', 'Rolling'],
     'fold-1': ['Rabat 1', 'Fold 1'], 'fold-2': ['Rabat 2', 'Fold 2'],
     'fold-3': ['Rabat 3', 'Fold 3'], 'fold-4': ['Rabat 4', 'Fold 4'],
@@ -7983,10 +7983,13 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           for(const conflict of [...simpleConflicts].sort((a,b)=>+a.action.at-+b.action.at)){
             const id=conflict.action.id;
             const name=/^fold-/.test(id)?(folds>1?(isFr?`${folds} rabats`:`${folds} folds`):(isFr?'un rabat':'a fold')):simpleConflictName(conflict.action);
-            if(seen.has(name))continue;seen.add(name);parts.push(name);
+            if(seen.has(name))continue;seen.add(name);
+            // Each step with its time (round 23, phrasing: "Starter out of the fridge at 11:15pm and pre-mix feed at
+            // 12:15am fall during the night"); folds keep their count.
+            parts.push(/^fold-/.test(id)||simpleConflicts.length>3?name:`${name} ${isFr?'à':'at'} ${simpleTimeLabel(conflict.action.at)}`);
           }
           // "Start Dough" is the step's name in English; keep its capitals mid-sentence.
-          const lower=parts.map((p,i)=>i===0||(!isFr&&p===conflictNames.mix[1])?p:p.charAt(0).toLowerCase()+p.slice(1));
+          const lower=parts.map((p,i)=>i===0||(!isFr&&p.startsWith(conflictNames.mix[1]))?p:p.charAt(0).toLowerCase()+p.slice(1));
           const list=lower.length>1?`${lower.slice(0,-1).join(', ')} ${isFr?'et':'and'} ${lower.at(-1)}`:lower[0];
           const sentence=list.charAt(0).toUpperCase()+list.slice(1);
           return isFr?`${sentence} tombent ${during}.`:`${sentence} fall ${during}.`;
@@ -8003,8 +8006,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             const at=prefFirst?new Date(+pendingStart-prefOffsetH*3600000):pendingStart;
             const name=prefFirst?(prefermentType==='biga'?(isFr?'Préparer la biga':'Make Biga'):(isFr?'Préparer le poolish':'Make Poolish')):conflictNames.mix[isFr?0:1];
             if(+at<=Date.now())return isFr?`${name} tomberait ${fmtCardDT(at,true)}, une heure déjà passée.`:`${name} would be ${fmtCardDT(at,false)}, which has passed.`;
-            return isFr?`${name} ${fmtCardDT(at,true)} ne laisse pas à la pâte le temps qu’il lui faut avant la cuisson de ${simpleTimeLabel(pendingEatTime)}.`
-              :`${name} at ${fmtCardDT(at,false)} doesn’t leave the dough the time it needs before the ${simpleTimeLabel(pendingEatTime)} bake.`;
+            // Round 23 (phrasing): the short form, the step by its own name and day ("Biga à ven. 19h30 : trop peu de
+            // temps pour cuire à 15h30.").
+            const short=prefFirst?(prefermentType==='biga'?'Biga':'Poolish'):(isFr?'Pétrissage':'Start Dough');
+            const day=`${at.toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'short'})} ${fmtCardHM(at,isFr)}`;
+            return isFr?`${short} à ${day} : trop peu de temps pour cuire à ${fmtCardHM(pendingEatTime,true)}.`
+              :`${short} at ${day} leaves too little time for a ${fmtCardHM(pendingEatTime,false)} bake.`;
           }
           const lang=isFr?'fr':'en';
           return isFr
@@ -9563,6 +9570,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
               ...(starterPreview?.validation.schedule?.availabilityActions??[]).map(action=>({id:action.id,at:+action.at,endAt:action.end?+action.end:undefined,name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id]??['Étape','Step'])[isFr?0:1])})),
             ].filter(row=>Number.isFinite(row.at)).sort((a,b)=>a.at-b.at)
           : previewRows.filter(row=>row.id!=='ready'&&Number.isFinite(row.at)).map(row=>({id:row.id,at:row.at,name:row.name,endAt:row.endAt}));
+        // Preparation's steps, as Preparation shows them (round 23, item 7): the end of mixing belongs to Start Dough
+        // (no "Resume kneading" row), times on the quarter-hour grid (folds read 9:25 here, 9:30 there), and a span
+        // only for the bake ("Start Dough 8:15–8:17pm" was the mix's own two minutes).
+        const handsOnRows=interventionRows.filter(row=>!/(?:^|:)mix-finish/.test(row.id))
+          .map(row=>({...row,at:Math.round(row.at/900000)*900000,endAt:row.id==='bake'||row.id==='dough:bake'?row.endAt:undefined}));
         if(isSourdough&&((planningMode==='know_peak'&&!knownPeakTime)||(planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null))))return null;
 
         const adjustment=dirty&&editingRow==='mix'&&hasPrefActive&&!activeOverrides.prefLocked
@@ -9610,8 +9622,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // "Change my busy times" only when a busy time is the cause (round 11, item 4): a window too short or too long
         // is answered by the bakes that fit, offered above.
         const busyCause=repairBlocks.length>0&&(currentConflicts.length>0||(isSourdough?('validation' in currentCandidate&&currentCandidate.validation.reason==='busy'):preview?.issue==='busy'));
+        // The sentence is said once (round 23, item 4: "…dans le passé" read twice, under the row and in this notice):
+        // when the row being moved already carries it, the notice does not repeat it.
+        const noticeSentence=isSourdough?starterPreview?.message:(rangeExplanation||draftMessage);
+        const noticeOnRow=!!noticeSentence&&anchors.some(anchor=>anchor.note===noticeSentence);
         const conflictNotice=!simpleDecisionPending&&!valid&&!keyDragging&&!showResolutionChoice&&!(listedConflicts&&!busyWithFridge&&!noticeAction&&!hasTimingOverrides)?<div className="bh-plan-notice" role="status">
-          {!busyWithFridge&&!listedConflicts&&<strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>}
+          {!busyWithFridge&&!listedConflicts&&!noticeOnRow&&<strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>}
           {busyWithFridge&&otherConflicts.length>0&&<><strong>{isFr?'Autres étapes pendant votre indisponibilité :':'Other steps during your unavailable hours:'}</strong><ul>{otherConflicts.map(({action})=><li key={`${action.id}:${+action.at}`}>{foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1]} · {fmtCardDT(action.at,isFr)}</li>)}</ul></>}
           {!busyWithFridge&&blockedPeriod&&['cold-out-2','preheat'].includes(preview?.conflict??'')&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Cette étape doit respecter la remise en température de la pâte ou le préchauffage du four. Choisissez une cuisson plus tardive, ou modifiez vos disponibilités si vous pouvez intervenir.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). The remaining step must fit the dough’s readiness window or oven preheating. Choose a later baking time, or change availability if you can do this step.`}</p>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
@@ -9649,7 +9665,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           {/* Custom has no "About this plan" (20 Nov 2026 chart review, owner): the curve is gone, and its time list and
               the Hands-on list repeated the plan above (three copies of the times). Simple keeps its closed list. */}
           {mode!=='custom' && <>
-          {interventionRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></details>}
+          {handsOnRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{handsOnRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></details>}
           <details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Comment fonctionne votre planning':'How your plan works'}</summary><p>{isFr?'Nous partons de votre heure de cuisson pour prévoir le temps de levée et organiser la préparation selon vos disponibilités. Si une étape tombe pendant une période où vous êtes indisponible, nous vous aidons à ajuster le planning.':'We work backwards from your baking time, allowing time for the dough to rise and fitting preparation around your availability. If a step clashes, we help you adjust the plan.'}</p></details>
           </>}
           {searchFailed&&hasTimingOverrides&&!editingRow&&!(isSourdough?starterPreview?.message:draftMessage)&&<p className="bh-key-detail">{isFr?'Aucun créneau trouvé avec vos horaires. Revenez aux horaires recommandés pour élargir la recherche.':'No slot found with your chosen times. Return to recommended times to widen the search.'}</p>}

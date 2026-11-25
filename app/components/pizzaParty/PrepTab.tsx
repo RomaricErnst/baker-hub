@@ -68,6 +68,7 @@ const STATIONS = [
   { id: 'board',   en: 'Board — slice & tear',            fr: 'Planche — trancher & déchirer' },
   { id: 'grate',   en: 'Grate & crush',                   fr: 'Râper & concasser' },
   { id: 'drain',   en: 'Open & drain',                    fr: 'Ouvrir & égoutter' },
+  { id: 'chop',    en: 'Slice & chop',                    fr: 'Émincer' },
   { id: 'herbs',   en: 'Herbs & finish',                  fr: 'Herbes & finitions' },
 ];
 
@@ -77,7 +78,10 @@ function assignStation(task: PrepTask): string {
   if (task.timing >= 20) return 'time';
   if (task.category === 'finish' || task.category === 'spice' || note.includes('pick') || note.includes('chiffonade') || note.includes('zest')) return 'herbs';
   if (note.includes('grate') || note.includes('crush') || note.includes('crumble') || note.includes('blend') || note.includes('râper') || note.includes('concass')) return 'grate';
-  if (note.includes('drain') || note.includes('égoutter') || note.includes('pat dry') || note.includes('éponger') || task.timing === 0 || task.timing <= 3) return 'drain';
+  if (note.includes('drain') || note.includes('égoutter') || note.includes('pat dry') || note.includes('éponger') || note.includes('open ') || note.includes('ouvrir')) return 'drain';
+  // Quick knife work, and toppings with no preparation note (garlic, chilli, salami): "Slice & chop", never
+  // "Open & drain" (round 23, item 12).
+  if (task.timing <= 3) return 'chop';
   return 'board';
 }
 

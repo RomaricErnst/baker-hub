@@ -9,8 +9,8 @@ export default function StarterFeedStatus({fr,plannedAt,onFed,onNotYet}:{fr:bool
   <p><strong>{fr?'Avez-vous rafraîchi le levain ?':'Have you fed the starter?'}</strong></p>
   <div className="bh-start-actions"><button type="button" style={STATUS_ANSWER} onClick={()=>onFed(plannedAt)}>{/* FR "Oui, à 8h30" the same day, "Oui, le ven. 27 nov. · 22h00" another day, as the mix prompt (18 Nov 2026 retention round 4). */}{fr?(new Date(plannedAt).toDateString()===new Date().toDateString()?'Oui, à':'Oui, le'):'Yes, at'} {label}</button><button type="button" style={STATUS_BUTTON} onClick={onNotYet}>{fr?'Pas encore · Actualiser le plan':'Not yet · Update plan'}</button></div>
   <button type="button" className="bh-start-link" onClick={()=>{
-   // The field opens on now, to the minute: a feed done a little late is usually one edit away (18 Nov 2026 retention).
-   if(!editing&&!time){const d=new Date(Date.now());d.setSeconds(0,0);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());setTime(d.toISOString().slice(0,16));}
+   // The field opens on now, to 5 minutes (round 23): a feed done a little late is usually one edit away (18 Nov 2026 retention).
+   if(!editing&&!time){const d=new Date(Math.floor(Date.now()/300000)*300000);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());setTime(d.toISOString().slice(0,16));}
    setEditing(!editing);}}>{fr?'À une autre heure ?':'Different time?'}</button>
   {editing&&<div className="bh-start-actions"><label>{fr?'Heure du rafraîchi':'Feeding time'}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/></label><button type="button" style={STATUS_BUTTON} disabled={!valid} onClick={()=>onFed(actual)}>{fr?'Enregistrer':'Set time'}</button></div>}
  </section>;

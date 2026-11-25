@@ -49,7 +49,7 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   return <section className="bh-start-status" aria-label={fr?'Préparation de la fournée':'Bake preparation'}>
     {execution?(
       // The fact is one compact line; the bar above leads to the step (16 Nov 2026 design review).
-      <p className="bh-start-compact"><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong><button type="button" className="bh-start-link" onClick={()=>editTime(execution.actualAt)}>{execution.stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button><button type="button" className="bh-start-link" aria-label={fr?'Annuler la confirmation':'Undo completion'} onClick={onUndo}>{fr?'Annuler':'Undo'}</button></p>
+      <p className="bh-start-compact"><strong>{method==='none'?(fr?'Pâte commencée':'Dough started'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong><button type="button" className="bh-start-link" onClick={()=>editTime(execution.stated||execution.actualAt>=Date.now()-5*60000?execution.actualAt:Math.floor(Date.now()/300000)*300000)}>{execution.stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button><button type="button" className="bh-start-link" aria-label={fr?'Annuler la confirmation':'Undo completion'} onClick={onUndo}>{fr?'Annuler':'Undo'}</button></p>
     ):<>
       {starting?<>
         <p><strong>{method==='none'?(fr?'C’est l’heure de pétrir':'Time to mix the dough'):(fr?`C’est l’heure de préparer ${noun}`:`Time to make ${noun}`)}</strong></p>
@@ -61,7 +61,7 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
         {status==='unconfirmed'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(plannedAt)}>{fr?(new Date(plannedAt).toDateString()===new Date(now).toDateString()?'Oui, à':'Oui, le'):'Yes, at'} {fmt(plannedAt)}</button>}
         {status==='unconfirmed'&&<button type="button" style={STATUS_BUTTON} onClick={onNotYet}>{fr?'Pas encore · Actualiser le plan':'Not yet · Update plan'}</button>}
       </div>
-      <button type="button" className="bh-start-link" onClick={()=>setDifferent(!different)}>{fr?'À une autre heure ?':'Different time?'}</button>
+      <button type="button" className="bh-start-link" onClick={()=>{if(!different&&!time){const d=new Date(Math.floor(Date.now()/300000)*300000);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());setTime(d.toISOString().slice(0,16));}setDifferent(!different);}}>{fr?'À une autre heure ?':'Different time?'}</button>
       <button type="button" className="bh-start-link" onClick={onRecipe}>{fr?'Voir la recette':'View recipe'}</button>
       </>}
     </>}
