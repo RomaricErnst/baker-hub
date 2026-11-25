@@ -1564,11 +1564,18 @@ function simplerHotPlan(plan: ScheduleResult, build: (hot: HotPlan) => ScheduleR
   // The bulk-cold plan keeps the fridge's share: no more room-temperature time than the engine's plan (with
   // only the style's cold hours it left an enriched dough 13 h at 27 °C on the yeast floor). Shaping first
   // moves the bulk's cold to the balls and keeps the warm time.
+  // The first rung that keeps those promises, unless a later rung clears a clash the first one keeps (round 21: under
+  // rule E1 a shaped-first plan whose balls go in at the night's edge kept the engine's one clash, a take-out in work
+  // hours, while the bulk-cold plan had none; the ladder took the first and lost the fit).
+  let chosen: ScheduleResult | null = null;
   for (const hot of ladder.filter(step => step !== 'room')) {
     const one = build(hot);
-    if (fridgeSpellCount(one) === 1 && keeps(one) && (hot !== 'bulkCold' || one.totalRTHours <= plan.totalRTHours + 0.25)) return one;
+    if (!(fridgeSpellCount(one) === 1 && keeps(one) && (hot !== 'bulkCold' || one.totalRTHours <= plan.totalRTHours + 0.25))) continue;
+    if (!chosen) chosen = one;
+    else if ((one.availabilityConflicts?.length ?? 0) < (chosen.availabilityConflicts?.length ?? 0)) chosen = one;
+    if (!(chosen.availabilityConflicts?.length)) break;
   }
-  return plan;
+  return chosen ?? plan;
 }
 
 /** Build canonical phases, then describe only work with an existing time budget.

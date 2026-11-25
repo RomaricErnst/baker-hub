@@ -70,10 +70,13 @@ for(const lang of ['en','fr']){
    const resume=page.getByRole('button',{name:fr?/Reprendre/:/Resume/}).first();
    await expect(resume).toBeVisible({timeout:20000});await resume.tap();
    await section(page,fr,fr?'Préparation':'Preparation');
-   const back=page.getByRole('button',{name:fr?/Retour à la vue d’ensemble|Vue d’ensemble/:/Overview/});
-   const mixed=page.getByRole('button',{name:fr?'Terminé maintenant':'Done now',exact:true});
-   if(!(await mixed.count())&&await back.count())await back.first().tap();
-   await mixed.first().tap();
+   // Round 21 (P): no separate "Done now" card; the step's own Step done, then "Different time?" (the tap's clock).
+   const startStep=page.getByRole('button',{name:fr?/^Pétrir la pâte/:/^Start Dough/});
+   if(!(await page.getByRole('checkbox',{name:fr?/Étape faite/:/Step done/}).count())&&await startStep.count())await startStep.first().tap();
+   const done=page.getByRole('checkbox',{name:fr?/Étape faite/:/Step done/}).first();
+   await done.scrollIntoViewIfNeeded();await done.check();
+   await page.getByRole('button',{name:fr?'À une autre heure ?':'Different time?'}).first().tap();
+   await page.locator('[data-done-time]:visible').getByRole('button',{name:fr?'Enregistrer':'Set time',exact:true}).first().tap();
    await expect.poll(async()=>(await stored(page))?.mixExecution??(await stored(page))?.execution,{timeout:10000}).toBeTruthy();
    const s=await stored(page);
    expect(s.executionClash).toBe(false);

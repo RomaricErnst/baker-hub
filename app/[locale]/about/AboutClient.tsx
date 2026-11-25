@@ -380,7 +380,7 @@ const CONTENT: Record<string, LocaleContent> = {
               'Humidity beyond the ±2 % hydration correction, and water hardness.',
               'Protein variation between bags of the same flour, and the thermal mass of a particular oven.',
             ]} />
-            <p style={{ margin: 0, ...bodyText }}>This is why each step of the guide gives the visual cue to look for, and why Maestro is there to look at your dough with you.</p>
+            <p style={{ margin: 0, ...bodyText }}>This is why each step of the guide gives the visual cue to look for, and why each step has its own Ask box for a question about your dough.</p>
           </>
         ),
       },
@@ -405,9 +405,9 @@ const CONTENT: Record<string, LocaleContent> = {
         ),
       },
       {
-        title: 'Maestro — help along the way',
+        title: 'Help along the way',
         body: (
-          <p style={{ margin: 0, ...bodyText }}>In the step-by-step guide, <B>Ask Maestro</B> answers a question about the step, in words. It knows your recipe, oven, style and the step you are on, so its answer is about your bake, not a generic one: fermentation signs, timing, temperature, what to check next. It cannot see or touch your dough, so it asks for the sign that decides.</p>
+          <p style={{ margin: 0, ...bodyText }}>In the step-by-step guide, each step has an <B>Ask</B> box: it answers a question about the step, in words. It knows your recipe, oven, style and the step you are on, so its answer is about your bake, not a generic one: fermentation signs, timing, temperature, what to check next. It cannot see or touch your dough, so it asks for the sign that decides.</p>
         ),
       },
       {
@@ -682,7 +682,7 @@ const CONTENT: Record<string, LocaleContent> = {
               'L’humidité au-delà de la correction de ±2 % d’hydratation, et la dureté de l’eau.',
               'La variation des protéines entre sacs d’une même farine, et la masse thermique de votre four précis.',
             ]} />
-            <p style={{ margin: 0, ...bodyText }}>C’est pourquoi chaque étape du guide donne le repère visuel à observer, et pourquoi Maestro est là pour regarder votre pâte avec vous.</p>
+            <p style={{ margin: 0, ...bodyText }}>C’est pourquoi chaque étape du guide donne le repère visuel à observer, et pourquoi chaque étape a sa case <B>Demander</B> pour une question sur votre pâte.</p>
           </>
         ),
       },
@@ -707,9 +707,9 @@ const CONTENT: Record<string, LocaleContent> = {
         ),
       },
       {
-        title: 'Maestro — l’aide en chemin',
+        title: 'L’aide en chemin',
         body: (
-          <p style={{ margin: 0, ...bodyText }}>Dans le guide pas à pas, <B>Demander au Maestro</B> répond par écrit à une question sur l’étape. Il connaît votre recette, votre four, votre style et l’étape où vous en êtes : sa réponse porte sur votre fournée, pas sur un cas général — signes de fermentation, durées, températures, ce qu’il faut vérifier ensuite. Il ne voit ni ne touche votre pâte : il demande le signe qui décide.</p>
+          <p style={{ margin: 0, ...bodyText }}>Dans le guide pas à pas, chaque étape a une case <B>Demander</B> : elle répond par écrit à une question sur l’étape. L’aide connaît votre recette, votre four, votre style et l’étape où vous en êtes : sa réponse porte sur votre fournée, pas sur un cas général — signes de fermentation, durées, températures, ce qu’il faut vérifier ensuite. Elle ne voit ni ne touche votre pâte : elle demande le signe qui décide.</p>
         ),
       },
       {

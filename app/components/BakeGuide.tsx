@@ -1679,7 +1679,7 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
                 (t.raw('mix.pitfalls') as string[])[0],
                 // Kneading advice follows the method in use; oil advice needs oil in the formula.
                 mixerType === 'hand' ? t('mix.pitfallHand') : mixerType === 'no_knead' ? '' : t('mix.pitfallMixer'),
-                isSpiral ? (l === 'fr' ? `Température de pâte en fin de pétrissage ignorée — les pétrins à spirale chauffent, la pâte peut dépasser ${tempC(28, u)} sans qu’on s’en aperçoive` : `Ignoring the final dough temperature — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing`) : '',
+                isSpiral ? (l === 'fr' ? `Température de pâte en fin de pétrissage ignorée — les pétrins à spirale chauffent, la pâte peut dépasser ${tempC(28, u, 'fr')} sans qu’on s’en aperçoive` : `Ignoring the final dough temperature — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing`) : '',
                 oil > 0 ? (t.raw('mix.pitfalls') as string[])[1] : '',
               ].filter(Boolean)} />
             </Section>
@@ -1769,7 +1769,7 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
               <Bullets items={isRye ? [
                 l === 'fr' ? 'Pétrir ou rabattre une pâte de seigle la rend plus collante, pas plus forte : laissez-la reposer.' : 'Kneading or folding rye dough makes it stickier, not stronger: leave it to rest.',
                 l === 'fr' ? 'Attendre qu’elle double : une pâte de seigle s’affaisse avant d’y arriver. Fiez-vous aux fissures.' : 'Waiting for it to double: rye dough sags before it gets there. Go by the cracks.',
-                ...(kitchenTemp < 26 ? [l === 'fr' ? `Au-dessus de ${tempC(26, u)}, le pointage accélère. Gardez la pâte à la température de la cuisine, loin d’une source de chaleur.` : `A spot warmer than ${tempC(26, u)} speeds the rise: keep the dough at kitchen temperature, away from heat`] : []),
+                ...(kitchenTemp < 26 ? [l === 'fr' ? `Au-dessus de ${tempC(26, u, 'fr')}, le pointage accélère. Gardez la pâte à la température de la cuisine, loin d’une source de chaleur.` : `A spot warmer than ${tempC(26, u)} speeds the rise: keep the dough at kitchen temperature, away from heat`] : []),
               ] : [
                 ...(hydration >= 70 ? [
                   oil > 0
@@ -1779,7 +1779,7 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
                     : (l === 'fr' ? `Mouillez vos mains avant chaque série de rabats pour limiter l’adhérence sans modifier l’hydratation.` : `Wet hands for stretch & folds — dip your hands in water before each set. Avoids sticking without altering hydration like bench flour would.`),
                 ] : []),
                 // Advice to find a cooler spot only helps when the kitchen itself is cooler.
-                ...(kitchenTemp < 26 ? [l === 'fr' ? `Au-dessus de ${tempC(26, u)}, le pointage accélère. Gardez la pâte à la température de la cuisine, loin d’une source de chaleur.` : `A spot warmer than ${tempC(26, u)} speeds the rise and flattens the flavour: keep the dough at kitchen temperature, away from heat`] : []),
+                ...(kitchenTemp < 26 ? [l === 'fr' ? `Au-dessus de ${tempC(26, u, 'fr')}, le pointage accélère. Gardez la pâte à la température de la cuisine, loin d’une source de chaleur.` : `A spot warmer than ${tempC(26, u)} speeds the rise and flattens the flavour: keep the dough at kitchen temperature, away from heat`] : []),
                 // A short rise that goes straight to the fridge rises little before it: "less than 30% … dense" would only worry (17 Nov 2026 retention round 2).
                 ...(t.raw('bulk.pitfallsBase') as string[]).filter(text => !(isSourdough && /75\s?%/.test(text)) && !(shortColdBulk && /30\s?%/.test(text))),
               ]} />
@@ -1826,7 +1826,7 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
                 <Bullets items={[
                   (t.raw('coldRetard.pitfalls') as string[])[0],
                   l === 'fr'
-                    ? `Frigo au-dessus de ${tempC(8, u)} : la pâte fermente trop pendant le repos — vérifiez sa température`
+                    ? `Frigo au-dessus de ${tempC(8, u, 'fr')} : la pâte fermente trop pendant le repos — vérifiez sa température`
                     : `Fridge temperature above ${tempC(8, u)}: dough over-ferments during the fridge rest — check your fridge`,
                   // "Do not rush the cold phase" only means something for a long cold rest.
                   ...((schedule.totalColdHours ?? schedule.coldRetardHours ?? 0) >= 8 ? [(t.raw('coldRetard.pitfalls') as string[])[1]] : []),

@@ -6,14 +6,23 @@ const journal=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journa
 // Round 20 (item 7): a bake still to come offers no rating and no Bake again; these tests move the bake into the past.
 // The draft is the same bake: it moves too, or the next save writes its future bake time back over the entry's
 // (round 20 CI: WebKit saved the draft after the reload and the sheet still showed a bake to come).
+// Round 21 (F1, cause): the move was written while the page still held the bake in memory, and the page saves its draft on
+// pagehide (the reload) â€” over the moved entry, when WebKit's save landed after the write. The move now runs in the NEXT
+// page, before any app script (an init script, once per move), so no save of the old page can follow it.
 // (2 h ago: still within the 12 h when the sheet offers "Open my bake".)
-const bakedTwoHoursAgo=(page,id)=>page.evaluate(id=>{
- const rows=JSON.parse(localStorage.getItem('bh_journal_v1')||'[]');const row=rows.find(r=>r.id===id);if(!row)return;
- const shift=Date.now()-2*3600000-row.eatTime;
- const move=s=>{if(!s)return s;for(const k of ['startTime','eatTime','acceptedStartTime','acceptedPreparationAt','acceptedEatTime'])if(typeof s[k]==='number')s[k]+=shift;return s;};
- row.eatTime+=shift;move(row.session);localStorage.setItem('bh_journal_v1',JSON.stringify(rows));
- if(localStorage.getItem('bh_journal_current_v1')===id){const d=JSON.parse(localStorage.getItem('bh_session_v1')||'null');if(d)localStorage.setItem('bh_session_v1',JSON.stringify(move(d)));}
-},id);
+async function bakedTwoHoursAgo(page,id){
+ const token=`moved-${id}-${Date.now()}`;
+ await page.addInitScript(([id,token])=>{
+  if(sessionStorage.getItem(token))return;sessionStorage.setItem(token,'1');
+  const rows=JSON.parse(localStorage.getItem('bh_journal_v1')||'[]');const row=rows.find(r=>r.id===id);if(!row)return;
+  const shift=Date.now()-2*3600000-row.eatTime;
+  const move=s=>{if(!s)return s;for(const k of ['startTime','eatTime','acceptedStartTime','acceptedPreparationAt','acceptedEatTime'])if(typeof s[k]==='number')s[k]+=shift;return s;};
+  row.eatTime+=shift;move(row.session);localStorage.setItem('bh_journal_v1',JSON.stringify(rows));
+  if(localStorage.getItem('bh_journal_current_v1')===id){const d=JSON.parse(localStorage.getItem('bh_session_v1')||'null');if(d)localStorage.setItem('bh_session_v1',JSON.stringify(move(d)));}
+ },[id,token]);
+ await page.reload();
+ await expect.poll(()=>page.evaluate(id=>(JSON.parse(localStorage.getItem('bh_journal_v1')||'[]').find(r=>r.id===id)||{}).eatTime<Date.now(),id)).toBe(true);
+}
 async function generate(page,fr,count=1){
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
@@ -69,8 +78,7 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in â€
  await expect(sheet.locator('[data-rate-now]')).toHaveCount(0);
  await expect(sheet.getByRole('button',{name:fr?/^Refaire la semaine suivante/:/^Bake again next week/})).toHaveCount(0);
  await sheet.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).tap();
- await bakedTwoHoursAgo(page,first.id);
- await page.reload();
+ await bakedTwoHoursAgo(page,first.id); // reloads
  await openMyBakes(page,fr);
  await menu.locator(`[data-journal-entry="${first.id}"]`).tap();
  await expect(sheet.getByText(fr?'Comment sâ€™est passÃ©e votre cuisson ?':'How did it turn out?',{exact:true})).toBeVisible();
@@ -116,6 +124,7 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in â€
 });
 
 test('en: photos stay on the device and a new bake adds a second entry',async({page})=>{
+ test.setTimeout(120000); // a full generate, two reloads and a second generate (as the test above)
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
@@ -126,8 +135,7 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  const sheet=page.getByRole('dialog',{name:'Bake journal entry'});
  // After the bake the entry takes photos (a bake still to come offers no rating, round 20).
  await sheet.getByRole('button',{name:'Close',exact:true}).tap();
- await bakedTwoHoursAgo(page,entry.id);
- await page.reload();
+ await bakedTwoHoursAgo(page,entry.id); // reloads
  await openMyBakes(page,false);
  await page.locator(`[data-journal-entry="${entry.id}"]`).tap();
  // A small PNG chosen from the device: downscaled to JPEG and kept in IndexedDB.

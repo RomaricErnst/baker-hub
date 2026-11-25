@@ -767,8 +767,8 @@ export default function RecipeOutput({
                 <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                   {flourBlend.ratio1}% {f1DisplayName} ({wStr(f1Weight)})
                   {' · '}
-                  {p2}% {flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} ({wStr(f2Weight)})
-                  {hasF3 && f3 && <>{' · '}{p3}% {flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} ({wStr(f3Weight)})</>}
+                  {formatPercent(p2, locale)} {flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} ({wStr(f2Weight)})
+                  {hasF3 && f3 && <>{' · '}{formatPercent(p3, locale)} {flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} ({wStr(f3Weight)})</>}
                 </span>
               );
             })() : <>

@@ -7967,7 +7967,16 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           const target=!searchingTargets?firstSuggestedTarget:undefined;
           const neededH=target?Math.round((+target.bake-+target.start)/900000)/4:0;
           const awayH=Math.round((+pendingEatTime-Date.now())/900000)/4;
-          if(!target||neededH<=0||awayH<=0||awayH>=neededH)return isFr?'Cet horaire ne laisse pas le bon temps à la pâte.':'This baking time doesn’t leave the dough the time it needs.';
+          if(!target||neededH<=0||awayH<=0||awayH>=neededH){
+            // Round 21 (P): name the step and its time, never a bare "doesn't leave the dough the time it needs": the
+            // plan's first step (the preferment's start, else Start Dough) and why it does not work.
+            const prefFirst=hasPrefActive&&prefOffsetH>0;
+            const at=prefFirst?new Date(+pendingStart-prefOffsetH*3600000):pendingStart;
+            const name=prefFirst?(prefermentType==='biga'?(isFr?'Préparer la biga':'Make Biga'):(isFr?'Préparer le poolish':'Make Poolish')):conflictNames.mix[isFr?0:1];
+            if(+at<=Date.now())return isFr?`${name} tomberait ${fmtCardDT(at,true)}, une heure déjà passée.`:`${name} would be ${fmtCardDT(at,false)}, which has passed.`;
+            return isFr?`${name} ${fmtCardDT(at,true)} ne laisse pas à la pâte le temps qu’il lui faut avant la cuisson de ${simpleTimeLabel(pendingEatTime)}.`
+              :`${name} at ${fmtCardDT(at,false)} doesn’t leave the dough the time it needs before the ${simpleTimeLabel(pendingEatTime)} bake.`;
+          }
           const lang=isFr?'fr':'en';
           return isFr
             ?`Cette pâte demande environ ${formatDuration(neededH,lang)} entre le pétrissage et la cuisson. ${fmtCardHM(pendingEatTime,true)}, c’est dans ${formatDuration(awayH,lang)}.`

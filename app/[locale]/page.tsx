@@ -86,7 +86,7 @@ import { soonStartLabel } from '../utils/startNotice';
 import { nightStepsLine } from '../utils/nightSteps';
 import { checkYeastEntry, entryPlan, entryTiming, type EntryPlan, entryPlanShape, entryPlanSearch, isNightBlock, nearestFittingShownPct, bakerHours, bakerPct, parseDecimal, formatDecimal, normalizeEntryNightKept, nightFreeShownPct, uncovered, type YeastEntryCheck, type YeastEntryInput, type PrefermentPlanOption } from '../utils/yeastEntry';
 import { starterActionLabelFor, starterBuild } from '../utils/starterBuild';
-import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatPlanClock, clockRange, roundToQuarter, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
+import { type UnitSystem, cToDisplay, displayTemp, inputTempToC, tempUnit, formatClock, formatPlanClock, clockRange, roundToQuarter, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
 import { formatDuration } from '../utils/duration';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
@@ -1661,6 +1661,22 @@ export default function Home() {
     if (restoredInputsPending.current) { restoredInputsPending.current = false; generatedRecipeInputKey.current = previousRecipeInputKey.current; }
     setScheduleRestoreRevision(value => value + 1);
   }
+
+  // Round 21 (F1, cause of the round8/round9-yeast flakes): the restore window ends 200 ms after the session is applied
+  // (a timer a busy phone runs late, after the planner's first render); an edit typed inside it was taken as part of
+  // the restored bake (no "Update recipe", the replanned start not marked as a change). A baker's own input ends the
+  // window first: what is on screen is the restored bake, and the edit is compared with it.
+  useEffect(() => {
+    const onBakerInput = (event: Event) => {
+      if (!isRestoringRef.current || partyHydratingRef.current) return;
+      if (event.type === 'focusin' && !/^(INPUT|TEXTAREA|SELECT)$/.test((event.target as HTMLElement | null)?.tagName ?? '')) return;
+      endRestore();
+    };
+    const types = ['pointerdown', 'keydown', 'focusin', 'input'];
+    for (const type of types) window.addEventListener(type, onBakerInput, true);
+    return () => { for (const type of types) window.removeEventListener(type, onBakerInput, true); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function applySession(session: SessionData) {
     isRestoringRef.current = true;
@@ -4553,7 +4569,7 @@ export default function Home() {
     // dough), both single-choice, both remembered by the profile.
     { id: 3, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Équipement et cuisine' : 'Equipment and kitchen',
       value: (ovenType && mixerType && (isUnleavened || yeastType))
-        ? `${ovenDisplayName} · ${localName(MIXER_TYPES[mixerType])} · ${kitchenTemp}°C${!isUnleavened && yeastType ? ` · ${localName(YEAST_TYPES[yeastType])}` : ''}`
+        ? `${ovenDisplayName} · ${localName(MIXER_TYPES[mixerType])} · ${displayTemp(kitchenTemp, 'metric', locale)}${!isUnleavened && yeastType ? ` · ${localName(YEAST_TYPES[yeastType])}` : ''}`
         : null,
       // The oven alone identifies the step; the mixer rarely changes the read.
       short: (ovenType && mixerType) ? ovenDisplayName : null,
@@ -4588,11 +4604,11 @@ export default function Home() {
   // entries long. Positions are indexes into it; ids never move.
   const flourSummary = (): string => {
     const primary = flourBlend.brandProduct ?? localName(FLOUR_DATA[flourBlend.flour1]) ?? '';
-    if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) return `100% ${primary}`;
+    if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) return `${formatPercent(100, locale)} ${primary}`;
     const hasThird = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined && 100 - flourBlend.ratio1 - flourBlend.ratio2 > 0;
     const secondRatio = hasThird ? flourBlend.ratio2! : 100 - flourBlend.ratio1;
-    const parts = [`${flourBlend.ratio1}% ${primary}`, `${secondRatio}% ${flourBlend.customFlour2Name ?? localName(FLOUR_DATA[flourBlend.flour2])}`];
-    if (hasThird) parts.push(`${100 - flourBlend.ratio1 - secondRatio}% ${flourBlend.customFlour3Name ?? localName(FLOUR_DATA[flourBlend.flour3!])}`);
+    const parts = [`${formatPercent(flourBlend.ratio1, locale)} ${primary}`, `${formatPercent(secondRatio, locale)} ${flourBlend.customFlour2Name ?? localName(FLOUR_DATA[flourBlend.flour2])}`];
+    if (hasThird) parts.push(`${formatPercent(100 - flourBlend.ratio1 - secondRatio, locale)} ${flourBlend.customFlour3Name ?? localName(FLOUR_DATA[flourBlend.flour3!])}`);
     return parts.join(' + ');
   };
   const kitchenAnswered = confirmed('climate',kitchenTemp);
@@ -4684,15 +4700,15 @@ export default function Home() {
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     { id: 10, group: 'dough', chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
       value: manualHydration !== undefined
-        ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}`
+        ? `${formatPercent(manualHydration, locale)} ${t('dialIn.hydrationSuffix')}`
         // The style's BASE hydration is not what the dough is made at — the
         // engine adjusts it for the oven and the climate, and the Fine-tune
         // page shows both ("Adjusted from 62% · oven -2%"). The chip was
         // printing the base, so the rail read 62% while the slider beside it
         // read 60% and the recipe was built at 60%. One fact, three places,
         // and the chip was showing the one number nothing used.
-        : advancedRecipe ? `${Math.round(advancedRecipe.hydration * 2) / 2}% ${t('dialIn.hydrationSuffix')}`
-        : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
+        : advancedRecipe ? `${formatPercent(Math.round(advancedRecipe.hydration * 2) / 2, locale)} ${t('dialIn.hydrationSuffix')}`
+        : styleKey ? `${formatPercent(ALL_STYLES[styleKey].hydration, locale)} ${t('dialIn.hydrationSuffix')}` : null,
       prefilled: true,
       gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },
     ...(levainPrefCustom ? [{
@@ -5466,7 +5482,7 @@ export default function Home() {
             return `${styleName} · ${numItems} ${itemLabel} · ${dateStr}, ${timeStr}`;
           })()}
           sessionDoughSpec={tab === 'custom' && manualHydration !== undefined
-            ? `${manualHydration}% ${locale === 'fr' ? 'd’hydratation' : 'hydration'}${prefermentType !== 'none' ? ' · ' + prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) : ''}`
+            ? `${formatPercent(manualHydration, locale)} ${locale === 'fr' ? 'd’hydratation' : 'hydration'}${prefermentType !== 'none' ? ' · ' + prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) : ''}`
             : ''}
           onBeforeLocaleChange={() => {
             if (!bakeType) return;
@@ -6735,6 +6751,10 @@ export default function Home() {
                     // Round 17 (finding 6): no "use the calculated amount" for an amount that weighs what the calculated one weighs.
                     // (The amount as typed and shown, to the thousandth: an amount the timing reads differently keeps its way back.)
                     const doughIsCalc = yeastPctOverride!==undefined&&calcYeast?.idyPct!==undefined&&Math.round(yeastPctOverride*conversion*1000)===Math.round(calcYeast.idyPct*conversion*1000);
+                    // Round 21 (P): the night line's pair is Use x % / Keep; its Use weighing what the calculated amount weighs makes
+                    // "Use the calculated amount" a second button for the same thing, so it goes.
+                    const nightUseIsCalc = !!entryNight&&!entryNight.kept&&!!entryNight.offer&&!entryNight.offer.pref&&calcYeast?.idyPct!==undefined
+                      &&sameGrams(entryNight.offer.shown,Math.round(calcYeast.idyPct*conversion*1000)/1000,recipe?.flour);
                     const prefIsCalc = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&Math.round(prefEntered*conversion*1000)===Math.round(calcYeast.pref.pct*conversion*1000);
                     const helper = entryIssue||prefIssue||entryNight||(pref&&prefYeastClearedLine(pref)) ? null : pref
                       ? (prefEntered!==undefined&&yeastPctOverride!==undefined
@@ -6799,7 +6819,7 @@ export default function Home() {
                       {helper&&<p data-yeast-helper style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{helper}</p>}
                       {/* One "calculated amount" per field (round 8, S3): none beside a statement that already offers it. */}
                       {pref&&prefEntered!==undefined&&!prefIssue&&!prefIsCalc&&<button type="button" data-pref-yeast-reset onClick={clearPrefYeast} style={{...secondaryButton,marginTop:6,marginRight:8}}>{fr?(pref==='biga'?'Biga : quantité calculée':'Poolish : quantité calculée'):`${pref==='biga'?'Biga':'Poolish'}: use the calculated amount`}</button>}
-                      {yeastPctOverride!==undefined&&!entryIssue&&!doughIsCalc&&<button type="button" data-ft-use-calculated-yeast onClick={clearYeast} style={{...secondaryButton,marginTop:6}}>{pref?(fr?'Pâte finale : quantité calculée':'Final dough: use the calculated amount'):fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
+                      {yeastPctOverride!==undefined&&!entryIssue&&!doughIsCalc&&!nightUseIsCalc&&<button type="button" data-ft-use-calculated-yeast onClick={clearYeast} style={{...secondaryButton,marginTop:6}}>{pref?(fr?'Pâte finale : quantité calculée':'Final dough: use the calculated amount'):fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div></div>;
                   })()}
                   <h3 data-finetune-group="process" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Pétrissage et pâte':'Mixing and dough'}</h3>

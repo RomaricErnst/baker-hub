@@ -12,6 +12,7 @@ const seed={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapol
  flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:false,prefermentChosen:true,customKitchenConfirmed:true,
  confirmedSettings:['yeast=instant','method=none','climate=22','oven=pizza_oven','mixer=hand'],activeStep:6,advancedStep:6,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
 
+const WANT={'200':['7:30pm','19h30'],'320':['11:30am','11h30'],'380':['9:30am',/^0?9h30$/]};
 for(const fr of [false,true])test(`${fr?'fr':'en'}: a typed W 200/320/380 moves the cold time, never the hydration`,async({page})=>{
  const L=(en,f)=>fr?f:en;
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -27,7 +28,8 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: a typed W 200/320/380 moves 
   await form.locator('select').selectOption('pizza00');
   await form.locator('summary').tap();
   await form.getByRole('spinbutton',{name:L('Strength W','Force W'),exact:true}).fill(W);
-  await expect(form.locator('[data-flour-w-note]')).toHaveText(L(/^Hydration follows the flour type\. The bag’s W measures strength/,/^L’hydratation suit le type de farine\. Le W du sachet mesure la force/));
+  // Round 21 (P): one line under the form (the long W paragraph is gone; About keeps the science).
+  await expect(form.locator('[data-flour-w-note]')).toHaveText(L('W sets the fermentation time, never the hydration.','Le W règle la durée de fermentation, jamais l’hydratation.'));
   if(W==='320'&&test.info().project.name.endsWith('320'))await page.screenshot({path:test.info().outputPath(`flour-w-form-${fr?'fr':'en'}.png`),fullPage:true});
   await form.getByRole('button',{name:L('Use this flour','Utiliser cette farine'),exact:true}).tap();
   // Flour → Preferment → Yeast → Fine-tune → Bake time.
@@ -41,8 +43,13 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: a typed W 200/320/380 moves 
   const bake=step.locator('input[type="datetime-local"]').first();
   await bake.fill('2026-10-05T19:30');await bake.blur();
   await expect(step).toContainText(L('Recommended plan','Planning recommandé'));
-  const text=(await step.innerText()).replace(/\s+/g,' ');
-  const start=text.match(new RegExp(L('Start Dough','Pétrir la pâte')+' ([0-9:h]+(?:am|pm)?)'))?.[1]; // time only: WebKit appends a ✓ to the row text
+  const readStart=async()=>(await step.innerText()).replace(/\s+/g,' ').match(new RegExp(L('Start Dough','Pétrir la pâte')+' ([0-9:h]+(?:am|pm)?)'))?.[1]; // time only: WebKit appends a ✓ to the row text
+  // Round 21 (F1, cause): the flour's re-timing reaches the planner as a pending replan (planReplanPending) that runs
+  // after the plan for the bake time is first shown; reading the row at once could catch that first plan (5:30pm for
+  // every W in the sandbox). Wait for this W's plan, then read it.
+  const want=WANT[W][fr?1:0];
+  await expect.poll(readStart,{timeout:15000}).toMatch(want);
+  const start=await readStart();
   seen.push({W,hydration,start});
   await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();});
  }

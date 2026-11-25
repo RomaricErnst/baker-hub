@@ -326,7 +326,7 @@ export const OVEN_TYPES = {
     emoji: '⚡',
     image: '/images/approved/equipment-v2/electric-pizza-oven-v3.webp',
     desc: '400°C, easy to control.',
-    descFr: '400°C, facile à contrôler.',
+    descFr: '400 °C, facile à contrôler.',
     hydrationDelta: -1,
     forceOil: 0,
     forceSugar: 0,
@@ -1098,8 +1098,8 @@ export function computePrefermentRecipe(
     : `Ferment for ${prefFermentH}h at room temperature before mixing the final dough.`;
 
   const scheduleFr = cold
-    ? `Laissez fermenter ${prefFermentH}h au réfrigérateur à ${effectiveFT}°C avant de pétrir la pâte finale.`
-    : coolBiga ? `Laissez fermenter ${prefFermentH}h dans un endroit frais, vers ${pathKT}°C, avant de pétrir la pâte finale.`
+    ? `Laissez fermenter ${prefFermentH}h au réfrigérateur à ${effectiveFT}\u00a0°C avant de pétrir la pâte finale.`
+    : coolBiga ? `Laissez fermenter ${prefFermentH}h dans un endroit frais, vers ${pathKT}\u00a0°C, avant de pétrir la pâte finale.`
     : `Laissez fermenter ${prefFermentH}h à température ambiante avant de pétrir la pâte finale.`;
 
   return {
@@ -1290,8 +1290,8 @@ export function computeBlendProfile(blend: FlourBlend): BlendProfile {
   const nameOf   = (f: typeof f1, custom?: string) => custom ?? f.name;
   const nameFrOf = (f: typeof f1, custom?: string) => custom ?? f.nameFr;
   const parts   = [`${p1}% ${f1.name}`, `${p2}% ${nameOf(f2, blend.customFlour2Name)}`];
-  const partsFr = [`${p1}% ${f1.nameFr}`, `${p2}% ${nameFrOf(f2, blend.customFlour2Name)}`];
-  if (hasF3 && f3) { parts.push(`${p3}% ${nameOf(f3, blend.customFlour3Name)}`); partsFr.push(`${p3}% ${nameFrOf(f3, blend.customFlour3Name)}`); }
+  const partsFr = [`${p1}\u202f% ${f1.nameFr}`, `${p2}\u202f% ${nameFrOf(f2, blend.customFlour2Name)}`];
+  if (hasF3 && f3) { parts.push(`${p3}% ${nameOf(f3, blend.customFlour3Name)}`); partsFr.push(`${p3}\u202f% ${nameFrOf(f3, blend.customFlour3Name)}`); }
   return {
     blendedW: Math.round(w1 * r1 + w2 * r2 + w3 * r3),
     hydrationDelta: Math.round((f1.hydrationDelta * r1 + f2.hydrationDelta * r2 + (f3 ? f3.hydrationDelta : 0) * r3) * 10) / 10,

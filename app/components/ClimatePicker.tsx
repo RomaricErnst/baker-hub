@@ -99,7 +99,7 @@ export default function ClimatePicker({
           style={{ width: '100%', accentColor: kind === 'fridge' ? '#6A7FA8' : 'var(--terra)', cursor: 'pointer', height: 44, margin: 0 }}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 5, fontSize: 13, color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-          <span>{tempC(min, units)}</span><span>{tempC(max, units)}</span>
+          <span>{tempC(min, units, fr?'fr':'en')}</span><span>{tempC(max, units, fr?'fr':'en')}</span>
         </div>
         <p style={{ margin: '7px 0 0', fontSize: 14, color: 'var(--smoke)', lineHeight: 1.45 }}>
           {kind === 'kitchen'
@@ -118,12 +118,12 @@ export default function ClimatePicker({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontSize: 16, lineHeight: 1.5, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
       {showTemperatures && !hideKitchen && (mode === 'simple' ? <section>
-        <p style={{margin:'0 0 8px',fontSize:16}}>{fr?`Il fait environ ${tempC(kitchenTemp,units)} là où la pâte repose ?`:`Is it about ${tempC(kitchenTemp,units)} where the dough rests?`}</p>
+        <p style={{margin:'0 0 8px',fontSize:16}}>{fr?`Il fait environ ${tempC(kitchenTemp,units,'fr')} là où la pâte repose ?`:`Is it about ${tempC(kitchenTemp,units)} where the dough rests?`}</p>
         <button type="button" aria-label={editingKitchen?(fr?'Fermer la température de la cuisine':'Close kitchen temperature'):(fr?'Modifier la température de la cuisine':'Change kitchen temperature')} aria-expanded={editingKitchen} aria-controls="climate-kitchen-editor" onClick={()=>setEditingKitchen(value=>!value)} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{editingKitchen?(fr?'Fermer':'Close'):(fr?'Modifier':'Edit')}</button>
         <div id="climate-kitchen-editor" hidden={!editingKitchen} style={{marginTop:editingKitchen?16:0}}>{temperatureField('kitchen')}</div>
       </section> : temperatureField('kitchen'))}
       {showTemperatures && showFridge && (mode === 'simple' ? <details>
-        <summary style={{minHeight:44,cursor:'pointer',fontSize:16}}>{fr?'Frigo':'Fridge'} · {tempC(fridgeTemp,units)} — {fr?'Modifier':'Change'}</summary>
+        <summary style={{minHeight:44,cursor:'pointer',fontSize:16}}>{fr?'Frigo':'Fridge'} · {tempC(fridgeTemp,units,fr?'fr':'en')} — {fr?'Modifier':'Change'}</summary>
         {temperatureField('fridge')}
       </details> : temperatureField('fridge'))}
 
@@ -146,7 +146,7 @@ export default function ClimatePicker({
                   onClick={() => onChange(kitchenTemp, option.value, fridgeTemp)}
                   style={{ ...controlStyle(), minHeight: 44, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`, background: active ? 'var(--warm)' : 'var(--paper)', fontSize: 16, textAlign: 'left' }}
                 >
-                  <span>{fr ? option.fr : option.en}</span><span style={{ color: 'var(--smoke)' }}>{option.range}</span>
+                  <span>{fr ? option.fr : option.en}</span><span style={{ color: 'var(--smoke)' }}>{fr ? option.range.replace(/(\d)%/, '$1\u202f%') : option.range}</span>
                 </button>
               );
             })}

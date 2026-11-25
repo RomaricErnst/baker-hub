@@ -28,15 +28,25 @@ export function inputTempToC(val: number, units: UnitSystem): number {
 export function cToDisplay(c: number, units: UnitSystem): number {
   return units === 'imperial' ? cToF(c) : Math.round(c);
 }
+/** The gap French puts before a unit (round 21: « 22 °C », « 65 % »): a no-break space before °C/°F, a narrow
+ * no-break space before %, as displayTemp and formatPercent write them; none in English. */
+export const unitGap = (locale?: string, unit: '°' | '%' = '°'): string => locale?.startsWith('fr') ? (unit === '%' ? '\u202f' : '\u00a0') : '';
 // Hardcoded single °C reference → display string
-export function tempC(celsius: number, units: UnitSystem): string {
-  return units === 'imperial' ? `${cToF(celsius)}°F` : `${celsius}°C`;
+export function tempC(celsius: number, units: UnitSystem, locale?: string): string {
+  const gap = unitGap(locale);
+  return units === 'imperial' ? `${cToF(celsius)}${gap}°F` : `${celsius.toLocaleString(locale?.startsWith('fr') ? 'fr-FR' : 'en-US', {maximumFractionDigits:1})}${gap}°C`;
 }
 // Hardcoded °C range → display string
-export function tempRange(low: number, high: number, units: UnitSystem): string {
+export function tempRange(low: number, high: number, units: UnitSystem, locale?: string): string {
+  const gap = unitGap(locale);
   return units === 'imperial'
-    ? `${cToF(low)}–${cToF(high)}°F`
-    : `${low}–${high}°C`;
+    ? `${cToF(low)}–${cToF(high)}${gap}°F`
+    : `${low}–${high}${gap}°C`;
+}
+/** A percentage range in the locale's writing: "40–65%" / « 40–65 % ». */
+export function percentRange(low: number, high: number, locale: string): string {
+  const fr = locale.startsWith('fr'), n = (v: number) => v.toLocaleString(fr ? 'fr-FR' : 'en-US', {maximumFractionDigits:1});
+  return `${n(low)}–${n(high)}${unitGap(locale, '%')}%`;
 }
 
 // ── Weight ───────────────────────────────────────

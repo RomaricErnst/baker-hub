@@ -266,7 +266,7 @@
       "high": "Taux élevé (niveau brioche) — la levure standard peut peiner. SAF Gold recommandée."
     },
     "none": "Sans",
-    "doughTempInfo": "+{friction}°C avec le pétrin {mixer}, compensés dans l’eau.",
+    "doughTempInfo": "+{friction} °C avec le pétrin {mixer}, compensés dans l’eau.",
     "mixerSpiral": "spiral",
     "mixerStand": "sur socle",
     "mixerHand": "à la main",
@@ -352,7 +352,7 @@
     "humidityVeryHumid": "Très humide",
     "fridgeTemp": "Température du frigo",
     "warmNudge": "Indiquez la température où la pâte reposera. Si elle change en journée, revérifiez la pâte et le planning.",
-    "fridgeWarning": "À {temp}°C, la fermentation peut rester plus active que dans un réfrigérateur plus froid.",
+    "fridgeWarning": "À {temp} °C, la fermentation peut rester plus active que dans un réfrigérateur plus froid.",
     "priority": "Priorité de fermentation",
     "priorityFlavour": "Saveur avant tout",
     "priorityBalanced": "Équilibré",

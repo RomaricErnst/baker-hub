@@ -65,7 +65,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Cooked marinara sauce', fr: 'Sauce marinara cuite' },
     prepNote: { en: 'Simmer 20 min: olive oil, garlic (remove), San Marzano, basil, salt', fr: 'Mijoter 20 min : huile, ail (retirer), San Marzano, basilic, sel', timing: 30 },
     prepNoteByStyle: {
-      neapolitan: { en: 'For Neapolitan: use raw hand-crushed San Marzano instead — cooked sauce scorches at 450°C. Season with salt only.', fr: 'Pour le napolitain : utiliser des San Marzano écrasées à la main crues — la sauce cuite brûle à 450°C. Assaisonner avec du sel uniquement.', timing: 0 },
+      neapolitan: { en: 'For Neapolitan: use raw hand-crushed San Marzano instead — cooked sauce scorches at 450°C. Season with salt only.', fr: 'Pour le napolitain : utiliser des San Marzano écrasées à la main crues — la sauce cuite brûle à 450 °C. Assaisonner avec du sel uniquement.', timing: 0 },
       sourdough:  { en: 'For sourdough: same as Neapolitan — use raw crushed tomatoes, do not cook.', fr: 'Pour le levain : même approche que le napolitain — tomates crues écrasées, ne pas cuire.', timing: 0 },
     },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: '3–4 tbsp · spread to 1cm from edge', noteFR: '3–4 c.à.s. · étaler à 1cm du bord' },
@@ -147,18 +147,18 @@ const ING: Record<string, Ingredient> = {
 
   cream35: {
     id: 'cream_35', category: 'base', bakeOrder: 'before',
-    name: { en: 'Whipping cream 35%+ fat', fr: 'Crème liquide entière 35%+ MG' },
+    name: { en: 'Whipping cream 35%+ fat', fr: 'Crème liquide entière 35 %+ MG' },
     confusingNote: {
       en: 'Must be 35%+ fat — "cooking cream" is usually 15% and splits in the oven. Look for "whipping" or "fleurette".',
-      fr: 'Doit être 35%+ MG — la "crème cuisine" est souvent 15% et tranche au four. Cherchez "entière" ou "fleurette".',
+      fr: 'Doit être 35 %+ MG — la "crème cuisine" est souvent 15 % et tranche au four. Cherchez "entière" ou "fleurette".',
     },
     goodEnough: { name: { en: 'Crème fraîche — best choice, stable at high heat', fr: 'Crème fraîche — meilleur choix, stable à haute température' } },
     qtyPerPizza: { amount: 80, unit: 'ml', noteEN: '5 tbsp · should just coat the base', noteFR: '5 c.à.s. · doit juste napper la base' },
     hardToFind: true,
     localSwap: {
       singapore: {
-        name: { en: 'President Whipping (35%) or Meiji Hokkaido (40%)', fr: 'President Whipping (35%) ou Meiji Hokkaido (40%)' },
-        note: { en: 'Avoid Elle & Vire Cooking Cream (15%) and Greenfields Fresh Cream (25%)', fr: 'Éviter Elle & Vire Cuisine (15%) et Greenfields (25%)' },
+        name: { en: 'President Whipping (35%) or Meiji Hokkaido (40%)', fr: 'President Whipping (35 %) ou Meiji Hokkaido (40 %)' },
+        note: { en: 'Avoid Elle & Vire Cooking Cream (15%) and Greenfields Fresh Cream (25%)', fr: 'Éviter Elle & Vire Cuisine (15 %) et Greenfields (25 %)' },
         brandExamples: { singapore: ['President Whipping (35%) — Cold Storage', 'Meiji Hokkaido (40%) — FairPrice Finest', 'Bulla Thickened (35%) — Marketplace'] },
       },
       france: {
@@ -195,17 +195,17 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Fromage blanc + crème fraîche (50/50)', fr: 'Fromage blanc + crème fraîche (50/50)' },
     prepNote: {
       en: 'Always mix 50% fromage blanc + 50% crème fraîche (30%+ MG). NEVER use fromage blanc alone — too low in fat (0–3%), splits and makes base watery in the oven.',
-      fr: 'Toujours mélanger 50% fromage blanc + 50% crème fraîche (30%+ MG). Ne JAMAIS utiliser le fromage blanc seul — trop maigre (0–3% MG), tranche et détrempe la base au four.',
+      fr: 'Toujours mélanger 50 % fromage blanc + 50 % crème fraîche (30 %+ MG). Ne JAMAIS utiliser le fromage blanc seul — trop maigre (0–3 % MG), tranche et détrempe la base au four.',
     },
     confusingNote: {
       en: 'Fromage blanc alone (0–3% fat) cannot be cooked — it splits. It must always be combined with crème fraîche (30%+ fat) in equal parts for pizza.',
-      fr: 'Le fromage blanc seul (0–3% MG) ne se cuit pas — il tranche. Il doit toujours être mélangé en parts égales avec de la crème fraîche (30%+ MG).',
+      fr: 'Le fromage blanc seul (0–3 % MG) ne se cuit pas — il tranche. Il doit toujours être mélangé en parts égales avec de la crème fraîche (30 %+ MG).',
     },
     goodEnough: {
-      name: { en: 'Crème fraîche only (30%+ MG) — richer, slightly tangier', fr: 'Crème fraîche seule (30%+ MG) — plus riche, légèrement plus acidulée' },
+      name: { en: 'Crème fraîche only (30%+ MG) — richer, slightly tangier', fr: 'Crème fraîche seule (30 %+ MG) — plus riche, légèrement plus acidulée' },
     },
     compromise: {
-      name: { en: 'Greek yogurt (10%+ fat) mixed with crème fraîche 50/50 — mid/low oven only', fr: 'Yaourt grec (10%+ MG) mélangé avec crème fraîche 50/50 — four moyen uniquement' },
+      name: { en: 'Greek yogurt (10%+ fat) mixed with crème fraîche 50/50 — mid/low oven only', fr: 'Yaourt grec (10 %+ MG) mélangé avec crème fraîche 50/50 — four moyen uniquement' },
     },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'total of the 50/50 mix', noteFR: 'total du mélange 50/50' },
     localSwap: {
@@ -284,7 +284,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Nduja', fr: 'Nduja' },
     prepNote: { en: 'Spread directly on base before other toppings', fr: 'Étaler directement sur la base avant les autres garnitures' },
     prepNoteByStyle: {
-      pan:   { en: 'Mix nduja with a little olive oil before spreading — lower oven temps (230°C) need help to melt it evenly.', fr: 'Mélanger la nduja avec un peu d\'huile d\'olive avant d\'étaler — les températures plus basses (230°C) nécessitent de l\'aide pour la faire fondre uniformément.', timing: 3 },
+      pan:   { en: 'Mix nduja with a little olive oil before spreading — lower oven temps (230°C) need help to melt it evenly.', fr: 'Mélanger la nduja avec un peu d\'huile d\'olive avant d\'étaler — les températures plus basses (230 °C) nécessitent de l\'aide pour la faire fondre uniformément.', timing: 3 },
       roman: { en: 'Mix with a touch of olive oil before spreading — ensures even melt at lower temperatures.', fr: 'Mélanger avec un peu d\'huile d\'olive avant d\'étaler — pour une fonte uniforme à température plus basse.', timing: 3 },
     },
     qtyPerPizza: { amount: 40, unit: 'g', noteEN: 'spread generously', noteFR: 'étaler généreusement' },
@@ -329,7 +329,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Smoked lardons', fr: 'Lardons fumés' },
     prepNote: { en: 'No need to pre-cook — render perfectly in the oven', fr: 'Pas besoin de précuire — fondent parfaitement au four' },
     prepNoteByStyle: {
-      neapolitan: { en: 'Par-cook 1–2 min in a dry pan before adding — at 450°C the pizza bakes too fast for lardons to render on their own.', fr: 'Précuire 1–2 min à sec avant d\'ajouter — à 450°C la pizza cuit trop vite pour que les lardons fondent seuls.', timing: 5 },
+      neapolitan: { en: 'Par-cook 1–2 min in a dry pan before adding — at 450°C the pizza bakes too fast for lardons to render on their own.', fr: 'Précuire 1–2 min à sec avant d\'ajouter — à 450 °C la pizza cuit trop vite pour que les lardons fondent seuls.', timing: 5 },
       sourdough:  { en: 'Par-cook 1–2 min in a dry pan — sourdough Neapolitan bakes fast, lardons need a head start.', fr: 'Précuire 1–2 min à sec — le levain napolitain cuit vite, les lardons ont besoin d\'un coup de pouce.', timing: 5 },
     },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'a small handful', noteFR: 'une petite poignée' },
@@ -469,7 +469,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Thinly sliced potato', fr: 'Pomme de terre en fines tranches' },
     prepNote: { en: 'Slice 2mm — no pre-cooking for mid/low oven. High oven: blanch 2 min first.', fr: 'Trancher à 2mm — pas de précuisson four moyen. Four très chaud : blanchir 2 min.', timing: 10 },
     prepNoteByStyle: {
-      roman: { en: 'For Pizza Romana: slice paper-thin (2mm) and pre-roast 10 min at 200°C before topping — the thin crispy base cannot handle raw potato moisture.', fr: 'Pour la Pizza Romana : trancher très finement (2mm) et pré-rôtir 10 min à 200°C avant de garnir — la base fine et croustillante ne supporte pas l\'humidité de la pomme de terre crue.', timing: 10 },
+      roman: { en: 'For Pizza Romana: slice paper-thin (2mm) and pre-roast 10 min at 200°C before topping — the thin crispy base cannot handle raw potato moisture.', fr: 'Pour la Pizza Romana : trancher très finement (2mm) et pré-rôtir 10 min à 200 °C avant de garnir — la base fine et croustillante ne supporte pas l\'humidité de la pomme de terre crue.', timing: 10 },
     },
     qtyPerPizza: { amount: 150, unit: 'g', noteEN: 'sliced 2mm', noteFR: 'tranché à 2mm' },
   },
@@ -545,7 +545,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Aubergine', fr: 'Aubergine' },
     prepNote: { en: 'Slice, salt 20 min, pat dry — roast or fry before adding', fr: 'Trancher, saler 20 min, sécher — rôtir ou frire avant d\'ajouter', timing: 35 },
     prepNoteByStyle: {
-      neapolitan: { en: 'Must pre-roast or fry — the 90-second bake will not cook raw aubergine. Salt, drain, then roast at 220°C for 15 min or pan-fry until golden.', fr: 'Doit être prérotie ou frite — la cuisson de 90 secondes ne cuira pas l\'aubergine crue. Saler, égoutter, puis rôtir à 220°C 15 min ou frire à la poêle jusqu\'à dorée.', timing: 20 },
+      neapolitan: { en: 'Must pre-roast or fry — the 90-second bake will not cook raw aubergine. Salt, drain, then roast at 220°C for 15 min or pan-fry until golden.', fr: 'Doit être prérotie ou frite — la cuisson de 90 secondes ne cuira pas l\'aubergine crue. Saler, égoutter, puis rôtir à 220 °C 15 min ou frire à la poêle jusqu\'à dorée.', timing: 20 },
       pan:        { en: 'Semi-raw works for pan style — slice thin, salt 20 min, pat dry. The 20+ min bake finishes them. Pre-roasting gives richer flavour.', fr: 'Semi-crue fonctionne pour le style pan — trancher finement, saler 20 min, éponger. La cuisson de 20+ min les termine. Prérotie donne plus de saveur.', timing: 20 },
       roman:      { en: 'Same as pan — semi-raw works. Salt and drain, the longer bake handles the rest.', fr: 'Même que le pan — semi-crue fonctionne. Saler et égoutter, la cuisson plus longue s\'occupe du reste.', timing: 20 },
     },
@@ -1118,8 +1118,8 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Guanciale (cured pork cheek)', fr: 'Guanciale (joue de porc séchée)' },
     prepNote: { en: 'Slice thin — renders and crisps beautifully', fr: 'Trancher finement — fond et croustille parfaitement' },
     prepNoteByStyle: {
-      neapolitan: { en: 'Slice paper-thin (1–2mm) — at 450°C it crisps in under 90 seconds. Too thick and it won\'t render in time.', fr: 'Trancher très finement (1–2mm) — à 450°C il croustille en moins de 90 secondes. Trop épais, il ne fondra pas à temps.', timing: 3 },
-      pan:        { en: 'Slice 3–4mm — the lower temperature (230°C) and longer bake give fat time to render. Thicker slices stay juicy.', fr: 'Trancher à 3–4mm — la température plus basse (230°C) et la cuisson plus longue laissent le temps au gras de fondre. Les tranches plus épaisses restent juteuses.', timing: 3 },
+      neapolitan: { en: 'Slice paper-thin (1–2mm) — at 450°C it crisps in under 90 seconds. Too thick and it won\'t render in time.', fr: 'Trancher très finement (1–2mm) — à 450 °C il croustille en moins de 90 secondes. Trop épais, il ne fondra pas à temps.', timing: 3 },
+      pan:        { en: 'Slice 3–4mm — the lower temperature (230°C) and longer bake give fat time to render. Thicker slices stay juicy.', fr: 'Trancher à 3–4mm — la température plus basse (230 °C) et la cuisson plus longue laissent le temps au gras de fondre. Les tranches plus épaisses restent juteuses.', timing: 3 },
       roman:      { en: 'Slice 2–3mm — medium thickness works well for the intermediate oven temperature.', fr: 'Trancher à 2–3mm — l\'épaisseur moyenne convient à la température de four intermédiaire.', timing: 3 },
     },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: '6–8 thin slices', noteFR: '6–8 tranches fines' },
@@ -1139,7 +1139,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Pecorino Romano (grated)', fr: 'Pecorino Romano (râpé)' },
     prepNote: { en: 'Grate finely — saltier than parmesan, use sparingly', fr: 'Râper finement — plus salé que le parmesan, utiliser avec parcimonie' },
     prepNoteByStyle: {
-      neapolitan: { en: 'Add half before baking, half after — at 450°C pecorino browns quickly. The post-bake addition gives fresh sharpness.', fr: 'Ajouter moitié avant, moitié après cuisson — à 450°C le pecorino dore rapidement. L\'ajout après cuisson donne une note fraîche et tranchante.', timing: 3 },
+      neapolitan: { en: 'Add half before baking, half after — at 450°C pecorino browns quickly. The post-bake addition gives fresh sharpness.', fr: 'Ajouter moitié avant, moitié après cuisson — à 450 °C le pecorino dore rapidement. L\'ajout après cuisson donne une note fraîche et tranchante.', timing: 3 },
       sourdough:  { en: 'Same as Neapolitan — split between before and after baking.', fr: 'Même que le napolitain — partager entre avant et après cuisson.', timing: 3 },
     },
     qtyPerPizza: { amount: 30, unit: 'g', noteEN: 'a small handful · grated', noteFR: 'une petite poignée · râpé' },
@@ -1283,7 +1283,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Labneh (strained yogurt)', fr: 'Labneh (yaourt égoutté)' },
     prepNote: { en: 'Dollop after baking — never cook it', fr: 'Déposer en petites boules après cuisson — ne jamais cuire' },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: '3–4 dollops', noteFR: '3–4 cuillerées' },
-    goodEnough: { name: { en: 'Thick Greek yogurt 10%+ fat', fr: 'Yaourt grec épais 10%+ MG' } },
+    goodEnough: { name: { en: 'Thick Greek yogurt 10%+ fat', fr: 'Yaourt grec épais 10 %+ MG' } },
     whereToFind: {
       singapore: { shops: ['Mustafa Centre', 'Al-Ansar grocery', 'Middle Eastern shops'], online: ['RedMart (Puck brand)'], note: 'Puck cream cheese labneh at Mustafa or online — thick Greek yogurt strained overnight is a great substitute' },
       france:    { shops: ['Monoprix', 'Carrefour', 'épiceries du Moyen-Orient'], note: 'Available in most Monoprix locations and Middle Eastern grocers' },
@@ -1401,7 +1401,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Lardo di Colonnata', fr: 'Lardo di Colonnata' },
     prepNote: { en: 'Add immediately after baking — it melts on the hot pizza', fr: 'Ajouter immédiatement après cuisson — il fond sur la pizza chaude' },
     prepNoteByStyle: {
-      neapolitan: { en: 'Add in the last 20–30 seconds of baking — at 450°C the pizza is so hot it melts lardo instantly even after the oven. Either way works.', fr: 'Ajouter les 20–30 dernières secondes de cuisson — à 450°C la pizza est si chaude qu\'elle fait fondre le lardo instantanément même après le four.', timing: 0 },
+      neapolitan: { en: 'Add in the last 20–30 seconds of baking — at 450°C the pizza is so hot it melts lardo instantly even after the oven. Either way works.', fr: 'Ajouter les 20–30 dernières secondes de cuisson — à 450 °C la pizza est si chaude qu\'elle fait fondre le lardo instantanément même après le four.', timing: 0 },
     },
     qtyPerPizza: { amount: 40, unit: 'g', noteEN: '4–6 thin slices', noteFR: '4–6 tranches fines' },
     hardToFind: true,
@@ -1418,7 +1418,7 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Stracchino (crescenza)', fr: 'Stracchino (crescenza)' },
     prepNote: { en: 'Dollop cold over pizza before the last 2 minutes of baking', fr: 'Déposer froid sur la pizza pendant les 2 dernières minutes de cuisson' },
     prepNoteByStyle: {
-      neapolitan: { en: 'Add after baking only — 450°C will burn it instantly. Dollop while the pizza is still hot.', fr: 'Ajouter après cuisson uniquement — 450°C le brûlerait instantanément. Déposer pendant que la pizza est encore chaude.', timing: 0 },
+      neapolitan: { en: 'Add after baking only — 450°C will burn it instantly. Dollop while the pizza is still hot.', fr: 'Ajouter après cuisson uniquement — 450 °C le brûlerait instantanément. Déposer pendant que la pizza est encore chaude.', timing: 0 },
       sourdough:  { en: 'Add after baking — high heat burns stracchino. Dollop on the hot pizza.', fr: 'Ajouter après cuisson — la chaleur brûle le stracchino. Déposer sur la pizza chaude.', timing: 0 },
     },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: '4 dollops', noteFR: '4 cuillerées' },
@@ -1537,7 +1537,7 @@ const ING: Record<string, Ingredient> = {
   wasabiCream: {
     id: 'wasabi_cream', category: 'sauce', bakeOrder: 'before',
     name: { en: 'Wasabi cream base', fr: 'Base crème wasabi' },
-    prepNote: { en: 'Mix crème fraîche 30%+ + wasabi paste to taste — spread thin', fr: 'Mélanger crème fraîche 30%+ + pâte wasabi — étaler finement', timing: 5 },
+    prepNote: { en: 'Mix crème fraîche 30%+ + wasabi paste to taste — spread thin', fr: 'Mélanger crème fraîche 30 %+ + pâte wasabi — étaler finement', timing: 5 },
     qtyPerPizza: { amount: 60, unit: 'g' },
     goodEnough: {
       name: { en: 'Wasabi paste + crème fraîche (mix yourself)', fr: 'Pâte de wasabi + crème fraîche (à mélanger)' },
@@ -4515,7 +4515,7 @@ export const PIZZAS: Pizza[] = [
       {
         id: 'whole_egg', category: 'base', bakeOrder: 'before',
         name: { en: 'Whole egg (free-range)', fr: 'Œuf entier (plein air)' },
-        prepNote: { en: 'Crack into center of pizza in last 3 minutes of baking — yolk should remain runny. For high-heat ovens (450°C+): crack in at the very end, just 90 seconds. For home ovens: crack in at start, bake normally.', fr: 'Casser au centre de la pizza dans les 3 dernières minutes de cuisson — le jaune doit rester coulant. Pour fours haute température (450°C+) : casser à la toute fin, 90 secondes seulement. Pour fours domestiques : casser au début, cuire normalement.', timing: 3 },
+        prepNote: { en: 'Crack into center of pizza in last 3 minutes of baking — yolk should remain runny. For high-heat ovens (450°C+): crack in at the very end, just 90 seconds. For home ovens: crack in at start, bake normally.', fr: 'Casser au centre de la pizza dans les 3 dernières minutes de cuisson — le jaune doit rester coulant. Pour fours haute température (450 °C+) : casser à la toute fin, 90 secondes seulement. Pour fours domestiques : casser au début, cuire normalement.', timing: 3 },
         qtyPerPizza: { amount: 1, unit: 'pcs' },
         isCommonPantry: true,
       },
