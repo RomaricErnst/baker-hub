@@ -8,6 +8,7 @@ import { blendSuggestions } from '../lib/blendSuggestions';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
 import UnitInput from './UnitInput';
+import { formatPercent } from '../utils/units';
 
 // ── Crowd favourite IDs ───────────────────────────
 // One shortlist served every pizza style, so a New York baker was shown the
@@ -765,7 +766,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               {blend.flour2 ? (locale === 'fr' ? 'Changer la farine 1' : 'Change flour 1') : (locale === 'fr' ? 'Changer la farine' : 'Change flour')}
             </button>
           </div>
-          {savedManual?.protein !== undefined && <p style={{fontSize:14,margin:'8px 0'}}>{isFr ? 'Protéines indiquées sur le sachet' : 'Protein entered from the bag'} : {savedManual.protein}%</p>}
+          {savedManual?.protein !== undefined && <p style={{fontSize:14,margin:'8px 0'}}>{isFr ? 'Protéines indiquées sur le sachet' : 'Protein entered from the bag'}{isFr ? '\u00a0:' : ':'} {formatPercent(savedManual.protein, isFr ? 'fr' : 'en')}</p>}
           {/* The W and how well it is known. "W ~220, typical for this type"
               is not the same promise as "W 260, read off the label", and the
               app used to print both the same way. */}
@@ -816,7 +817,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
-          <p data-flour-w-note style={{fontSize:14}}>{isFr?'L’hydratation suit le type de farine. Le W du sachet mesure la force — combien de temps la pâte tient — et fixe la durée de fermentation d’une farine de blé blanche ; il ne mesure pas l’eau que la farine absorbe. Sans W, nous suivons le type.':'Hydration follows the flour type. The bag’s W measures strength — how long the dough holds — and sets how long a white wheat flour can ferment; it doesn’t measure how much water the flour drinks. Without a W, we go by the type.'}</p>
+          <p data-flour-w-note style={{fontSize:14}}>{isFr?'Le W règle la durée de fermentation, jamais l’hydratation.':'W sets the fermentation time, never the hydration.'}</p>
           <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{
             const selection=manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale);
             if(!selection)return;
@@ -993,7 +994,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
-          <p data-flour-w-note style={{fontSize:14}}>{isFr?'L’hydratation suit le type de farine. Le W du sachet mesure la force — combien de temps la pâte tient — et fixe la durée de fermentation d’une farine de blé blanche ; il ne mesure pas l’eau que la farine absorbe. Sans W, nous suivons le type.':'Hydration follows the flour type. The bag’s W measures strength — how long the dough holds — and sets how long a white wheat flour can ferment; it doesn’t measure how much water the flour drinks. Without a W, we go by the type.'}</p>
+          <p data-flour-w-note style={{fontSize:14}}>{isFr?'Le W règle la durée de fermentation, jamais l’hydratation.':'W sets the fermentation time, never the hydration.'}</p>
           <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{
             const selection=manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale);
             if(!selection)return;

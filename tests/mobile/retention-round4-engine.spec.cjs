@@ -72,7 +72,10 @@ test.describe('Thomas',()=>{
   await bakeDate.fill('2026-11-22T09:15');await bakeDate.blur();
   await page.getByRole('button',{name:/^Générer ma recette/}).tap();
   const sheet=page.getByRole('dialog',{name:'Avant votre recette'});
-  await expect(sheet).toContainText('Pour enfourner à 9h15, la pâte doit sortir du réfrigérateur à 6h45, pendant la nuit, et les baguettes occupent le four de 9h15 à 10h45.');
+  // Round 21 (rule E1): the take-out is a quick step, free at 7h00 when the night ends (within the warm-up and shortest
+  // proof before the 9h15 bake), so the night is no longer in the sentence; the baguettes' oven still is.
+  await expect(sheet).toContainText('Les baguettes occupent le four de 9h15 à 10h45.');
+  await expect(sheet).not.toContainText('pendant la nuit');
   await expect(sheet.getByRole('button',{name:/^Enfourner à 11h30/})).toBeVisible();
   await sheet.getByRole('button',{name:/^Garder 9h15/}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated??false,{timeout:20000}).toBe(true);

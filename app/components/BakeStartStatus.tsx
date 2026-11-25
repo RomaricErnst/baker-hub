@@ -24,12 +24,14 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
 }) {
   const [different,setDifferent]=useState(false),[time,setTime]=useState('');
   const status=preparationStatus(plannedAt,execution,now);
-  // A "Made now" button hours ahead invites a mistaken tap: offer it from 30 minutes before.
-  if(status==='planned'&&(!preparing||plannedAt-now>30*60_000))return null;
+  // In Preparation the step itself says it all (round 21, owner): "Step done", then "Different time?" on the step
+  // (prefilled with the tap's own clock); the separate "Start Dough / Done now" card above the steps is gone.
+  if(preparing)return null;
+  // Outside Preparation nothing is asked before the planned time.
+  if(status==='planned')return null;
   // At the planned minute the honest answer is "starting now": for the first 45 minutes it is a start,
   // not a question; in Preparation the step itself (marked Now) takes over (16 Nov retention review).
   const starting=!execution&&status==='unconfirmed'&&now-plannedAt<45*60_000;
-  if(starting&&preparing)return null;
   // Once confirmed, the note stays for half an hour, not for the rest of the bake (retention review).
   if(execution&&now-(execution.recordedAt??execution.actualAt)>30*60_000)return null;
   // Once a later step is the one to do, the note goes (17 Nov 2026 retention round 2); right after the tap it
@@ -38,9 +40,6 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   // A question is an optional shortcut, never a gate: once the clock has moved on to a later step the bake
   // simply follows it, and the question goes (18 Nov 2026 retention round 3).
   if(!execution&&superseded)return null;
-  // In Preparation a recorded mix or preferment is said once, on its step ("Completed · 7:00pm", Change time there):
-  // no second strip above the page (18 Nov 2026 retention round 3).
-  if(execution&&preparing)return null;
     const fmt=(at:number)=>statusTime(at,now,fr);
   const noun=method==='none'?(fr?'la pâte':'the dough'):method==='biga'?(fr?'la biga':'the biga'):(fr?'le poolish':'the poolish');
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};
@@ -48,11 +47,8 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   // can leave minutes behind; "Mixed now" at 9:50 recorded an earlier minute.
   const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed);
   return <section className="bh-start-status" aria-label={fr?'Préparation de la fournée':'Bake preparation'}>
-    {execution?(preparing?<>
-      <p><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong></p>
-      <div className="bh-start-actions"><button type="button" style={STATUS_BUTTON} onClick={()=>editTime(execution.actualAt)}>{execution.stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button><button type="button" className="bh-start-link" onClick={onUndo}>{fr?'Annuler la confirmation':'Undo completion'}</button></div>
-    </>:
-      // Outside Preparation the fact is one compact line; the bar above leads to the step (16 Nov 2026 design review).
+    {execution?(
+      // The fact is one compact line; the bar above leads to the step (16 Nov 2026 design review).
       <p className="bh-start-compact"><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong><button type="button" className="bh-start-link" onClick={()=>editTime(execution.actualAt)}>{execution.stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button><button type="button" className="bh-start-link" aria-label={fr?'Annuler la confirmation':'Undo completion'} onClick={onUndo}>{fr?'Annuler':'Undo'}</button></p>
     ):<>
       {starting?<>
@@ -63,11 +59,10 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
       <div className="bh-start-actions">
         {/* FR: "Oui, à 19h00" the same day, "Oui, le ven. 20 nov. · 19h00" another day (18 Nov 2026 retention round 3). */}
         {status==='unconfirmed'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(plannedAt)}>{fr?(new Date(plannedAt).toDateString()===new Date(now).toDateString()?'Oui, à':'Oui, le'):'Yes, at'} {fmt(plannedAt)}</button>}
-        {preparing&&status==='planned'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(Date.now())}>{method==='none'?(fr?'Terminé maintenant':'Done now'):(fr?'Préparé maintenant':'Made now')}</button>}
         {status==='unconfirmed'&&<button type="button" style={STATUS_BUTTON} onClick={onNotYet}>{fr?'Pas encore · Actualiser le plan':'Not yet · Update plan'}</button>}
       </div>
       <button type="button" className="bh-start-link" onClick={()=>setDifferent(!different)}>{fr?'À une autre heure ?':'Different time?'}</button>
-      {!preparing&&<button type="button" className="bh-start-link" onClick={onRecipe}>{fr?'Voir la recette':'View recipe'}</button>}
+      <button type="button" className="bh-start-link" onClick={onRecipe}>{fr?'Voir la recette':'View recipe'}</button>
       </>}
     </>}
     {different&&<div className="bh-start-actions"><label>{method==='none'?(fr?'Heure du pétrissage':'Mixing time'):(fr?'Heure réelle':'Actual time')}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/></label><button type="button" style={STATUS_BUTTON} disabled={!valid} onClick={()=>{if(parsed>Date.now())return;onMade(parsed);setDifferent(false);}}>{fr?'Enregistrer':'Set time'}</button>{!execution&&<button type="button" style={STATUS_BUTTON} onClick={()=>{onMade(Date.now());setDifferent(false);}}>{fr?'Maintenant':'Now'}</button>}</div>}

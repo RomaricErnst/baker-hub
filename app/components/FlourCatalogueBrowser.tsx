@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {useLocale} from 'next-intl';
 import {FLOUR_DB,FLOUR_PHOTO_PROVENANCE,type FlourEntry} from '@/lib/flourDatabase';
 import {FLOUR_DATA,ALL_STYLES,type FlourKey} from '../data';
+import {percentRange} from '../utils/units';
 
 export function flourTypeLabel(type:string,fr:boolean){
  const labels:Record<string,[string,string]>={all_purpose:['All-purpose','Tout usage'],bread:['Bread flour','Farine de pain'],bread_flour:['Bread flour','Farine de pain'],french:['French wheat flour','Farine de blé française'],french_wheat_flour:['French wheat flour','Farine de blé française'],wheat:['Wheat','Blé'],whole_spelt:['Whole spelt','Épeautre complet'],whole_wheat:['Whole wheat','Blé complet'],wholemeal:['Whole wheat','Blé complet'],high_gluten:['High-gluten','Farine de force'],pastry:['Pastry','Pâtisserie'],rye:['Rye','Seigle'],semolina:['Semolina','Semoule'],spelt:['Spelt','Épeautre'],'t45_blend':['T45 blend','Mélange T45']};
@@ -46,7 +47,7 @@ export function FlourProductButton({entry,onChoose,selected=false,onChange,chang
  <button type="button" onClick={()=>setOpen(false)} style={{float:'right',minHeight:44}}>{fr?'Fermer':'Close'}</button><h2>{entry.brand} {entry.name}</h2>
  {entry.bagImage&&<img src={entry.bagImage} alt={`${entry.brand} ${entry.name}`} width={240} height={280} loading="lazy" decoding="async" style={{objectFit:'contain',display:'block',margin:'12px auto',maxWidth:'100%'}}/>}
  <p>{flourNumbers(entry,fr)}</p><p>{entry.manufacturerType||flourTypeLabel(entry.type,fr)} · {new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(entry.country.toUpperCase())}</p>{entry.specificationNote&&<p>{fr?entry.specificationNote.fr:entry.specificationNote.en}</p>}
- {entry.hydration&&<p>{fr?'Hydratation indicative':'Indicative hydration'} · {entry.hydration[0]}–{entry.hydration[1]}%</p>}
+ {entry.hydration&&<p>{fr?'Hydratation indicative':'Indicative hydration'} · {percentRange(entry.hydration[0], entry.hydration[1], fr ? 'fr' : 'en')}</p>}
  {entry.w==null&&<p>{fr?`Le calcul utilisera une estimation de type W ~${flourEngineW(entry)}, pas une mesure de cette farine.`:`The calculation will use a type estimate W ~${flourEngineW(entry)}, not a measurement of this flour.`}</p>}
  <button type="button" onClick={()=>{setOpen(false);onChoose();}} style={{width:'100%',minHeight:48,background:'var(--terra)',color:'white',border:0,borderRadius:10}}>{entry.w==null?(fr?'Utiliser avec l’estimation':'Use with type estimate'):(fr?'Utiliser cette farine':'Use this flour')}</button>
  {provenance?.credit&&<p style={{fontSize:11,marginTop:12,color:'var(--smoke)'}}><a href={provenance.credit.sourceUrl} target="_blank" rel="noreferrer">{provenance.credit.author}</a> · <a href={provenance.credit.licenseUrl} target="_blank" rel="noreferrer">{provenance.credit.license}</a><br/>{fr?'Image redimensionnée et convertie en WebP.':'Image resized and converted to WebP.'}</p>}

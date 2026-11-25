@@ -24,7 +24,7 @@ test('cool-spot biga: the yeast model with the biga medium at 18 °C (the kitche
   // Window: default 16 h, held to 12–20 h.
   a.equal(data.computePrefermentRecipe('biga',1000,650,18,6,false,40).fermentHoursMin,16);
   a.equal(at(18,30).fermentHoursMin,20);a.equal(at(18,6).fermentHoursMin,12);
-  a.match(r.schedule,/cool spot at about 18°C/);a.match(r.scheduleFr,/endroit frais, vers 18°C/);
+  a.match(r.schedule,/cool spot at about 18°C/);a.match(r.scheduleFr,/endroit frais, vers 18\u00a0°C/);
   // More time, less yeast.
   a.ok(dose(at(18,12))>dose(at(18,16))&&dose(at(18,16))>dose(at(18,20)));
 });

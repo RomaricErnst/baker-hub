@@ -647,6 +647,10 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 .bh-seed-toggle input { width:20px; height:20px; margin:0; accent-color:var(--terra); }
 .bh-editor-exit { display:flex; justify-content:flex-end; }
 #schedule-anchor-panel[data-open] :is(.bh-editor-exit,.bh-linked-actions) { position:sticky; bottom:0; z-index:2; padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px)); background:var(--warm); border-top:1px solid var(--border); }
+/* Round 21 (F1): that sticky bar covers whatever editor row scrolls under it; on a phone a tap on the mix lock at the
+   bottom edge landed on "Apply". Controls scrolled into view (focus, a tap's scroll) stop above it. */
+#schedule-anchor-panel[data-open] :is(input,select,button,label,summary):not(.bh-apply-plan) { scroll-margin-bottom:112px; }
+html:has(#schedule-anchor-panel[data-open] :is(.bh-editor-exit,.bh-linked-actions)) { scroll-padding-bottom:112px; }
 /* Kitchen temperature: a coloured zone track with a large thumb (44px reach). */
 .bh-kitchen-range { -webkit-appearance:none; appearance:none; background:transparent; outline:none; touch-action:pan-y; }
 .bh-kitchen-range::-webkit-slider-runnable-track { background:transparent; height:44px; }

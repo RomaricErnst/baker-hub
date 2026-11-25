@@ -98,7 +98,10 @@ test('item 2: a kept amount with busy nights takes the plan with the fewest nigh
   assert.ok(plan);
   // Not the 1:45am room plan with four folds, nor round 15's take-out and shaping at 3:00am: Thursday evening, shaped at
   // the end of the warm bulk (round 17, one trip), no step after 3am.
-  assert.equal(hhmm(plan.times.start), 'Thu 19:45');
+  // Round 21 (E1): the fits anchored up to an hour before the calculated knead are candidates; 0.14 % now kneads at the
+  // calculated 20:00 with a proof fit, shaping 10:30pm (main: 7:45pm one trip, shaping 11:30pm and the balls in 11:45pm).
+  assert.equal(hhmm(plan.times.start), 'Thu 20:00');
+  assert.ok(plan.nightSteps.every(a => !require('../app/utils/scheduleAvailability.ts').isDeepNight(a)), JSON.stringify(plan.nightSteps));
   assert.ok(plan.nightSteps.every(a => new Date(a.at).getHours() >= 22), JSON.stringify(plan.nightSteps));
   // The amount next to the calculated one, within the band at the calculated knead, has a plan there (it had none:
   // its window was the anchor alone); its shaping at 10:30pm is named.
@@ -161,7 +164,8 @@ test('item 7: small texts and displays', () => {
   assert.match(guide, /\{!briefBulk && <StepCard/);
   // A kept night step is named once, in the night line, not again on its row.
   // Round 15: the night line (kept or not) names those steps once.
-  assert.match(page, /busy:blocks\.some\(block=>\+e\.at>\+block\.from&&\+e\.at<\+block\.to\)&&!\(entryNight&&coveredAt\.has\(\+e\.at\)/);
+  // Round 21 (rule E1): the busy tag reads the one edge rule (busyHit).
+  assert.match(page, /busy:blocks\.some\(block=>busyHit\(\{id:e\.key\?\?'',at:e\.at\},\+block\.from,\+block\.to\)\)&&!\(entryNight&&coveredAt\.has\(\+e\.at\)/);
   // The plan begins at the starter's take-out (Preparation header and the Recipe's steps); the header is on the quarter hour.
   // Round 20 (item 4): the guide's starter events (a shared jar's feed included), on the shown quarter hour.
   assert.match(page, /guideStarterEvents\.filter\(e=>!e\.isPast && e\.kind!=='last_fed' && e\.kind!=='known_peak'\)\.map\(e=>\+starterStepShownTime\(e\)\)/);

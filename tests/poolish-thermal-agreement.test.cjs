@@ -61,7 +61,8 @@ test('room-temperature poolish can be chilled to reach the mixing target in a ho
         const action=candidate.schedule.availabilityActions.find(a=>a.id==='preferment-cold-in');
         assert.equal(+action.at,+start-hours*3600000);
         assert.equal(+poolishCoolingAt(candidate.schedule,recipe),+action.at);
-        const blocked=validateScheduleCandidate({...input,blocks:[{from:action.at,to:new Date(+action.at+60000),label:'Unavailable'}]});
+        // Round 21 (rule E1): the chill is quick, free on a busy time's edge; a busy time around it blocks it.
+        const blocked=validateScheduleCandidate({...input,blocks:[{from:new Date(+action.at-60000),to:new Date(+action.at+60000),label:'Unavailable'}]});
         assert.equal(blocked.valid,false);assert.equal(blocked.conflict,'preferment-cold-in');
       }
       if(Math.abs(predicted.doughTempC-targetDoughTemp)<=1)atTarget++;

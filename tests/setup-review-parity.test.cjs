@@ -4,19 +4,20 @@ const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 function declaration(name){let found;function visit(n){if(ts.isVariableDeclaration(n)&&n.name.getText(tree)===name)found=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);assert.ok(found);return found;}
 test('summary reports each chosen flour with its actual two or three slot ratio',()=>{
- const context={flourBlend:{flour1:'one',flour2:'two',flour3:'three',ratio1:70,ratio2:20,brandProduct:'First brand',customFlour2Name:'Second brand',customFlour3Name:'Third brand'},FLOUR_DATA:{one:{name:'Generic'},two:{name:'Second'},three:{name:'Third'}},localName:x=>x.name};
+ const context={flourBlend:{flour1:'one',flour2:'two',flour3:'three',ratio1:70,ratio2:20,brandProduct:'First brand',customFlour2Name:'Second brand',customFlour3Name:'Third brand'},FLOUR_DATA:{one:{name:'Generic'},two:{name:'Second'},three:{name:'Third'}},localName:x=>x.name,locale:'en',formatPercent:require('../app/utils/units.ts').formatPercent};
  const code=ts.transpileModule('const '+declaration('flourSummary')+'; result=flourSummary();', {}).outputText;
  vm.runInNewContext(code,context);assert.equal(context.result,'70% First brand + 20% Second brand + 10% Third brand');
  context.flourBlend.flour3=null;vm.runInNewContext('{'+code+'}',context);assert.equal(context.result,'70% First brand + 30% Second brand');
 });
 test('review includes calendar date and fridge temperature without changing stored values',()=>{
  require('./load-production.cjs');
- const {formatBakeDateTime,cToDisplay,tempUnit}=require('../app/utils/units.ts');
+ const {formatBakeDateTime,cToDisplay,tempUnit,displayTemp}=require('../app/utils/units.ts');
  for(const [locale,expected] of [['fr','lun. 4 mars · 18h30'],['en','Mon 4 Mar · 6:30pm']]){
-  const context={eatTime:new Date(2030,2,4,18,30),fr:locale==='fr',locale,formatBakeDateTime,cToDisplay,tempUnit,units:'metric',kitchenAnswered:false,isUnleavened:false,kitchenLabel:'',kitchenTemp:23,fridgeTemp:5};
+  const context={eatTime:new Date(2030,2,4,18,30),fr:locale==='fr',locale,formatBakeDateTime,cToDisplay,tempUnit,displayTemp,units:'metric',kitchenAnswered:false,isUnleavened:false,kitchenLabel:'',kitchenTemp:23,fridgeTemp:5};
   vm.runInNewContext(ts.transpileModule('const '+declaration('reviewTiming')+'; const '+declaration('reviewKitchen')+'; result=[reviewTiming,reviewKitchen];', {}).outputText,context);
   assert.equal(context.result[0],expected);
-  assert.match(context.result[1],locale==='fr'?/réfrigérateur 5°C/i:/fridge 5°C/i);
+  // Round 21 (P): « 5 °C » in French (a no-break space), "5°C" in English.
+  assert.match(context.result[1],locale==='fr'?/réfrigérateur 5\u00a0°C/i:/fridge 5°C/i);
  }
 });
 test('both review actions regenerate stale recipes and expose explicit edits; guide footer removed',()=>{

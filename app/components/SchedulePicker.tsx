@@ -23,7 +23,7 @@ import {assessScheduleDraft} from '../utils/scheduleDraft';
 import {recommendRipePoolish, ripenFixedPoolish, ripenPoolish, type PoolishPeakCheck} from '../utils/poolishRipeness';
 import { uncovered, type EntryPlan } from '../utils/yeastEntry';
 import {prefermentConditioningAction,withNightRule,proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, recommendPreferment, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
-import { isOvernightPreparation, newNightHandsOn, planActions, blockClock, chronologicalBlocks, profileBlocksForBake, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
+import { busyHit, isDeepNight, isQuickAction, withMainEdges, isOvernightPreparation, newNightHandsOn, planActions, blockClock, chronologicalBlocks, profileBlocksForBake, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, bigaWindow, bigaCoolOffered, type BigaStorage, type MixerType } from '../data';
 import { prefermentYeastTiming, prefermentYeastStorages, prefermentMassG, type FlourPreferment } from '../utils/prefermentYeast';
 import type {BakeExecution} from '../utils/bakeExecution';
@@ -936,7 +936,28 @@ export type AutomaticCommercialPlan =
       optimalPrefOffset: number; inFridge: boolean; chosen: ReturnType<typeof commercialPlanRecommendation> }
   | PlanBase & { kind: 'direct'; times: { start: Date; prefHours: number; inFridge?: boolean }; expectedColdH: number; guardShort: boolean;
       sweetCenter: number; sweetFrom: number; popup: boolean; result: ReturnType<typeof findOptimalPosition> };
+/** The automatic plan of a commercial dough. Round 21 (rule E1, coordinator): when the plan found has hands-on steps
+ * 22:00–07:00 the baker did not declare free (newNightHandsOn), main's plan (edges as before, `withMainEdges`) is taken
+ * instead unless the E1 plan has no more of them and no more wake-ups (23:00–06:00): E1 never adds a night step. A plan
+ * without busy times is never touched. */
 export function automaticCommercialPlan(c: CommercialPlanContext, currentBlocks: AvailabilityBlock[], et: Date, overrides: TimingOverrides): AutomaticCommercialPlan {
+  const plan = automaticCommercialPlanE1(c, currentBlocks, et, overrides);
+  if (!plan.times || !currentBlocks.length) return plan;
+  const judge = (p: AutomaticCommercialPlan) => {
+    if (!p.times) return null;
+    const s = buildSchedule(p.times.start, et, currentBlocks, c.kitchenTemp, c.preheatMin, c.mixerType, c.styleKey, c.numItems, c.mixingBatches, false, 1, c.exitLeadMin, c.planLadder);
+    const acts = [...(s.availabilityActions ?? []), ...(p.times.prefHours > 0 ? [{ id: 'preferment', at: new Date(+p.times.start - p.times.prefHours * 3600000) }] : [])].filter(a => +a.at >= c.now);
+    const night = newNightHandsOn(acts, currentBlocks);
+    return { night: night.length, deep: night.filter(a => isDeepNight(a)).length };
+  };
+  const now = judge(plan);
+  if (!now || !now.night) return plan;
+  const before = withMainEdges(() => automaticCommercialPlanE1(c, currentBlocks, et, overrides));
+  const old = judge(before);
+  // Main's plan unless the E1 plan has no more undeclared night steps and no more wake-ups (23:00–06:00) than it.
+  return old && (old.night < now.night || old.deep < now.deep) ? before : plan;
+}
+function automaticCommercialPlanE1(c: CommercialPlanContext, currentBlocks: AvailabilityBlock[], et: Date, overrides: TimingOverrides): AutomaticCommercialPlan {
   const {styleKey,kitchenTemp,fridgeTemp,preheatMin,flourStrength,prefermentType,poolishStorage,execution,completedMixAt}=c;
   const hasPrefActive=prefermentType!=='none'&&prefermentType!=='';
   const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
@@ -3377,8 +3398,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
               // (16 Nov 2026 review: feed Monday, fridge Tuesday, out Friday for a Sunday loaf; was 96 h).
               if (ideal < earliestRefeed + 24 * 3600000) return new Date(earliestRefeed);
               // The removal, the first feed and each revival feed after it stay out of busy times.
-              const clear = (at: number) => !revivalBlocks?.length || [at - warmupH * 3600000, at, ...Array.from({length: cycles}, (_, k) => at + (k + 1) * cycleH * 3600000)]
-                .every(ms => !isTimeBlocked(ms, revivalBlocks));
+              // Rule E1: the removal is quick (free on a busy time's edge); the feeds are not.
+              const clear = (at: number) => !revivalBlocks?.length || !isTimeBlocked(at - warmupH * 3600000, revivalBlocks, true)
+                && [at, ...Array.from({length: cycles}, (_, k) => at + (k + 1) * cycleH * 3600000)].every(ms => !isTimeBlocked(ms, revivalBlocks));
               for (let at = ideal, i = 0; i < 192 && at > earliestRefeed + 24 * 3600000; i++, at -= 900000) if (clear(at)) return new Date(at);
               // Busy all of that day: start later instead, inside the 12 h margin, before falling back to now.
               for (let at = ideal + 900000; at <= ideal + 12 * 3600000; at += 900000) if (clear(at)) return new Date(at);
@@ -3397,14 +3419,16 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
               // The solver's refresh stretch (computeNonPathBFridgeTimes reads it for the fridge spell).
               const stretch = restStretchFactor(hSinceFed, adjNext, troughNext);
               const busy = (ms: number) => isTimeBlocked(ms, revivalBlocks);
+              // Rule E1: the starter into or out of the fridge is quick.
+              const busyQuick = (ms: number) => isTimeBlocked(ms, revivalBlocks, true);
               const chainClear = (at: number) => {
                 const c = revivalCycles(starterAgeAt(at), starterMature, tang);
-                if (busy(at - warmupH * 3600000) || busy(at)) return false;
+                if (busyQuick(at - warmupH * 3600000) || busy(at)) return false;
                 const ints = planIntermediateFeeds(at, preMixMs, spacingH, Math.max(0, c - 1), adjNext, Date.now());
                 if (ints.length < c - 1 || ints.some(busy)) return false;
                 const fridgeIn = Math.max(at + adjNext * stretch * 3600000, ...ints.map(ms => ms + adjNext * 3600000));
                 const fridgeOut = Math.min(preMixMs, mixMs) - warmupH * 3600000;
-                if (fridgeOut - fridgeIn >= 3 * 3600000 && (busy(fridgeIn) || busy(fridgeOut))) return false;
+                if (fridgeOut - fridgeIn >= 3 * 3600000 && (busyQuick(fridgeIn) || busyQuick(fridgeOut))) return false;
                 return true;
               };
               // The bake-relative start stays whenever its chain is already free for this mix.
@@ -4861,6 +4885,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     function inBlockerMs(timeMs: number): boolean {
       return isTimeBlocked(timeMs, effectiveBlocks);
     }
+    // Rule E1 (round 21): the starter into or out of the fridge is a quick step, free on a busy time's edges.
+    function inBlockerQuickMs(timeMs: number): boolean {
+      return isTimeBlocked(timeMs, effectiveBlocks, true);
+    }
     // POLICY (Jul 2026): blockers bind the present too. Planning from inside
     // a blocked window (e.g. lunch break at the office) does not mean the
     // baker can act right now, so a refresh pinned to "now" during a blocker
@@ -4870,9 +4898,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     // The 1h cutoff mirrors the refresh event's isPast convention
     // (nowMs − 60min).
     const HISTORY_CUTOFF_MS = 60 * 60000;
-    function isBlockedActionMs(timeMs: number): boolean {
+    function isBlockedActionMs(timeMs: number, quick = false): boolean {
       if (timeMs < Date.now() - HISTORY_CUTOFF_MS) return false; // history — exempt
-      return inBlockerMs(timeMs);
+      return quick ? inBlockerQuickMs(timeMs) : inBlockerMs(timeMs);
     }
     // candidateValid READS the candidate's stored action-time list and rejects
     // any candidate whose actions touch a blocker. The list was populated by
@@ -4885,10 +4913,14 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     function candidateValid(cand: Candidate): boolean {
       if (planningMode==='know_peak' && knownPeakTime &&
           !knownPeakMixUsable(new Date(bakeMs-cand.mixHBF*3600000),knownPeakTime,adjPeakH_derived)) return false;
-      for (const ms of candidateActionTimes(cand)) {
+      // The starter's fridge moves are quick (rule E1); every other action time is a feed or the mix. A time that is
+      // both (a feed at the fridge exit) is judged as the feed.
+      const times = candidateActionTimes(cand), quick = candidateQuickTimes(cand);
+      const count = (list: number[], ms: number) => list.filter(other => other === ms).length;
+      for (const ms of times) {
         // isBlockedActionMs (not inBlockerMs): firmly-past times are history
         // and exempt; present and future actions must clear blockers.
-        if (ms != null && isBlockedActionMs(ms)) return false;
+        if (ms != null && isBlockedActionMs(ms, count(quick, ms) >= count(times, ms))) return false;
       }
       const mixMs=bakeMs-cand.mixHBF*3600000;
       if (candidateActionTimes(cand).some(ms=>!Number.isFinite(ms)||ms>mixMs)) return false;
@@ -4998,6 +5030,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     // every consumer agrees byte-for-byte on what time each action lands at.
     // Returns null for non-Path-B candidates (those use the non-fridge-hold
     // paths in computeActionTimes below).
+    // The fridge in/out times among a candidate's action times (computeActionTimes), quick steps under rule E1.
+    function candidateQuickTimes(c: Pick<Candidate, 'isFridgeHoldPath' | 'fridgeHoldRefreshMs' | 'fridgeHoldInMs' | 'fridgeHoldOutMs' | 'feed2Ms' | 'renderFridgeInMs' | 'renderFridgeOutMs'>): number[] {
+      const fh = fridgeHoldActionTimes(c);
+      if (fh) return [fh.fridgeInMs, fh.fridgeOutMs];
+      return [c.fridgeHoldInMs, c.fridgeHoldOutMs, c.renderFridgeInMs, c.renderFridgeOutMs].filter((ms): ms is number => ms != null);
+    }
     function fridgeHoldActionTimes(
       c: Pick<Candidate, 'isFridgeHoldPath' | 'fridgeHoldRefreshMs' | 'fridgeHoldInMs' | 'fridgeHoldOutMs' | 'feed2Ms'>,
     ): { refreshMs: number; fridgeInMs: number; fridgeOutMs: number; preMixMs: number } | null {
@@ -5402,7 +5440,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
 
     // Peak 1 Fridge candidates (still-rising RT starter, fridge path computed)
     if (starterLocation === 'rt' && _suggestedFridgePeak && _suggestedFridgeOut
-        && !inBlockerMs(_suggestedFridgeOut.getTime())) {
+        && !inBlockerQuickMs(_suggestedFridgeOut.getTime())) {
       const fridgePeakHBF = (bakeMs - _suggestedFridgePeak.getTime()) / 3600000;
       const fridgeFeedMs  = lastFedTime?.getTime() ?? feed1Ms;
       const fridgeTOL     = TOL * 1.5;
@@ -5468,7 +5506,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         const mixHBF = (bakeMs - mixMs) / 3600000;
         if (mixHBF < mixHBFMin - 0.5 || mixHBF > mixHBFMax + 0.5) continue;
         if (inBlocker(mixHBF)) continue;
-        if (inBlockerMs(foMs)) continue;
+        if (inBlockerQuickMs(foMs)) continue;
         const ds = doughScore(mixHBF);
         if (ds === 0) continue;
         // Scoring peak = the SAME value fridgePeakAfterRemoval renders for the
@@ -5809,8 +5847,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           if (holdH < minHoldH || holdH > maxHoldH) continue;
           if (fridgeOutMs <= refreshPeakMs) continue;  // pre-mix must come at or after refresh peak
           if ((fridgeOutMs - refreshPeakMs) / 3600000 < minGapFromRefreshPeakH - 1) continue;
-          if (inBlockerMs(fridgeInMs)) continue;
-          if (inBlockerMs(fridgeOutMs)) continue;
+          if (inBlockerQuickMs(fridgeInMs)) continue;
+          if (inBlockerQuickMs(fridgeOutMs)) continue;
 
           const sc = combinedScore(mHBF, mHBF, t, true);
           const ss = starterScore(mHBF, mHBF);
@@ -7147,7 +7185,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         const ideal=Math.floor(at/900000)*900000;
         const tries:number[]=[];
         for(let t=ideal;t>=ideal-(warmupH+3)*hour&&tries.length<3;t-=900000)
-          if(t-warmupH*hour>now&&t<preMix-6*hour&&!busy(t)&&!busy(t-warmupH*hour))tries.push(t);
+          if(t-warmupH*hour>now&&t<preMix-6*hour&&!busy(t)&&!isTimeBlocked(t-warmupH*hour,candidateBlocks,true))tries.push(t);
         for(const t of tries){
           probeRatioRef.current=r;probeRevivalAtRef.current=t;
           const checked=evaluateStarterCandidateOnce({mix,feed:null,refresh:null},candidateBlocks,undefined,preserveStorage,undefined,candidateBake);
@@ -7170,10 +7208,18 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const coldPattern=(events:StarterEvent[])=>JSON.stringify(events.filter(e=>+e.time>=now&&(e.kind==='fridge_in'||e.kind==='fridge_out')).map(e=>e.kind));
     const existingCold=coldPattern(displayStarterEvents);
     const retainsStorage=(checked:ReturnType<typeof evaluateStarterCandidate>)=>!preserveStorage||!displayStarterEvents.length||existingCold===coldPattern(checked.probe.result?.starterEvents??[]);
-    if(initial.valid&&retainsStorage(initial))return initial;
-    if(pins.mix!==null)return null;
+    // Round 21 (rule E1, coordinator): a plan that fits only because a quick step sits on a busy time's start (main
+    // called it a clash) never wins with hands-on steps 22:00–07:00 the baker did not declare free (newNightHandsOn,
+    // the commercial ladder's rule): the search goes on, and takes it only when nothing else fits.
+    const onEdgeWithNight=(checked:ReturnType<typeof evaluateStarterCandidate>)=>{
+      const acts=[...(checked.validation?.schedule?.availabilityActions??[]),...starterHandsOnActions(checked.probe.result?.starterEvents??[],now)].filter(a=>+a.at>=now);
+      return acts.some(a=>isQuickAction(a.id)&&!a.end&&candidateBlocks.some(b=>+b.from===+a.at))&&newNightHandsOn(acts,candidateBlocks).length>0;
+    };
+    let edgeFallback:ReturnType<typeof evaluateStarterCandidate>|null=null;
+    if(initial.valid&&retainsStorage(initial)){if(!onEdgeWithNight(initial))return initial;edgeFallback=initial;}
+    if(pins.mix!==null)return edgeFallback;
     const result=initial.probe.result;
-    if(result?.sourdoughSweetFrom==null||result.sourdoughSweetTo==null)return null;
+    if(result?.sourdoughSweetFrom==null||result.sourdoughSweetTo==null)return edgeFallback;
     const step=900000;
     const from=Math.max(Date.now()+1,+candidateBake-result.sourdoughSweetFrom*3600000);
     const to=+candidateBake-result.sourdoughSweetTo*3600000;
@@ -7189,9 +7235,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         if(!dough.valid)continue;
       }
       const checked=evaluateStarterCandidate({...pins,mix},candidateBlocks,undefined,preserveStorage,undefined,candidateBake);
-      if(checked.valid&&retainsStorage(checked))return checked;
+      if(checked.valid&&retainsStorage(checked)){if(!onEdgeWithNight(checked))return checked;edgeFallback??=checked;}
     }
-    return null;
+    return edgeFallback;
   }
 
   const repairBlocks = [...localBlocks];
@@ -7357,7 +7403,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const currentCandidate=isSourdough?validateCurrentStarterCandidate(repairBlocks):validateScheduleCandidate(commercialCandidateInput(repairBlocks));
   const committedSchedule='validation' in currentCandidate?currentCandidate.validation.schedule:currentCandidate.schedule;
   const finalFridgeRemoval=getFinalFridgeRemoval(committedSchedule?.availabilityActions??[]);
-  const fridgeBlocks=finalFridgeRemoval?repairBlocks.filter(block=>+block.from<=+finalFridgeRemoval.at&&+finalFridgeRemoval.at<+block.to):[];
+  const fridgeBlocks=finalFridgeRemoval?repairBlocks.filter(block=>busyHit(finalFridgeRemoval,+block.from,+block.to)):[];
   const fridgeRemovalCovered=!!finalFridgeRemoval&&fridgeBlocks.length>0&&fridgeBlocks.every(block=>isFridgeRemovalCovered(finalFridgeRemoval,block));
   const canArrangeFridgeRemoval=!!finalFridgeRemoval&&+finalFridgeRemoval.at>=Date.now()&&fridgeBlocks.length>0;
   useEffect(()=>{
@@ -7372,7 +7418,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     // recommendation solver: accepting/undoing must preserve all chosen times.
     const nextBlocks=localBlocks.map(block=>{
       const {fridgeRemoval:_previous,...plain}=block;
-      return covered&&+block.from<=+finalFridgeRemoval.at&&+finalFridgeRemoval.at<+block.to
+      return covered&&busyHit(finalFridgeRemoval,+block.from,+block.to)
         ?{...plain,fridgeRemoval:{at:+finalFridgeRemoval.at,bake:+pendingEatTime}}:plain;
     });
     lastFridgeArrangementRef.current=covered?{at:+finalFridgeRemoval.at,bake:+pendingEatTime}:undefined;
@@ -7402,7 +7448,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     // reads the pre-tap blocks and would drop the covers just added).
     if(fridge&&finalFridgeRemoval&&canArrangeFridgeRemoval){
       const removal={at:+finalFridgeRemoval.at,bake:+pendingEatTime};
-      next=next.map(block=>+block.from<=removal.at&&removal.at<+block.to?{...block,fridgeRemoval:removal}:block);
+      next=next.map(block=>busyHit({id:'cold-out-2',at:new Date(removal.at)},+block.from,+block.to)?{...block,fridgeRemoval:removal}:block);
       lastFridgeArrangementRef.current=removal;setFridgeArrangementChanged(false);
     }
     solverBlocksRef.current=next;setLocalBlocks(next);
@@ -7950,7 +7996,16 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           const target=!searchingTargets?firstSuggestedTarget:undefined;
           const neededH=target?Math.round((+target.bake-+target.start)/900000)/4:0;
           const awayH=Math.round((+pendingEatTime-Date.now())/900000)/4;
-          if(!target||neededH<=0||awayH<=0||awayH>=neededH)return isFr?'Cet horaire ne laisse pas le bon temps à la pâte.':'This baking time doesn’t leave the dough the time it needs.';
+          if(!target||neededH<=0||awayH<=0||awayH>=neededH){
+            // Round 21 (P): name the step and its time, never a bare "doesn't leave the dough the time it needs": the
+            // plan's first step (the preferment's start, else Start Dough) and why it does not work.
+            const prefFirst=hasPrefActive&&prefOffsetH>0;
+            const at=prefFirst?new Date(+pendingStart-prefOffsetH*3600000):pendingStart;
+            const name=prefFirst?(prefermentType==='biga'?(isFr?'Préparer la biga':'Make Biga'):(isFr?'Préparer le poolish':'Make Poolish')):conflictNames.mix[isFr?0:1];
+            if(+at<=Date.now())return isFr?`${name} tomberait ${fmtCardDT(at,true)}, une heure déjà passée.`:`${name} would be ${fmtCardDT(at,false)}, which has passed.`;
+            return isFr?`${name} ${fmtCardDT(at,true)} ne laisse pas à la pâte le temps qu’il lui faut avant la cuisson de ${simpleTimeLabel(pendingEatTime)}.`
+              :`${name} at ${fmtCardDT(at,false)} doesn’t leave the dough the time it needs before the ${simpleTimeLabel(pendingEatTime)} bake.`;
+          }
           const lang=isFr?'fr':'en';
           return isFr
             ?`Cette pâte demande environ ${formatDuration(neededH,lang)} entre le pétrissage et la cuisson. ${fmtCardHM(pendingEatTime,true)}, c’est dans ${formatDuration(awayH,lang)}.`
@@ -9126,7 +9181,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // One row per event in chronological order, including Bake and Out of
         // fridge — both were previously missing or buried in the cards.
         const _blocks = isSourdough ? localBlocks : blocks;
-        const inAnyBlocker = (d: Date) => isTimeBlocked(d, _blocks);
+        const inAnyBlocker = (d: Date, quick = false) => isTimeBlocked(d, _blocks, quick);
         const rows: PlanRow[] = [];
 
         // Estimated history renders day-only — the minute is fiction.
@@ -9134,7 +9189,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           `≈ ${d.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' })}`;
 
         const busyNote = (id: string, at: Date): React.ReactNode | undefined => {
-          if (!inAnyBlocker(at) && !readinessConflicts.some(conflict => conflict.action.id === id)) return undefined;
+          if (!inAnyBlocker(at, isQuickAction(id)) && !readinessConflicts.some(conflict => conflict.action.id === id)) return undefined;
           return isFr ? 'Cette étape chevauche une indisponibilité. Vérifiez le planning ci-dessus.'
             : 'This step overlaps an unavailable period. Review the plan above.';
         };

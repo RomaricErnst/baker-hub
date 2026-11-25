@@ -197,13 +197,22 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
     add(enteredYeastTiming(idyPct, { ...timingInput(input), anchorH: o.anchorH, prefStartH: o.prefStartH, maxH: left, oneTrip: true }), true);
     // The room-temperature plan (round 9) where the style takes one: no fridge trip at all can be the lightest.
     if (roomPlanAllowed(o.styleKey)) add(enteredYeastTiming(idyPct, { ...timingInput(input), exitLeadMin: ROOM_PLAN, anchorH: o.anchorH, maxH: left }));
+    // Round 21 (rule E1): the automatic plan may now knead a quarter hour later (shaping ends at a night's edge, the balls
+    // go in on it); an amount whose anchored fit no longer reaches its band at that knead keeps the fits of the hour
+    // before it as candidates (D2: within an hour of the calculated knead), ranked as every other.
+    // Only with busy times: E1 moves no plan without them.
+    if (o.anchorH !== undefined && blocks.length) for (const earlierH of [0.25, 0.5, 0.75, 1]) {
+      const earlier = { ...input, anchorH: o.anchorH + earlierH };
+      add(entryTiming(idyPct, earlier, left));
+      if (days.length < blocks.length) add(entryTiming(idyPct, { ...earlier, blocks: days }, left));
+    }
   } else {
     const w = o.defaultWindow?.(o.bake);
     if (w?.from != null && w?.to != null) timings.push({ center: o.anchorH ?? w.from, from: w.from, to: w.to, ...(typeof o.exitLeadMin === 'object' && o.exitLeadMin ? { shape: o.exitLeadMin } : {}) });
   }
   type Key = [number, number, number];
   const keyOf = (night: AvailabilityAction[], start: number): Key =>
-    [night.filter(a => isDeepNight(a.at)).length, night.length, anchorMs === null ? 0 : Math.abs(start - anchorMs)];
+    [night.filter(a => isDeepNight(a)).length, night.length, anchorMs === null ? 0 : Math.abs(start - anchorMs)];
   const less = (a: Key, b: Key) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
   // Each knead's dough steps alone (a lower bound: the preferment adds steps), cheapest first.
   const raw: { t: number; at: number; key: Key }[] = [];

@@ -49,7 +49,8 @@ test('a hot room poolish chill is a timed and coverable part of the preferment',
   assert.ok(free.valid);assert.equal(free.schedule.prefermentCooldownHours,1);
   const chill=free.schedule.availabilityActions.find(action=>action.id==='preferment-cold-in');
   assert.equal(+chill.at,+start-hour);
-  const block={from:chill.at,to:new Date(+chill.at+60000),label:'Out'};
+  // Round 21 (rule E1): the chill is a quick step, free on a busy time's edge; a busy time around it blocks it.
+  const block={from:new Date(+chill.at-60000),to:new Date(+chill.at+60000),label:'Out'};
   const blocked=validateScheduleCandidate({...input,blocks:[block]});
   assert.equal(blocked.conflict,'preferment-cold-in');assert.equal(blocked.schedule.prefermentCooldownHours,undefined);
   const covered=validateScheduleCandidate({...input,blocks:[{...block,coveredActions:[{id:chill.id,at:+chill.at}]}]});

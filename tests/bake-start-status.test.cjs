@@ -14,6 +14,8 @@ function render(overrides={}){
 test('overdue preparation asks one question with one yes and one not-yet action in both languages',()=>{
  for(const fr of [false,true])for(const method of ['none','poolish','biga'])for(const preparing of [false,true]){
   const html=render({fr,method,preparing});
+  // Round 21 (P): in Preparation the step says it (Step done, Different time?): no card at all.
+  if(preparing){assert.equal(html,'');continue;}
   // Same day in FR: "Oui, à 11h00" (18 Nov 2026 retention round 3).
   assert.equal((html.match(fr?/Oui, à/g:/Yes, at/g)||[]).length,1);
   assert.equal((html.match(fr?/Pas encore/g:/Not yet/g)||[]).length,1);
@@ -48,12 +50,12 @@ test('missed starter feed asks one equivalent question without an additional con
 });
 
 
-test('planned mixing uses one completed action, without a separate start or finish flow',()=>{
- for(const fr of [false,true]){
-  assert.equal(render({fr,method:'none',plannedAt:NOW+30*60000+1,preparing:true}), '');
-  const html=render({fr,method:'none',plannedAt:NOW+30*60000,preparing:true});
-  assert.equal((html.match(fr?/Terminé maintenant/g:/Done now/g)||[]).length,1);
-  assert.doesNotMatch(html,/Start mixing|Finish mixing|Commencer le pétrissage|Terminer le pétrissage|Yes, at|Oui, le/);
+// Round 21 (P, owner): the separate "Start Dough / Done now" card in Preparation is gone; the step's own Step done and
+// "Different time?" (prefilled with the tap's clock) record the mix. Outside Preparation nothing is asked before the time.
+test('planned mixing: no card before its time, in Preparation or outside it',()=>{
+ for(const fr of [false,true])for(const preparing of [false,true]){
+  assert.equal(render({fr,method:'none',plannedAt:NOW+30*60000,preparing}), '');
+  assert.equal(render({fr,method:'none',plannedAt:NOW+5*60000,preparing}), '');
  }
 });
 // 16 Nov 2026 retention review: at the planned minute the honest answer is "starting now".

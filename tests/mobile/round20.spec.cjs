@@ -119,10 +119,18 @@ for(const fr of [false,true]){
    const page=await visit(context,tapAt,fr);
    await resume(page,fr);
    await section(page,fr,L('Preparation','Préparation'));
-   const doneNow=page.getByRole('button',{name:L('Done now','Terminé maintenant'),exact:true});
-   const overview=page.getByRole('button',{name:L(/Overview/,/Vue d’ensemble/)});
-   if(!(await doneNow.count())&&await overview.count())await overview.first().tap();
-   await doneNow.first().tap();
+   // Round 21 (P): the step's Step done, then "Different time?" prefilled with the tap's clock (the card is gone).
+   await expect(page.locator('.bh-start-status:visible')).toHaveCount(0);
+   const startStep=page.getByRole('button',{name:fr?/^Pétrir la pâte/:/^Start Dough/});
+   // The step marked Now may be another (Preparation opens on the clock's step): open Start Dough when its box is not shown.
+   if(!(await page.getByRole('checkbox',{name:L(/Step done/,/Étape faite/)}).filter({visible:true}).count())&&await startStep.count())await startStep.filter({visible:true}).first().tap();
+   const done=page.getByRole('checkbox',{name:L(/Step done/,/Étape faite/)}).filter({visible:true}).first();
+   // A tap, not check(): ticking moves Preparation on and closes the step, so check() would wait on a hidden box.
+   await done.scrollIntoViewIfNeeded();await done.tap();
+   const different=page.getByRole('button',{name:L('Different time?','À une autre heure ?')}).filter({visible:true});
+   if(!(await different.count()))await startStep.filter({visible:true}).first().tap();
+   await different.first().tap();
+   await page.locator('[data-done-time]:visible').getByRole('button',{name:L('Set time','Enregistrer'),exact:true}).first().tap();
    await expect.poll(async()=>(await stored(page))?.execution?.actualAt??0,{timeout:10000}).toBeGreaterThan(0);
    const s=await stored(page);
    expect(Math.abs(s.execution.actualAt-tapAt)).toBeLessThan(2*60000);
