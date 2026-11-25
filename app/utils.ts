@@ -3,7 +3,7 @@ import { formatDuration } from './utils/duration';
 import { starterBuild } from './utils/starterBuild';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { scheduledFoldMinutes } from './utils/scheduleFolds';
-import { actionConflicts, busyHit, findAvailabilityConflicts, inClockWindow, isTimeBlocked, isFridgeRemovalCovered, newNightHandsOn, nightScore, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
+import { actionConflicts, busyHit, findAvailabilityConflicts, isTimeBlocked, mainEdgesActive, isFridgeRemovalCovered, newNightHandsOn, nightScore, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
 import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 import { yeastActivity, pathHeq, riseTarget, doseForHeq, yeastBudget, thermalTauH, type PathResult, type ThermalPhase } from './utils/yeastModel';
 // ══════════════════════════════════════════
@@ -1496,11 +1496,11 @@ type FinalProofMode = 'generic' | 'style' | 'styleRoom' | 'styleBulk';
  * block, the sleep preset) and the step falls outside every busy time they entered. */
 const NIGHT_FROM_H = 22, NIGHT_TO_H = 7;
 function nightActionIds(schedule: ScheduleResult, blocks: AvailabilityBlock[]): Set<string> {
-  // Rule E1 (busyHit): the night is read as a busy time, quick steps free on its edges, long steps ending by 22:00.
+  // The clock night keeps main's test (a step's start); the baker's own busy times read rule E1 (busyHit).
   const ownNight = blocks.some(block => block.label?.endsWith(' night'));
   const free = (action: AvailabilityAction) => ownNight && !blocks.some(block => busyHit(action, +block.from, +block.to));
   return new Set((schedule.availabilityActions ?? [])
-    .filter(action => inClockWindow(action, NIGHT_FROM_H, NIGHT_TO_H) && !free(action))
+    .filter(action => { const h = action.at.getHours(); return (h >= NIGHT_FROM_H || h < NIGHT_TO_H) && !free(action); })
     .map(action => action.id));
 }
 
@@ -1572,7 +1572,8 @@ function simplerHotPlan(plan: ScheduleResult, build: (hot: HotPlan) => ScheduleR
     const one = build(hot);
     if (!(fridgeSpellCount(one) === 1 && keeps(one) && (hot !== 'bulkCold' || one.totalRTHours <= plan.totalRTHours + 0.25))) continue;
     if (!chosen) chosen = one;
-    else if ((one.availabilityConflicts?.length ?? 0) < (chosen.availabilityConflicts?.length ?? 0)) chosen = one;
+    else if (!mainEdgesActive() && (one.availabilityConflicts?.length ?? 0) < (chosen.availabilityConflicts?.length ?? 0)
+      && nightActionIds(one, blocks).size <= nightActionIds(chosen, blocks).size) chosen = one;
     if (!(chosen.availabilityConflicts?.length)) break;
   }
   return chosen ?? plan;

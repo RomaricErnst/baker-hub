@@ -23,7 +23,7 @@ import {assessScheduleDraft} from '../utils/scheduleDraft';
 import {recommendRipePoolish, ripenFixedPoolish, ripenPoolish, type PoolishPeakCheck} from '../utils/poolishRipeness';
 import { uncovered, type EntryPlan } from '../utils/yeastEntry';
 import {prefermentConditioningAction,withNightRule,proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, recommendPreferment, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
-import { busyHit, isQuickAction, isOvernightPreparation, newNightHandsOn, planActions, blockClock, chronologicalBlocks, profileBlocksForBake, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
+import { busyHit, isDeepNight, isQuickAction, withMainEdges, isOvernightPreparation, newNightHandsOn, planActions, blockClock, chronologicalBlocks, profileBlocksForBake, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, bigaWindow, bigaCoolOffered, type BigaStorage, type MixerType } from '../data';
 import { prefermentYeastTiming, prefermentYeastStorages, prefermentMassG, type FlourPreferment } from '../utils/prefermentYeast';
 import type {BakeExecution} from '../utils/bakeExecution';
@@ -936,7 +936,28 @@ export type AutomaticCommercialPlan =
       optimalPrefOffset: number; inFridge: boolean; chosen: ReturnType<typeof commercialPlanRecommendation> }
   | PlanBase & { kind: 'direct'; times: { start: Date; prefHours: number; inFridge?: boolean }; expectedColdH: number; guardShort: boolean;
       sweetCenter: number; sweetFrom: number; popup: boolean; result: ReturnType<typeof findOptimalPosition> };
+/** The automatic plan of a commercial dough. Round 21 (rule E1, coordinator): when the plan found has hands-on steps
+ * 22:00–07:00 the baker did not declare free (newNightHandsOn), main's plan (edges as before, `withMainEdges`) is taken
+ * instead unless the E1 plan has no more of them and no more wake-ups (23:00–06:00): E1 never adds a night step. A plan
+ * without busy times is never touched. */
 export function automaticCommercialPlan(c: CommercialPlanContext, currentBlocks: AvailabilityBlock[], et: Date, overrides: TimingOverrides): AutomaticCommercialPlan {
+  const plan = automaticCommercialPlanE1(c, currentBlocks, et, overrides);
+  if (!plan.times || !currentBlocks.length) return plan;
+  const judge = (p: AutomaticCommercialPlan) => {
+    if (!p.times) return null;
+    const s = buildSchedule(p.times.start, et, currentBlocks, c.kitchenTemp, c.preheatMin, c.mixerType, c.styleKey, c.numItems, c.mixingBatches, false, 1, c.exitLeadMin, c.planLadder);
+    const acts = [...(s.availabilityActions ?? []), ...(p.times.prefHours > 0 ? [{ id: 'preferment', at: new Date(+p.times.start - p.times.prefHours * 3600000) }] : [])].filter(a => +a.at >= c.now);
+    const night = newNightHandsOn(acts, currentBlocks);
+    return { night: night.length, deep: night.filter(a => isDeepNight(a)).length };
+  };
+  const now = judge(plan);
+  if (!now || !now.night) return plan;
+  const before = withMainEdges(() => automaticCommercialPlanE1(c, currentBlocks, et, overrides));
+  const old = judge(before);
+  // Main's plan unless the E1 plan has no more undeclared night steps and no more wake-ups (23:00–06:00) than it.
+  return old && (old.night < now.night || old.deep < now.deep) ? before : plan;
+}
+function automaticCommercialPlanE1(c: CommercialPlanContext, currentBlocks: AvailabilityBlock[], et: Date, overrides: TimingOverrides): AutomaticCommercialPlan {
   const {styleKey,kitchenTemp,fridgeTemp,preheatMin,flourStrength,prefermentType,poolishStorage,execution,completedMixAt}=c;
   const hasPrefActive=prefermentType!=='none'&&prefermentType!=='';
   const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
@@ -7187,10 +7208,18 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const coldPattern=(events:StarterEvent[])=>JSON.stringify(events.filter(e=>+e.time>=now&&(e.kind==='fridge_in'||e.kind==='fridge_out')).map(e=>e.kind));
     const existingCold=coldPattern(displayStarterEvents);
     const retainsStorage=(checked:ReturnType<typeof evaluateStarterCandidate>)=>!preserveStorage||!displayStarterEvents.length||existingCold===coldPattern(checked.probe.result?.starterEvents??[]);
-    if(initial.valid&&retainsStorage(initial))return initial;
-    if(pins.mix!==null)return null;
+    // Round 21 (rule E1, coordinator): a plan that fits only because a quick step sits on a busy time's start (main
+    // called it a clash) never wins with hands-on steps 22:00–07:00 the baker did not declare free (newNightHandsOn,
+    // the commercial ladder's rule): the search goes on, and takes it only when nothing else fits.
+    const onEdgeWithNight=(checked:ReturnType<typeof evaluateStarterCandidate>)=>{
+      const acts=[...(checked.validation?.schedule?.availabilityActions??[]),...starterHandsOnActions(checked.probe.result?.starterEvents??[],now)].filter(a=>+a.at>=now);
+      return acts.some(a=>isQuickAction(a.id)&&!a.end&&candidateBlocks.some(b=>+b.from===+a.at))&&newNightHandsOn(acts,candidateBlocks).length>0;
+    };
+    let edgeFallback:ReturnType<typeof evaluateStarterCandidate>|null=null;
+    if(initial.valid&&retainsStorage(initial)){if(!onEdgeWithNight(initial))return initial;edgeFallback=initial;}
+    if(pins.mix!==null)return edgeFallback;
     const result=initial.probe.result;
-    if(result?.sourdoughSweetFrom==null||result.sourdoughSweetTo==null)return null;
+    if(result?.sourdoughSweetFrom==null||result.sourdoughSweetTo==null)return edgeFallback;
     const step=900000;
     const from=Math.max(Date.now()+1,+candidateBake-result.sourdoughSweetFrom*3600000);
     const to=+candidateBake-result.sourdoughSweetTo*3600000;
@@ -7206,9 +7235,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         if(!dough.valid)continue;
       }
       const checked=evaluateStarterCandidate({...pins,mix},candidateBlocks,undefined,preserveStorage,undefined,candidateBake);
-      if(checked.valid&&retainsStorage(checked))return checked;
+      if(checked.valid&&retainsStorage(checked)){if(!onEdgeWithNight(checked))return checked;edgeFallback??=checked;}
     }
-    return null;
+    return edgeFallback;
   }
 
   const repairBlocks = [...localBlocks];

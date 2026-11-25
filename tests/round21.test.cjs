@@ -46,24 +46,20 @@ test('E1: quick steps may sit on either edge; long steps end by the start, may s
   assert.equal(av.isTimeBlocked(night.from, [night]), true);
 });
 
-test('E1: the night rules read 22:00–07:00 (and 23:00–06:00) as busy times, with the same edges', () => {
+test('E1 in the night rules: the baker\'s own nights read E1, the clock night keeps main\'s tests', () => {
   const steps = [{ id: 'fold-1', at: at('22:00') }, { id: 'divide', at: at('21:50'), end: at('22:05') }, { id: 'mix', at: at('21:30'), end: at('22:00') },
     { id: 'cold-in', at: at('23:00') }, { id: 'cold-out', at: SG('2026-11-27T07:00:00') }, { id: 'divide', at: SG('2026-11-27T07:00:00'), end: SG('2026-11-27T07:15:00') }];
-  // nightHandsOn (entered amounts' ranking and line): the shaping across 22:00 and the fridge at 23:00 (inside 22–07).
-  assert.deepEqual(av.nightHandsOn(steps, []).map(a => a.id + '@' + hhmm(a.at)), ['divide@Thu 21:50', 'cold-in@Thu 23:00']);
-  // A wake-up (23:00–06:00): a quick step at 23:00 is not one, a long one starting then is.
-  assert.equal(av.isDeepNight(at('23:00')), false);
-  assert.equal(av.isDeepNight({ id: 'cold-in', at: at('23:00') }), false);
-  assert.equal(av.isDeepNight({ id: 'mix', at: at('23:00') }), true);
-  // D4 (newNightHandsOn, automatic plans): with the baker's own 23:00 night, 22:00–23:00 is free and the 23:00 edge too.
+  // Clock night (no busy times): main's test on a step's start, edges exclusive (22:00 and 07:00 are not night).
+  assert.deepEqual(av.nightHandsOn(steps, []).map(a => a.id + '@' + hhmm(a.at)), ['cold-in@Thu 23:00']);
+  // With the baker's Nights, a long step starting at 23:00 is inside it (E1); the quick fridge step on the edge is not.
+  assert.deepEqual(av.nightHandsOn([{ id: 'mix', at: at('23:00') }], [night]).map(a => a.id), ['mix']);
+  // D4 (newNightHandsOn, automatic plans): with their own 23:00 night, 22:00–23:00 is free and the quick 23:00 edge too.
   assert.deepEqual(av.newNightHandsOn(steps, [night]).map(a => a.id), []);
-  assert.deepEqual(av.newNightHandsOn(steps, []).map(a => a.id), ['divide', 'cold-in']);
-  // Overnight preparation (23:00–07:00, the daytime preference): the 23:00 fridge is not one, a mix at 23:00 is.
-  assert.equal(av.isOvernightPreparation({ id: 'cold-in-2', at: at('23:00') }), false);
-  assert.equal(av.isOvernightPreparation({ id: 'mix', at: at('23:00') }), true);
+  assert.deepEqual(av.newNightHandsOn(steps, []).map(a => a.id), ['fold-1', 'cold-in']);
+  assert.deepEqual(av.newNightHandsOn([{ id: 'mix', at: at('23:00') }], [night]).map(a => a.id), ['mix']);
 });
 
-test('E1 in the engine: B3 shapes until 23:00 and the balls go in at 23:00 under a 23:00 night (shaping that would cross it moves)', () => {
+test('E1 in the engine: shaping may end at 23:00 and the balls go in at 23:00 under a 23:00 night (shaping that would cross it moves)', () => {
   const nights = [night, { label: 'Friday night', from: SG('2026-11-27T23:00:00'), to: SG('2026-11-28T07:00:00') }];
   const s = utils.buildSchedule(at('20:15'), SG('2026-11-27T11:30:00'), nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, undefined, 'hot');
   const byId = Object.fromEntries(s.availabilityActions.map(a => [a.id, a]));
@@ -76,10 +72,11 @@ test('E1 in the engine: B3 shapes until 23:00 and the balls go in at 23:00 under
   // A fridge return exactly at a busy start: shaping ends then (engine-availability.test.cjs has the 22:30 block).
   const blocked = utils.buildSchedule(new Date('2026-09-27T16:00Z'), new Date('2026-09-28T18:00Z'), [{ from: new Date('2026-09-27T22:30Z'), to: new Date('2026-09-27T22:45Z'), label: 'Busy' }], 22, 60, 'hand', 'neapolitan');
   assert.equal(+blocked.coldRetard2Start, +new Date('2026-09-27T22:30Z'));
-  // The automatic plan (the picker's and the page's one function) kneads 20:15 for B3's lunch (main: 20:00).
+  // The automatic plan for B3's lunch keeps main's 20:00: the clock's 23:00–07:00 daytime preference still reads the 23:00
+  // fridge step as overnight (E1 changes only what the baker's busy times allow).
   const ctx = { now: +SG('2026-11-26T19:30:00'), styleKey: 'neapolitan', kitchenTemp: 22, fridgeTemp: 6, flourStrength: 1.2, tang: 'balanced', preheatMin: 45, preheatExtraMin: 0,
     planLadder: 'hot', mixerType: 'hand', numItems: 4, mixingBatches: 1, prefermentType: 'none', poolishStorage: 'auto', bigaStorage: 'auto', prefOffsetH: 0, prefInFridge: false, targetDoughTemp: 24 };
-  assert.equal(hhmm(sp.automaticCommercialPlan(ctx, nights, SG('2026-11-27T11:30:00'), {}).times.start), 'Thu 20:15');
+  assert.equal(hhmm(sp.automaticCommercialPlan(ctx, nights, SG('2026-11-27T11:30:00'), {}).times.start), 'Thu 20:00');
 });
 
 test('round-19 finding 5: Bake again plans from today\'s inputs; the 11:00pm fridge step is no clash', () => {
@@ -145,4 +142,31 @@ test('F1: the editor\'s sticky Apply bar never covers a control scrolled into vi
   assert.match(css, /#schedule-anchor-panel\[data-open\] :is\(input,select,button,label,summary\):not\(\.bh-apply-plan\) \{ scroll-margin-bottom:112px; \}/);
   // A baker's input ends the restore window: an edit typed early is an edit (the round8/round9-yeast flakes).
   assert.match(read('app/[locale]/page.tsx'), /const types = \['pointerdown', 'keydown', 'focusin', 'input'\];/);
+});
+
+test('round 21 follow-up: the clock nights keep main\'s tests; E1 touches only the baker\'s busy times', () => {
+  const at = (h, m = 0) => new Date(2026, 10, 26, h, m);
+  // A plan without busy times is judged as on main: the 23:00 fridge step is an overnight step, 22:00 is night.
+  assert.equal(av.isOvernightPreparation({ id: 'cold-in-2', at: at(23) }), true);
+  assert.deepEqual(av.newNightHandsOn([{ id: 'fold-1', at: at(22) }], []).map(a => a.id), ['fold-1']);
+  assert.equal(av.isDeepNight(at(23)), false);
+  assert.equal(av.isDeepNight({ id: 'mix', at: at(23, 15) }), true);
+  // Main's edges on request (the night guard): a quick step at a busy start is inside again.
+  assert.equal(av.withMainEdges(() => av.busyHit({ id: 'cold-in', at: night.from }, +night.from, +night.to)), true);
+  assert.equal(av.busyHit({ id: 'cold-in', at: night.from }, +night.from, +night.to), false);
+  assert.equal(av.usesBusyEdge([{ id: 'cold-out-2', at: night.from }], [night]), true);
+  assert.equal(av.usesBusyEdge([{ id: 'divide', at: night.from }], [night]), false);
+  // The guards: the levain search and the automatic commercial plan never take an E1-only plan with new undeclared night steps.
+  const picker = read('app/components/SchedulePicker.tsx');
+  assert.match(picker, /const onEdgeWithNight=/);
+  assert.match(picker, /const before = withMainEdges\(\(\) => automaticCommercialPlanE1\(c, currentBlocks, et, overrides\)\);/);
+});
+
+test('round 21 follow-up: a unit box keeps what the baker types; the page never re-keys it by value', () => {
+  const box = read('app/components/UnitInput.tsx');
+  assert.match(box, /if \(!el \|\| 'value' in input \|\| dirty\.current \|\| document\.activeElement === el\) return;/);
+  const page = read('app/[locale]/page.tsx');
+  assert.match(page, /key=\{`yeast:\$\{locale\}`\}/);
+  assert.doesNotMatch(page, /key=\{`yeast:\$\{yeastPctOverride/);
+  assert.match(page, /key="starter"/);
 });

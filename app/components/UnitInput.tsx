@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 // A number box whose unit sits inside it ("23 °C", "2.8 %"), so the row label fits one line
 // (20 Nov 2026 round 7). The unit is painted, not typed: it is not part of the value, cannot be
@@ -24,20 +24,33 @@ export const UNIT_INPUT_STYLE: React.CSSProperties = {
 
 const isEmpty = (v: unknown) => v === undefined || v === null || v === '';
 
-export default function UnitInput({ suffix, label, width = 96, style, onInput, decimal = false, ...rest }: Props) {
+export default function UnitInput({ suffix, label, width = 96, style, onInput, onBlur, decimal = false, ...rest }: Props) {
   // A text box takes no min/max/step (the page clamps the value it reads).
   const input = decimal ? Object.fromEntries(Object.entries(rest).filter(([key]) => !['min', 'max', 'step'].includes(key))) as typeof rest : rest;
   // Uncontrolled boxes are re-keyed by the page when their value changes, so the initial state is enough;
   // typing updates it. A controlled box follows its value.
   const [typedEmpty, setTypedEmpty] = useState(isEmpty(input.defaultValue));
+  // Round 21 (coordinator): a new value from the page (the calculated amount arriving, a suggestion applied) reaches an
+  // uncontrolled box here, never by remounting it, and never while the baker is in the box or holds typed text that the
+  // page has not read yet (it reads it on blur): on a slow phone the plan's amount landed mid-typing and wiped it.
+  const ref = useRef<HTMLInputElement | null>(null);
+  const dirty = useRef(false);
+  const shownDefault = input.defaultValue === undefined || input.defaultValue === null ? '' : String(input.defaultValue);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || 'value' in input || dirty.current || document.activeElement === el) return;
+    if (el.value !== shownDefault) { el.value = shownDefault; setTypedEmpty(shownDefault === ''); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shownDefault]);
   const empty = 'value' in input ? isEmpty(input.value) : typedEmpty;
   const showSuffix = !empty;
   // About 9.5 px per character at 16 px Figtree, plus a 4 px gap: the unit starts just after the number.
   const suffixRoom = 12 + Math.ceil(suffix.length * 9.5) + 5;
   return (
     <span data-unit-input style={{ position: 'relative', display: 'inline-flex', flex: typeof width === 'number' ? `0 0 ${width}px` : undefined, width }}>
-      <input type={decimal ? 'text' : 'number'} {...(decimal ? { inputMode: 'decimal' as const, autoComplete: 'off', spellCheck: false } : {})} aria-label={label} {...input}
-        onInput={e => { setTypedEmpty(e.currentTarget.value === ''); onInput?.(e); }}
+      <input ref={ref} type={decimal ? 'text' : 'number'} {...(decimal ? { inputMode: 'decimal' as const, autoComplete: 'off', spellCheck: false } : {})} aria-label={label} {...input}
+        onInput={e => { dirty.current = true; setTypedEmpty(e.currentTarget.value === ''); onInput?.(e); }}
+        onBlur={e => { onBlur?.(e); dirty.current = false; }}
         style={{ ...UNIT_INPUT_STYLE, ...style, paddingRight: showSuffix ? suffixRoom : 12 }} />
       {showSuffix && <span aria-hidden="true" data-unit-suffix
         style={{ position: 'absolute', left: `calc(100% - ${suffixRoom - 4}px)`, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'var(--smoke)',

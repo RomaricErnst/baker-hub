@@ -49,13 +49,26 @@ export function isFridgeRemovalCovered(action: AvailabilityAction, block: Availa
 const QUICK_ACTION = /^(?:folds?$|fold-\d|cold-(?:in|out)(?:-2)?$|preheat$|preferment-cold-(?:in|out)$|pref-(?:in|out)$|starter-(?:cold|fridge)|take-out)/;
 export const isQuickAction = (id: string): boolean => QUICK_ACTION.test(id);
 /** Does a hands-on step fall in the busy interval [from, to) under rule E1? */
+let mainEdges = false;
+/** Runs `fn` with main's edges (a quick step at a busy time's start counts as inside it), for the night guard of the
+ * automatic plans: a plan that E1 alone makes possible must not bring night steps main's plan did not have. */
+export function withMainEdges<T>(fn: () => T): T {
+  const previous = mainEdges; mainEdges = true;
+  try { return fn(); } finally { mainEdges = previous; }
+}
+/** True inside withMainEdges: main's rules throughout (the night guard's reference plan). */
+export const mainEdgesActive = (): boolean => mainEdges;
+/** A quick step sitting exactly on a busy time's start: a plan rule E1 alone makes possible. */
+export function usesBusyEdge(actions: AvailabilityAction[], blocks: AvailabilityPeriod[]): boolean {
+  return actions.some(a => isQuickAction(a.id) && !(a.end && +a.end > +a.at) && blocks.some(b => +b.from === +a.at));
+}
 export function busyHit(action: Pick<AvailabilityAction,'id'|'at'|'end'>, from: number, to: number): boolean {
   if (!(from < to)) return false;
   const at = +action.at;
   if (!Number.isFinite(at)) return false;
   const end = action.end != null && Number.isFinite(+action.end) && +action.end > at ? +action.end : undefined;
   if (end !== undefined) return at < to && from < end;
-  return isQuickAction(action.id) ? from < at && at < to : from <= at && at < to;
+  return isQuickAction(action.id) && !mainEdges ? from < at && at < to : from <= at && at < to;
 }
 
 /** A moment in busy time. `quick`: the moment is a quick step (rule E1: its start edge is free too); else a long step's
@@ -85,9 +98,13 @@ function clockWindows(action:Pick<AvailabilityAction,'at'|'end'>,fromH:number,to
 export function inClockWindow(action:Pick<AvailabilityAction,'id'|'at'|'end'>,fromH:number,toH:number):boolean {
   return Number.isFinite(+action.at)&&clockWindows(action,fromH,toH).some(([from,to])=>busyHit(action,from,to));
 }
+/** Round 21 (coordinator): the clock nights (22:00–07:00, 23:00–06:00, 23:00–07:00) are not busy times the baker
+ * entered; they keep main's tests (a step's start, its end for a span here), so a plan without busy times is planned
+ * exactly as before. Rule E1 applies to the baker's busy times only. */
 export function isOvernightPreparation(action:AvailabilityAction):boolean {
   if(action.id==='bake')return false;
-  return inClockWindow(action,23,7);
+  const atNight=(stamp:Date)=>stamp.getHours()<7||stamp.getHours()>=23;
+  return atNight(action.at)||Boolean(action.end&&atNight(new Date(+action.end-1)));
 }
 
 /** Hands-on steps that fall in the night (22:00–07:00 local, rule E1 edges) and that the baker did not declare free for
@@ -97,7 +114,11 @@ export function isOvernightPreparation(action:AvailabilityAction):boolean {
 export function newNightHandsOn(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):AvailabilityAction[] {
   const ownNight=blocks.some(block=>block.label?.endsWith(' night'));
   const free=(action:AvailabilityAction)=>ownNight&&!blocks.some(block=>busyHit(action,+block.from,+block.to));
-  return actions.filter(action=>action.id!=='bake'&&inClockWindow(action,22,7)&&!free(action));
+  return actions.filter(action=>{
+    if(action.id==='bake')return false;
+    const h=action.at.getHours();
+    return (h>=22||h<7)&&!free(action);
+  });
 }
 
 /** How heavy a plan's night steps are for an entered amount's ranking (round 13): each step between 23:00 and 06:00
@@ -109,13 +130,16 @@ export function newNightHandsOn(actions:AvailabilityAction[],blocks:Availability
  * long step must end by 22:00 (or by the own night's start). */
 export function nightHandsOn(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):AvailabilityAction[] {
   const nights=blocks.filter(block=>block.label?.endsWith(' night'));
-  return actions.filter(action=>action.id!=='bake'&&(inClockWindow(action,22,7)||nights.some(block=>busyHit(action,+block.from,+block.to))));
+  return actions.filter(action=>{
+    if(action.id==='bake')return false;
+    const m=minuteOfDay(action.at);
+    return m>22*60||m<7*60||nights.some(block=>busyHit(action,+block.from,+block.to));
+  });
 }
 /** A wake-up: a step in 23:00–06:00 (rule E1 edges: a quick step at 23:00 or 06:00 is not one; a long one at 23:00 is). */
-export const isDeepNight=(at:Date|AvailabilityAction)=>{
-  const action=at instanceof Date?{id:'cold-in',at}:at;
-  return inClockWindow(action,23,6);
-};
+const minuteOfDay=(at:Date)=>at.getHours()*60+at.getMinutes()+at.getSeconds()/60;
+/** A wake-up: after 23:00 and before 06:00 by the clock (exclusive edges, as on main). */
+export const isDeepNight=(at:Date|AvailabilityAction)=>{const m=minuteOfDay(at instanceof Date?at:at.at);return m>23*60||m<6*60;};
 /** The ranking's night weight (owner O2): a step between 23:00 and 06:00 outweighs any number of shoulder steps. */
 export function nightScore(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):number {
   const steps=nightHandsOn(actions,blocks);

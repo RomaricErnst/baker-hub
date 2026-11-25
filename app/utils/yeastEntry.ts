@@ -200,7 +200,8 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
     // Round 21 (rule E1): the automatic plan may now knead a quarter hour later (shaping ends at a night's edge, the balls
     // go in on it); an amount whose anchored fit no longer reaches its band at that knead keeps the fits of the hour
     // before it as candidates (D2: within an hour of the calculated knead), ranked as every other.
-    if (o.anchorH !== undefined) for (const earlierH of [0.25, 0.5, 0.75, 1]) {
+    // Only with busy times: E1 moves no plan without them.
+    if (o.anchorH !== undefined && blocks.length) for (const earlierH of [0.25, 0.5, 0.75, 1]) {
       const earlier = { ...input, anchorH: o.anchorH + earlierH };
       add(entryTiming(idyPct, earlier, left));
       if (days.length < blocks.length) add(entryTiming(idyPct, { ...earlier, blocks: days }, left));
