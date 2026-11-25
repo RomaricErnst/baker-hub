@@ -83,7 +83,7 @@ test('a W changed after the recipe re-times the plan',async({page})=>{
  expect(new Date(before.startTime).toLocaleTimeString('en-GB',{timeZone:'Asia/Singapore',hour:'2-digit',minute:'2-digit'})).toBe('19:30');
  // My choices → Flour → a W 380 flour → Update recipe.
  await page.getByRole('button',{name:'My choices',exact:true}).first().tap();
- await page.getByRole('button',{name:/^Edit : Flour/}).first().tap();
+ await page.getByRole('button',{name:/^Edit: Flour/}).first().tap();
  await page.getByRole('button',{name:'Change flour',exact:true}).filter({visible:true}).first().tap();
  await enterW('380');
  await page.getByRole('button',{name:'Update recipe',exact:true}).filter({visible:true}).last().tap();

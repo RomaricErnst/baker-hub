@@ -3,6 +3,17 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // Bake journal on this device, signed out: a generated bake appears under
 // "My bakes"; rating and note survive a reload; delete is immediate, with Undo (round 18).
 const journal=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journal_v1')||'[]'));
+// Round 20 (item 7): a bake still to come offers no rating and no Bake again; these tests move the bake into the past.
+// The draft is the same bake: it moves too, or the next save writes its future bake time back over the entry's
+// (round 20 CI: WebKit saved the draft after the reload and the sheet still showed a bake to come).
+// (2 h ago: still within the 12 h when the sheet offers "Open my bake".)
+const bakedTwoHoursAgo=(page,id)=>page.evaluate(id=>{
+ const rows=JSON.parse(localStorage.getItem('bh_journal_v1')||'[]');const row=rows.find(r=>r.id===id);if(!row)return;
+ const shift=Date.now()-2*3600000-row.eatTime;
+ const move=s=>{if(!s)return s;for(const k of ['startTime','eatTime','acceptedStartTime','acceptedPreparationAt','acceptedEatTime'])if(typeof s[k]==='number')s[k]+=shift;return s;};
+ row.eatTime+=shift;move(row.session);localStorage.setItem('bh_journal_v1',JSON.stringify(rows));
+ if(localStorage.getItem('bh_journal_current_v1')===id){const d=JSON.parse(localStorage.getItem('bh_session_v1')||'null');if(d)localStorage.setItem('bh_session_v1',JSON.stringify(move(d)));}
+},id);
 async function generate(page,fr,count=1){
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
@@ -16,16 +27,24 @@ async function generate(page,fr,count=1){
  await bakeDate.fill(value);await bakeDate.blur();
  await page.getByRole('button',{name:fr?'Générer ma recette':'Generate my recipe',exact:true}).tap();
  // A second bake in the same oven at the same time is asked once (18 Nov 2026 retention round 3): keep it.
- if(count>1){await page.locator('[data-oven-keep]').tap();}
+ // (Round 20: the first bake may be behind, then there is no oven to share and no question.)
+ if(count>1){await page.waitForTimeout(1500);const keep=page.locator('[data-oven-keep]');if(await keep.count())await keep.tap();}
  await expect.poll(async()=>(await journal(page)).length).toBe(count);
 }
 async function openMyBakes(page,fr){
- await page.getByRole('button',{name:'Menu',exact:true}).tap();
+ // A bake baked within 12 h opens its rating sheet by itself when the page comes back (round 6); on a slow
+ // runner it can land after the reload settles (round 20 CI). Close it: My bakes opens the same sheet.
+ const auto=page.getByRole('dialog',{name:fr?'Fournée du journal':'Bake journal entry'});
+ for(let i=0;;i++){
+  if(await auto.count())await auto.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).tap();
+  try{await page.getByRole('button',{name:'Menu',exact:true}).tap({timeout:5000});break;}catch(e){if(i>=5)throw e;}
+ }
  await page.getByRole('button',{name:fr?'Mes fournées':'My bakes',exact:true}).tap();
 }
 
 for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in — rate, note, reload, delete`,async({page})=>{
  const fr=lang==='fr';
+ test.setTimeout(120000); // two reloads and a full generate: a slow runner needs more than the default minute
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  let confirms=0;page.on('dialog',d=>{confirms++;d.dismiss();});
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
@@ -44,10 +63,16 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in �
 
  const sheet=page.getByRole('dialog',{name:fr?'Fournée du journal':'Bake journal entry'});
  await expect(sheet.getByText(fr?'Enregistré sur cet appareil uniquement.':'Saved on this device only.',{exact:true})).toBeVisible();
- // Before the bake the entry shows the plan; rating is one tap away.
+ // Before the bake the entry shows the plan; nothing to rate yet and no Bake again (round 20, item 7).
  await expect(sheet.locator('[data-journal-plan]')).toBeVisible();
  await expect(sheet.getByText(fr?'Comment s’est passée votre cuisson ?':'How did it turn out?',{exact:true})).toHaveCount(0);
- await sheet.locator('[data-rate-now]').tap();
+ await expect(sheet.locator('[data-rate-now]')).toHaveCount(0);
+ await expect(sheet.getByRole('button',{name:fr?/^Refaire la semaine suivante/:/^Bake again next week/})).toHaveCount(0);
+ await sheet.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).tap();
+ await bakedTwoHoursAgo(page,first.id);
+ await page.reload();
+ await openMyBakes(page,fr);
+ await menu.locator(`[data-journal-entry="${first.id}"]`).tap();
  await expect(sheet.getByText(fr?'Comment s’est passée votre cuisson ?':'How did it turn out?',{exact:true})).toBeVisible();
  await sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true}).tap();
  await expect(sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true})).toHaveAttribute('aria-pressed','true');
@@ -66,16 +91,18 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in �
  await expect(sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true})).toHaveAttribute('aria-pressed','true');
 
  // Delete is immediate, with Undo in My bakes where its card was (round 18, H3); never a confirm.
+ // The draft as it stands (a bake behind is no longer a live recipe on reload): Undo brings back this one.
+ const draftBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.recipeGenerated);
  await sheet.getByRole('button',{name:fr?'Supprimer de cet appareil':'Delete from this device',exact:true}).tap();
  await expect(sheet).toHaveCount(0);
  expect(await journal(page)).toEqual([]);
  const removed=menu.locator(`[data-journal-removed="${first.id}"]`);
- await expect(removed).toContainText(fr?'Supprimée ·':'Removed ·');
+ await expect(removed).toContainText(fr?/Pizza du soir supprimée ·|supprimée ·/:/Pizza night removed ·|removed ·/);
  // It was the bake on screen: its draft goes with it, and Undo brings both back.
  expect(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBeNull();
  await removed.locator('[data-journal-undo]').tap();
- expect((await journal(page)).map(e=>e.id)).toEqual([first.id]);
- expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.recipeGenerated)).toBe(true);
+ await expect.poll(async()=>(await journal(page)).map(e=>e.id)).toEqual([first.id]);
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.recipeGenerated)).toBe(draftBefore);
  await expect(menu.locator(`[data-journal-entry="${first.id}"]`)).toBeVisible();
  // Delete again and close the menu: Undo is gone.
  await menu.locator(`[data-journal-entry="${first.id}"]`).tap();
@@ -97,8 +124,12 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  await openMyBakes(page,false);
  await page.locator(`[data-journal-entry="${entry.id}"]`).tap();
  const sheet=page.getByRole('dialog',{name:'Bake journal entry'});
- // Before the bake the entry shows the plan; photos are one tap away.
- await sheet.locator('[data-rate-now]').tap();
+ // After the bake the entry takes photos (a bake still to come offers no rating, round 20).
+ await sheet.getByRole('button',{name:'Close',exact:true}).tap();
+ await bakedTwoHoursAgo(page,entry.id);
+ await page.reload();
+ await openMyBakes(page,false);
+ await page.locator(`[data-journal-entry="${entry.id}"]`).tap();
  // A small PNG chosen from the device: downscaled to JPEG and kept in IndexedDB.
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQI12P8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==','base64');
  await sheet.locator('input[type=file]').setInputFiles({name:'crumb.png',mimeType:'image/png',buffer:png});

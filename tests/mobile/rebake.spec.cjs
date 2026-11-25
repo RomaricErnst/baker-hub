@@ -27,11 +27,14 @@ for(const mode of ['simple','custom'])test(`${mode}: bake again opens the next w
   // Make it a Custom bake: the saved session says so.
   await page.evaluate(id=>{const all=JSON.parse(localStorage.getItem('bh_journal_v1'));all[0].session.tab='custom';localStorage.setItem('bh_journal_v1',JSON.stringify(all));},first.id);
  }
+ // Bake again is offered once the bake is behind (round 20, item 7): it was baked yesterday evening.
+ const yesterday=await local(page,-1,19);
+ await page.evaluate(([id,v])=>{const all=JSON.parse(localStorage.getItem('bh_journal_v1'));for(const e of all)if(e.id===id)e.eatTime=+new Date(v);localStorage.setItem('bh_journal_v1',JSON.stringify(all));},[first.id,yesterday]);
  await page.getByRole('button',{name:'Menu',exact:true}).tap();
  await page.getByRole('button',{name:'My bakes',exact:true}).tap();
  await page.locator(`#bakerhub-menu [data-journal-entry="${first.id}"]`).tap();
  await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:/^Bake again next week/}).tap();
- const nextWeek=await local(page,9,19);
+ const nextWeek=await local(page,9,19); // the draft's own bake, a week on
  // A Customized bake opens on its bake time, then Create my recipe (20 Nov 2026 round 6, A13).
  if(mode==='custom'){await expect(page.locator('.bh-bake-navigator').first()).toContainText('Bake time');await expect(page.getByLabel('Number of pizzas',{exact:true})).toHaveCount(0);return expect(errors).toEqual([]);}
  // Bake again opens on how much (18 Nov 2026 retention round 3); the kitchen follows, then the bake time.

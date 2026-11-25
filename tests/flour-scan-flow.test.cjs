@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const catalogue=require('../lib/flourCatalogue.json');
 const moduleResult={exports:{}};
 const code=ts.transpileModule(fs.readFileSync('app/components/FlourScan.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-vm.runInNewContext(code,{module:moduleResult,exports:moduleResult.exports,require:p=>p==='@/lib/flourDatabase'?{FLOUR_DB:catalogue}:require(p)});
+vm.runInNewContext(code,{module:moduleResult,exports:moduleResult.exports,require:p=>p==='@/lib/flourDatabase'?{FLOUR_DB:catalogue}:p.startsWith('.')?{}:require(p)});
 const {matchScannedFlour,validScannedValues}=moduleResult.exports;
 test('scan matches a complete catalogue identity and retains flour type and provenance',()=>{
  const entry=catalogue.find(f=>f.brand&&f.type==='rye');

@@ -88,7 +88,7 @@ for(const locale of ['en','fr']){
   await expect(kept).toHaveCount(1);
   await expect(kept).toHaveText(text);
   // Every time the line names is one of the saved plan's step times (Preparation shows them).
-  await expect(page.getByText(fr?/de la pousse/:/% risen/)).toHaveCount(0);
+  await expect(page.getByText(fr?/prête un peu en avance|un peu en retard\. Vérifiez/:/a little ahead of time|a little behind time/)).toHaveCount(0);
   await shot(page,`1-recipe-${locale}`,kept);
   await openPreparation(page,fr);
   const prep=page.locator('[data-preparation-timing] [data-kept-night]');
@@ -147,7 +147,7 @@ for(const locale of ['en','fr']){
   await ft.locator('[data-entry-night] [data-entry-night-keep]').tap();
   await update(page,fr);
   await page.getByRole('button',{name:fr?/Mes choix/:/My choices/}).last().tap();
-  await page.getByRole('button',{name:fr?'Modifier : Heure de cuisson':'Edit : Bake time'}).tap();
+  await page.getByRole('button',{name:fr?'Modifier : Heure de cuisson':'Edit: Bake time'}).tap();
   await page.getByRole('button',{name:fr?/^Nuits/:/^Nights/}).first().tap();
   await expect(page.locator('[data-simple-decision]')).toHaveCount(0);
   await shot(page,`picker-nights-${locale}`);
@@ -155,7 +155,7 @@ for(const locale of ['en','fr']){
   const s=await stored(page);
   expect(s.protocolStale).toBe(false);
   expect(s.entryNightKept).toEqual({yeast:0.14});
-  await expect(page.getByText(fr?/Aucun créneau/:/No slot found/)).toHaveCount(0);
+  await expect(page.getByText(fr?/Aucun horaire ne convient/:/No time fits all steps/)).toHaveCount(0);
   await expect(page.getByText(fr?'Vous avez modifié vos choix.':'You changed your choices.')).toHaveCount(0);
   await shot(page,`picker-recipe-${locale}`);
   expect(errors).toEqual([]);
@@ -218,7 +218,7 @@ for(const locale of ['en','fr']){
   const s=await stored(page);
   log('mix',new Date(s.startTime).toISOString());
   expect(Math.abs(s.startTime-B3_DINNER_MIX)).toBeLessThanOrEqual(H);
-  await expect(page.getByText(fr?/de la pousse/:/% risen/)).toHaveCount(0);
+  await expect(page.getByText(fr?/prête un peu en avance|un peu en retard\. Vérifiez/:/a little ahead of time|a little behind time/)).toHaveCount(0);
   await shot(page,`d2-recipe-${locale}`);
   expect(errors).toEqual([]);
  });
@@ -263,7 +263,7 @@ for(const locale of ['en','fr']){
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(0.3);
   await update(page,fr);
   await page.getByRole('button',{name:fr?/Mes choix/:/My choices/}).last().tap();
-  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit : Fine-tune the dough'}).tap();
+  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit: Fine-tune the dough'}).tap();
   const again=await fineTune(page);
   await again.locator('[data-ft-use-calculated-yeast]').first().tap();
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeUndefined();
@@ -275,7 +275,7 @@ for(const locale of ['en','fr']){
   const pct=num(body.match(fr?/Levure sèche instantanée[^%]*?(\d+[.,]\d+)\s?%/:/Instant dry yeast[^%]*?(\d+[.,]\d+)\s?%/)[1]);
   // Back on Fine-tune, the box shows the amount this recipe uses.
   await page.getByRole('button',{name:fr?/Mes choix/:/My choices/}).last().tap();
-  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit : Fine-tune the dough'}).tap();
+  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit: Fine-tune the dough'}).tap();
   const third=await fineTune(page);
   expect(Math.abs(num(await third.locator('[data-yeast-override] input').getAttribute('placeholder'))-pct)).toBeLessThan(0.006);
   log('placeholder',shown,'before',before,'recipe',pct);
@@ -312,7 +312,7 @@ for(const locale of ['en','fr']){
   await expect(page.locator('[data-recipe-stages]:visible')).toContainText('Le 5 Stagioni Oro');
   await shot(page,`8-flour-${locale}`,page.locator('[data-recipe-stages]:visible'));
   await page.getByRole('button',{name:fr?/Mes choix/:/My choices/}).last().tap();
-  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit : Fine-tune the dough'}).tap();
+  await page.getByRole('button',{name:fr?'Modifier : Peaufiner la pâte':'Edit: Fine-tune the dough'}).tap();
   await fineTune(page).catch(()=>{});
   await expect(page.locator('[data-pref-yeast-override]:visible')).toHaveCount(1,{timeout:30000});
   await expect(page.locator('[data-pref-yeast-cleared]:visible')).toHaveCount(0);

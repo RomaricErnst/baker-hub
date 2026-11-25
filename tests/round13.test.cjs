@@ -163,6 +163,7 @@ test('item 7: small texts and displays', () => {
   // Round 15: the night line (kept or not) names those steps once.
   assert.match(page, /busy:blocks\.some\(block=>\+e\.at>\+block\.from&&\+e\.at<\+block\.to\)&&!\(entryNight&&coveredAt\.has\(\+e\.at\)/);
   // The plan begins at the starter's take-out (Preparation header and the Recipe's steps); the header is on the quarter hour.
-  assert.match(page, /shownStarterEvents\.filter\(e=>!e\.isPast && e\.kind!=='last_fed' && e\.kind!=='known_peak'\)\.map\(e=>\+e\.time\)/);
+  // Round 20 (item 4): the guide's starter events (a shared jar's feed included), on the shown quarter hour.
+  assert.match(page, /guideStarterEvents\.filter\(e=>!e\.isPast && e\.kind!=='last_fed' && e\.kind!=='known_peak'\)\.map\(e=>\+starterStepShownTime\(e\)\)/);
   assert.match(page, /formatBakeDateTime\(roundToQuarter\(firstRecipeAction\),locale\)/);
 });

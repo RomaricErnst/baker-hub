@@ -51,6 +51,7 @@ test('existing pizza: late selection returns to service after reload and prepara
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')).done.margherita)).toBe(1);
  await page.getByRole('button',{name:'Préparer les garnitures',exact:true}).tap();
- await expect(page.getByRole('button',{name:'Cuire les pizzas →',exact:true})).toHaveCount(1);
- await expect(page.getByRole('button',{name:'Cuisson & service →',exact:true})).toHaveCount(0);
+ // One forward action: the standard bar's (round 20), no "Cuire les pizzas →" of its own.
+ await expect(page.getByRole('button',{name:/^(Cuisson & service|Retour à Cuisson & service) →$/}).filter({visible:true})).toHaveCount(1);
+ await expect(page.getByRole('button',{name:'Cuire les pizzas →',exact:true})).toHaveCount(0);
 });

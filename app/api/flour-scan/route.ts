@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server';
 import { FLOUR_DB } from '@/lib/flourDatabase';
-import { allowRequest, clientIp, readJsonCapped } from '../../lib/apiGuard';
+import { clientIp, guardModelCall, issueAskToken, readJsonCapped, sameOrigin } from '../../lib/apiGuard';
 
 // Abuse guard (round 18, M4): per-IP rate limit and an image of at most 5 MB.
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+// The model call usually takes about 5 s; Vercel's default (300 s) is far above it.
+export const maxDuration = 30;
 const MAX_BODY = Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 4096;
 
+/** The page's ask token (round 20): fetched before a call, bound to the caller's address. */
+export async function GET(request: Request) {
+  if (!sameOrigin(request.headers)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  return NextResponse.json({ token: issueAskToken('flour-scan', clientIp(request.headers)) }, { headers: { 'Cache-Control': 'no-store' } });
+}
+
 export async function POST(request: Request) {
-  if (!allowRequest('flour-scan', clientIp(request.headers))) {
-    return NextResponse.json({ error: 'Too many scans. Please try again in a few minutes.' }, { status: 429 });
+  const guard = await guardModelCall('flour-scan', request.headers);
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.status === 429 ? 'Too many scans. Please try again in a few minutes.' : 'Forbidden' }, { status: guard.status });
   }
   const read = await readJsonCapped(request, MAX_BODY);
   if (!read.ok) return NextResponse.json({ error: read.status === 413 ? 'Please use an image under 5 MB.' : 'Invalid request' }, { status: read.status });
@@ -66,12 +75,15 @@ ESTIMATION RULES when values are not visible:
 - W value by flour type: Italian 00 strong=280, Italian 00 standard=220, French T45 forte=260,
   French T55/AP=180, French T65/bread=200, T80=170, T110 wholemeal=150, rye=130, Manitoba=350
 - Protein: W280→13%, W220→11.5%, W180→10.5%, W200→11%, W350→14.5%
+- Protein printed on the bag (g per 100 g in the nutrition table) is copied exactly, decimals included (11.5 stays 11.5).
 
 RESPONSE FORMAT — always return this exact JSON, no other text:
 {
   "name": "brand and product name as shown on bag, or best guess",
   "w": <positive number, never null or 0>,
   "protein": <number between 8 and 16>,
+  "wOnBag": <true only when the W value is printed on this bag>,
+  "proteinOnBag": <true only when the protein is printed on this bag>,
   "confidence": "high" | "medium" | "low",
   "readability": "clear" | "partial" | "unreadable",
   "source": "database" | "estimated",
@@ -83,51 +95,53 @@ RESPONSE FORMAT — always return this exact JSON, no other text:
     }),
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
+  // Round 20 (9): the browser gets the reading only, never the provider's message (model id, message id,
+  // token usage, error text).
   if (!response.ok) {
-    console.error('Anthropic API error:', data);
-    return NextResponse.json(
-      { error: data.error?.message ?? 'Anthropic API error' },
-      { status: response.status }
-    );
+    console.error('flour-scan provider error:', response.status, data?.error?.type ?? '');
+    return NextResponse.json({ error: 'Scan unavailable right now.' }, { status: response.status === 429 ? 429 : 502 });
   }
-
-  // Verify we got content back
-  if (!data.content?.[0]?.text) {
-    console.error('No content in response:', JSON.stringify(data));
-    return NextResponse.json(
-      { error: 'Empty response from AI' },
-      { status: 500 }
-    );
+  const text = typeof data?.content?.[0]?.text === 'string' ? data.content[0].text as string : '';
+  const result = scanReading(text);
+  if (!result) {
+    console.error('flour-scan: no reading in the response');
+    return NextResponse.json({ error: 'Could not read the bag.' }, { status: 502 });
   }
+  return NextResponse.json({ result });
+}
 
-  // Don't trust the model's self-reported source: 'database' claim — it was
-  // labeling anything from a recognized brand as "matched" even when the
-  // specific product isn't in FLOUR_DB (e.g. brand-only recognition of
-  // Molino Pasini falsely matched "Ideale per Pizza", which wasn't
-  // catalogued). Re-derive it here against the real list: only count as a
-  // database match if BOTH the brand and product name are actually present.
-  try {
-    const text = data.content[0].text as string;
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      const claimedName = String(parsed.name ?? '').toLowerCase();
-      const isRealMatch = FLOUR_DB.some(f => {
-        const brand = f.brand.toLowerCase();
-        const name = f.name.toLowerCase();
-        return brand.length > 0 && claimedName.includes(brand) && claimedName.includes(name);
-      });
-      if (parsed.source === 'database' && !isRealMatch) {
-        parsed.source = 'estimated';
-        data.content[0].text = JSON.stringify(parsed);
-      }
-    }
-  } catch {
-    // If re-parsing fails here, leave the original response — the client
-    // does its own parsing/validation next and will surface any real issue.
-  }
+export interface FlourReading {
+  name: string; w: number; protein: number; wOnBag: boolean; proteinOnBag: boolean;
+  readability: string; confidence: string; source: 'database' | 'estimated'; note: string;
+}
 
-  return NextResponse.json(data);
+/** The model's JSON, reduced to the fields the scanner shows. Don't trust its self-reported
+ *  source: 'database': it labelled anything from a recognised brand as matched even when the product
+ *  is not in FLOUR_DB, so a match needs both the brand and the product name. Null when unreadable. */
+export function scanReading(text: string): FlourReading | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  let parsed: Record<string, unknown>;
+  try { parsed = JSON.parse(jsonMatch[0]); } catch { return null; }
+  const name = String(parsed.name ?? '').slice(0, 160);
+  const claimed = name.toLowerCase();
+  const isRealMatch = FLOUR_DB.some(f => {
+    const brand = f.brand.toLowerCase();
+    return brand.length > 0 && claimed.includes(brand) && claimed.includes(f.name.toLowerCase());
+  });
+  const w = Number(parsed.w);
+  const protein = Number(parsed.protein);
+  return {
+    name,
+    w: Number.isFinite(w) ? Math.round(w) : NaN,
+    protein: Number.isFinite(protein) ? Math.round(protein * 10) / 10 : NaN,
+    wOnBag: parsed.wOnBag === true,
+    proteinOnBag: parsed.proteinOnBag === true,
+    readability: String(parsed.readability ?? 'partial'),
+    confidence: String(parsed.confidence ?? 'medium'),
+    source: parsed.source === 'database' && isRealMatch ? 'database' : 'estimated',
+    note: String(parsed.note ?? '').slice(0, 400),
+  };
 }

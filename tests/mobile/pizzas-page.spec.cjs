@@ -3,7 +3,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // Romaric, 13 Nov 2026: the Pizzas page opens on one question and one line, then search, filters
 // and pizzas. The style is the first filter chip, the pool size sits in the search field, the
 // results count shows only while filtering, "Create my own pizza" sits above the first pizza, and
-// the tally under the title opens the selection sheet however many pizzas are chosen.
+// "See my selection" under the title opens the selection sheet; the tally sits in the Your bake bar.
 test.use({timezoneId:'Asia/Singapore'});
 
 for(const fr of [false,true])test(`${fr?'fr':'en'}: Pizzas page, first visit to a chosen pizza`,async({page})=>{
@@ -22,7 +22,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Pizzas page, first visit to 
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Recipe','Recette'));
 
  // The section is named for what the baker picks.
- await page.locator('.bh-recipe-next:visible [data-toppings-step]').tap();
+ await page.locator('[data-add-fillings]:visible').tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Pizzas');
  await expect(page.getByRole('heading',{level:1})).toHaveText(L('Which pizzas?','Quelles pizzas ?'));
  // No bake summary block, no "suited to" bar, no "Showing N".
@@ -37,7 +37,12 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Pizzas page, first visit to 
  // Choosing one turns the line into a tally; its link opens the selection sheet.
  const card=page.getByRole('button',{name:/^Margherita(?: · \d+)?$/});
  await card.getByRole('button',{name:/^\+/}).tap();
- await expect(page.locator('[data-pizza-count]')).toContainText(L('1 of 4 chosen','1 sur 4 choisie'));
+ // The tally rides in the sticky Your bake bar (25 Nov 2026): one place, in view at every scroll position.
+ await expect(page.locator('[data-navigator-bake]')).toHaveText(L('· 1 of 4 chosen','· 1 sur 4 choisie'));
+ await expect(page.locator('[data-pizza-count]')).not.toContainText(L('of 4 chosen','sur 4 choisie'));
+ await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+ await expect(page.locator('[data-navigator-bake]')).toBeInViewport();
+ await page.evaluate(()=>window.scrollTo(0,0));
  await page.locator('[data-see-selection]').tap();
  await expect(page.getByRole('dialog').filter({hasText:'Margherita'})).toBeVisible();
 

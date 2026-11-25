@@ -7,6 +7,7 @@ import FlourCatalogueBrowser, {FlourProductButton, flourBehaviour, flourEngineW}
 import { blendSuggestions } from '../lib/blendSuggestions';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
+import UnitInput from './UnitInput';
 
 // ── Crowd favourite IDs ───────────────────────────
 // One shortlist served every pizza style, so a New York baker was shown the
@@ -178,7 +179,9 @@ export type ManualFlourBlend = FlourBlend & {
 };
 export function manualFlourSelection(blend: FlourBlend, type: FlourKey, name: string, wText: string, proteinText: string, locale: string): ManualFlourBlend | null {
   const w = wText.trim() === '' ? undefined : Number(wText);
-  const protein = proteinText.trim() === '' ? undefined : Number(proteinText);
+  // A decimal in either separator (round 20: FR « 11,5 » became 115 in a number box).
+  const typed = proteinText.trim().replace(/\s/g, '').replace(',', '.');
+  const protein = typed === '' ? undefined : /^\d+\.?\d*$|^\.\d+$/.test(typed) ? Number(typed) : NaN;
   if (w !== undefined && (!Number.isFinite(w) || w < 1 || w > 500)) return null;
   if (protein !== undefined && (!Number.isFinite(protein) || protein < 1 || protein > 30)) return null;
   const selectedW = w ?? FLOUR_DATA[type].w;
@@ -808,8 +811,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
               <input type="number" inputMode="numeric" placeholder="Ex. 280" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} className="manual-flour-input"/>
             </label>
-            <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
-              <input type="number" inputMode="decimal" placeholder="Ex. 12.5" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} className="manual-flour-input"/>
+            <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines':'Protein'}
+              <UnitInput decimal suffix={isFr?'\u202f%':'%'} width="100%" label={isFr?'Protéines, %':'Protein, %'} placeholder={isFr?'Ex. 12,5':'e.g. 12.5'} value={manualProtein} onChange={e=>setManualProtein(e.target.value)}/>
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
@@ -985,8 +988,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
               <input type="number" inputMode="numeric" placeholder="Ex. 280" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} className="manual-flour-input"/>
             </label>
-            <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
-              <input type="number" inputMode="decimal" placeholder="Ex. 12.5" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} className="manual-flour-input"/>
+            <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines':'Protein'}
+              <UnitInput decimal suffix={isFr?'\u202f%':'%'} width="100%" label={isFr?'Protéines, %':'Protein, %'} placeholder={isFr?'Ex. 12,5':'e.g. 12.5'} value={manualProtein} onChange={e=>setManualProtein(e.target.value)}/>
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>

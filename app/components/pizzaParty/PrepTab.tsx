@@ -2,12 +2,15 @@
 import { useState, useEffect } from 'react';
 import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList } from '../../lib/toppingDatabase';
 import type { Ingredient, IngredientUnit } from '../../lib/toppingTypes';
+import BottomActions from '../BottomActions';
+import { BackLabel } from '../BackLabel';
+import { NEXT_CTA, oneLineCta } from '../../lib/navButtons';
 
 function formatQty(amount: number, unit: IngredientUnit, locale: string): string {
   const unitLabels: Record<IngredientUnit, { en: string; fr: string }> = {
     g:      { en: 'g',       fr: 'g' },
     ml:     { en: 'ml',      fr: 'ml' },
-    pcs:    { en: 'pcs',     fr: 'pcs' },
+    pcs:    { en: '',        fr: '' },
     slices: { en: 'slices',  fr: 'tranches' },
     leaves: { en: 'leaves',  fr: 'feuilles' },
     sprigs: { en: 'sprigs',  fr: 'brins' },
@@ -17,7 +20,8 @@ function formatQty(amount: number, unit: IngredientUnit, locale: string): string
   };
   const singular: Record<string, {en:string;fr:string}> = { slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
   const label = (amount === 1 ? singular[unit]?.[locale as 'en'|'fr'] : undefined) ?? unitLabels[unit]?.[locale as 'en' | 'fr'] ?? unit;
-  return `${Math.round(amount)} ${label}`;
+  // A count needs no unit: "2", never "2 pcs" (round 20).
+  return label ? `${Math.round(amount)} ${label}` : String(Math.round(amount));
 }
 
 interface Props {
@@ -29,7 +33,7 @@ interface Props {
   selectedPizzas: Record<string, number>;
   onGoToBake: () => void;
   onGoToShopping: () => void;
-  onGoToPizzas: () => void;
+  onGoToPizzas?: () => void;
   styleKey?: string;
 }
 
@@ -77,7 +81,7 @@ function assignStation(task: PrepTask): string {
   return 'board';
 }
 
-export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey, storagePrefix="bh", onProgress, continueLabel }: Props) {
+export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, styleKey, storagePrefix="bh", onProgress, continueLabel }: Props) {
   const l = locale as 'en' | 'fr';
   // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -116,8 +120,9 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
     if (!pizza) return;
     pizza.ingredients.forEach((ing: Ingredient) => {
       const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
-      const note = styleNote ?? ing.prepNote;
-      if (!note) return;
+      // Every topping the shopping list has (round 20, item 8: salami, garlic, chilli and oregano were missing because
+      // they carry no preparation note): one without a note is simply kept ready to top.
+      const note = styleNote ?? ing.prepNote ?? { en: 'Keep it ready to top.', fr: 'À garder prêt pour garnir.', timing: 0 };
       // A shared ingredient can require different preparations (e.g. laksa vs rendang).
       // Aggregate only the same instruction and unit, never whichever recipe came first.
       const taskKey = JSON.stringify([ing.id, note.en, note.fr, note.timing ?? 0, ing.qtyPerPizza?.unit]);
@@ -224,7 +229,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
             )}
           </div>
           <span style={{
-            fontFamily: 'var(--font-ui)', fontSize: '12px', lineHeight: 1.4,
+            fontFamily: 'var(--font-ui)', fontSize: '14px', lineHeight: 1.4,
             color: 'var(--smoke)',
             textDecoration: done ? 'line-through' : undefined,
             opacity: done ? 0.6 : 1,
@@ -294,7 +299,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
                 {l === 'fr' ? 'Commencez par là' : 'Get ahead'}
               </div>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', marginBottom: '12px' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--smoke)', marginBottom: '12px' }}>
                 {l === 'fr'
                   ? 'Ces préparations demandent du temps. Gardez les ingrédients périssables au froid jusqu’à leur utilisation.'
                   : 'These preparations need time. Keep perishable ingredients chilled until needed.'}
@@ -318,7 +323,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
           {hasFlex && (
             <div>
               {!hasEarly && (
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', marginBottom: '12px' }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--smoke)', marginBottom: '12px' }}>
                   {l === 'fr' ? 'Préparez ces ingrédients pendant le préchauffage ou juste avant de garnir.' : 'Prepare these ingredients during preheating or just before topping.'}
                 </div>
               )}
@@ -328,45 +333,11 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
         </>
       )}
 
-      {/* CTA */}
-      <button
-        onClick={onGoToBake}
-        style={{
-          width: '100%', height: '52px',
-          background: '#6B4423', color: 'white',
-          fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 600,
-          borderRadius: '12px', marginTop: '24px',
-          cursor: 'pointer', border: 'none',
-        }}
-      >
-        {continueLabel ? `${continueLabel} →` : l === 'fr' ? 'Cuire les pizzas →' : 'Cook pizzas →'}
-      </button>
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-        <button
-          type="button"
-          onClick={onGoToShopping}
-          style={{
-            flex: 1, minHeight: '44px', padding: '10px 12px',
-            border: '1px solid #E0D8CF', borderRadius: '12px',
-            background: '#FDFBF7', color: '#3D3530',
-            fontFamily: 'var(--font-ui)', fontSize: '13px', cursor: 'pointer',
-          }}
-        >
-          {l === 'fr' ? 'Liste de courses' : 'Shopping list'}
-        </button>
-        <button
-          type="button"
-          onClick={onGoToPizzas}
-          style={{
-            flex: 1, minHeight: '44px', padding: '10px 12px',
-            border: '1px solid #E0D8CF', borderRadius: '12px',
-            background: '#FDFBF7', color: '#3D3530',
-            fontFamily: 'var(--font-ui)', fontSize: '13px', cursor: 'pointer',
-          }}
-        >
-          {l === 'fr' ? 'Modifier les pizzas' : 'Change pizzas'}
-        </button>
-      </div>
+      {/* The standard bottom bar (round 20, item 8): back to the shopping list, on to Baking & serving. */}
+      {(() => { const next = oneLineCta(continueLabel ?? (l === 'fr' ? 'Cuisson & service' : 'Baking & serving')); return <BottomActions>
+        <button type="button" className="bh-back-action" onClick={onGoToShopping}><BackLabel text={l === 'fr' ? 'Retour aux courses' : 'Back to Shopping list'}/></button>
+        <button type="button" data-prep-to-oven className={next.className} aria-label={next['aria-label']} onClick={onGoToBake} style={{ ...NEXT_CTA, minHeight: 48 }}>{next.children}</button>
+      </BottomActions>; })()}
     </div>
   );
 }

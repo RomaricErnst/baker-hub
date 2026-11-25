@@ -63,7 +63,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await expect(page.getByRole('region',{name:'Vos moments clés',exact:true})).toHaveCount(0);
  await page.getByRole('button',{name:'Générer ma recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
- await page.locator('.bh-step-actions:visible [data-toppings-step]').tap();
+ await page.locator('[data-add-fillings]:visible').tap();
  if(bread){
    const item=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})}).getByRole('spinbutton');
    await item.fill('1');await item.blur();

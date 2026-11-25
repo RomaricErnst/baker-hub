@@ -159,15 +159,14 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
     const bounds=await start.boundingBox();
     expect(page.viewportSize().height-bounds.y-bounds.height).toBeGreaterThanOrEqual(23);
    }
-   // Back goes one section at a time: Shopping list, Toppings, then the Recipe.
+   // Back goes one section at a time: Shopping list, then the Recipe (nothing picked: Pizzas are optional, round 20).
    await actions.getByRole('button',{name:'Back to Shopping list',exact:true}).tap();
    await expect(page.locator('.bh-navigator-current')).toContainText('Shopping list');
-   await page.getByRole('button',{name:/^Back to (Pizzas|Fillings)$/}).filter({visible:true}).last().tap();
-   await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Back to Recipe',exact:true}).tap();
+   await page.getByRole('button',{name:'Back to Recipe',exact:true}).filter({visible:true}).last().tap();
    await expect(page.locator('.bh-navigator-name')).toHaveText('Recipe');
-   // Toppings are the next step after the Recipe, not a button inside it.
+   // Toppings are one optional row above the Recipe's bar (round 20), never a button inside the recipe card.
    await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
-   await expect(page.locator('.bh-step-actions:visible [data-toppings-step]')).toHaveText(/^(Pizzas|Fillings) →$/);
+   await expect(page.locator('[data-add-fillings]:visible')).toHaveText(/^Add (pizzas|fillings) \(optional\)$/);
    await expect(page.locator('.bh-step-actions:visible')).toHaveCount(1);
    await expect(page.locator('.bh-step-actions:visible')).toHaveClass(/bh-recipe-next/);
    await expect(page.locator('.bh-step-actions:visible')).toHaveCSS('position','fixed');
@@ -310,7 +309,7 @@ test('generated country bread offers optional tartines and preserves the recipe 
  const before=await stored(page);
  // A plain loaf's Recipe leads on to the Shopping list (17 Nov 2026 retention); its tartines stay
  // optional, one tap away in Your bake.
- await expect(page.locator('.bh-step-actions:visible [data-toppings-step]')).toHaveCount(0);
+ await expect(page.locator('[data-add-fillings]:visible')).toHaveCount(0);
  await noOverflow(page);
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
  await navigate(page,'Garnitures');
@@ -390,7 +389,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
  await expect.poll(async()=>(await stored(page))?.navigation?.prepReturnToService).toBe('fillings');
  if(!bread){
-  await page.getByRole('button',{name:'Liste de courses',exact:true}).tap();
+  // The standard bar (round 20): back to the shopping list.
+  await page.getByRole('button',{name:'Retour aux courses',exact:true}).filter({visible:true}).last().tap();
   await page.getByRole('button',{name:'Passer à la préparation →',exact:true}).tap();
   await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
  }
@@ -414,7 +414,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  }
  await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).tap();
  await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('button',{name:bread?'Cuisson & service →':'Cuire les pizzas →',exact:true}).tap();
+ // Pizza: the standard bar's forward action (round 20), back to Cuisson & service.
+ await page.getByRole('button',{name:bread?'Cuisson & service →':/^(Retour à )?Cuisson & service →$/,exact:!bread||undefined}).filter({visible:true}).last().tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  if(bread)await expect(choices.getByRole('button',{name:'Guide de cuisson',exact:true})).toHaveAttribute('aria-pressed','true');else await expect(choices).toHaveCount(0);
  const serveLabel=bread?'Assembler mes sandwichs →':'Commencer la cuisson des pizzas →';
@@ -433,7 +434,7 @@ test('fillings chosen after the Recipe lead on to Shopping without changing the 
  await seed(page,{bread:true});
  await navigate(page,'Recette');
  const before=await stored(page);
- await page.locator('.bh-step-actions:visible [data-toppings-step]').tap();
+ await page.locator('[data-add-fillings]:visible').tap();
  const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();

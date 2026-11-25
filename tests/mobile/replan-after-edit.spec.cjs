@@ -27,7 +27,7 @@ test('editing the yeast after generation updates the plan and says what moved',a
 
  // Review my choices → Fine-tune → Edit.
  await page.getByRole('button',{name:'My choices',exact:true}).first().tap();
- await page.getByRole('button',{name:'Edit : Fine-tune the dough',exact:true}).tap();
+ await page.getByRole('button',{name:'Edit: Fine-tune the dough',exact:true}).tap();
  const yeast=page.locator('[data-yeast-override] input:visible');
  // Round 7: the plan's amount is the empty box's greyed placeholder ("0.18 · auto").
  const recommended=Number((await yeast.getAttribute('placeholder')).match(/^([\d.]+) · auto$/)[1]);

@@ -422,15 +422,17 @@ export function journalBakeStarted(entry: JournalEntry, now = Date.now()): boole
   return [...times, ...planned].some(t => t <= now);
 }
 
-/** Home's rows (round 18, H1): every bake under way (and every bake to rate), plus the most recently generated
- *  bake not started yet; a bake sharing a jar feed with a shown row stays with it. The other planned bakes are a
+/** Home's rows (round 18, H1): every bake under way (and every bake to rate), plus the soonest bake not started
+ *  yet (round 20; it was the most recently generated); a bake sharing a jar feed with a shown row stays with it. The other planned bakes are a
  *  count behind "N more planned · My bakes" (each restart left the last plan live until its bake). */
 export function homeJournalRows(rows: LiveJournalBake[], now = Date.now()): { rows: LiveJournalBake[]; hidden: number } {
   const current = currentJournalId();
   const shown = new Set(rows.filter(row => row.rate || journalBakeStarted(row.entry, now)).map(row => row.entry.id));
-  const newest = rows.filter(row => !shown.has(row.entry.id))
-    .sort((a, b) => b.entry.updatedAt - a.entry.updatedAt || Number(b.entry.id === current) - Number(a.entry.id === current) || b.entry.createdAt - a.entry.createdAt)[0];
-  if (newest) shown.add(newest.entry.id);
+  // The SOONEST plan not started (round 20, item 7): at 10:00 a lunch bake starting at 12:15pm hid behind
+  // "3 more planned" because a later dinner was generated last. Ties: the bake on screen, then the newest.
+  const soonest = rows.filter(row => !shown.has(row.entry.id))
+    .sort((a, b) => a.at - b.at || (a.entry.eatTime ?? Infinity) - (b.entry.eatTime ?? Infinity) || Number(b.entry.id === current) - Number(a.entry.id === current) || b.entry.updatedAt - a.entry.updatedAt)[0];
+  if (soonest) shown.add(soonest.entry.id);
   const uses = rows.map(row => savedStarterUse(row.entry as Parameters<typeof savedStarterUse>[0], row.entry.id, false, now)).filter((use): use is StarterUse => !!use);
   for (let changed = true; changed;) {
     changed = false;

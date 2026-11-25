@@ -1,6 +1,7 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
-// The route agreed on the journey map (12 Nov 2026), walked end to end:
+// The route agreed on the journey map (12 Nov 2026), walked end to end (round 20, owner: Pizzas are optional; the
+// Recipe goes on to shopping and offers "Add pizzas (optional)" as one row):
 // one setup path, sections in order with the same bottom bar, times changed only
 // from the plan (in place on the Recipe), My bake holds the choices, and customizing continues in place.
 test.use({timezoneId:'Asia/Singapore'});
@@ -38,8 +39,10 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  // The water line: no kneading-equipment question, and a "how to get it" toggle only when it has steps (ice).
  await expect(page.getByText(L(/Use a mixer|hand kneading/,/Utiliser un robot|pétrissage à la main/)).filter({visible:true})).toHaveCount(0);
  if(await page.locator('[data-water-help]:visible').count())await expect(page.locator('[data-water-temp]:visible').first()).toContainText(L('ice','glace'));
- // Pizzas are planned with the dough: the Recipe leads to them, and carries no toppings button of its own.
- await expect(bar(page).getByRole('button')).toHaveText([L('‹ My choices','‹ Mes choix'),'Pizzas →']);
+ // The Recipe goes on to shopping and preparation; pizzas are one optional row above the bar.
+ const NEXT=L('Shopping & prep →','Courses et prépa →');
+ await expect(bar(page).getByRole('button')).toHaveText([L('‹ My choices','‹ Mes choix'),NEXT]);
+ await expect(page.locator('[data-add-fillings]:visible')).toHaveText(L('Add pizzas (optional)','Ajouter des pizzas (facultatif)'));
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
  // Start Dough moves in place, on the Recipe: no trip to the timing screen.
  await expect(page.locator('[data-change-times]')).toHaveCount(0);
@@ -49,24 +52,24 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await page.locator('[data-plan-editor]').getByRole('button',{name:L(/^Close /,/^Fermer /)}).tap();
  await expect(page.locator('[data-plan-editor]')).toHaveCount(0);
 
- // Sections in order: Recipe → Pizzas → Shopping list → Preparation; each bar goes back one and on to the next.
+ // Sections in order: Recipe → (Pizzas, optional) → Shopping list → Preparation; each bar goes back one and on to the next.
  const companion=page.locator('[data-companion-action]:visible');
- await bar(page).getByRole('button',{name:'Pizzas →',exact:true}).tap();
+ await page.locator('[data-add-fillings]:visible').tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Pizzas');
  // Back reads "‹ Recipe" and keeps "Back to Recipe" as its name (14 Nov 2026).
  await expect(companion.getByRole('button')).toHaveCount(2);
  await expect(companion.getByRole('button').first()).toHaveAccessibleName(L('Back to Recipe','Retour à la recette'));
  await expect(companion.getByRole('button').first().locator('[aria-hidden="true"]')).toHaveText(L('‹ Recipe','‹ Recette'));
- await expect(companion.getByRole('button').last()).toHaveText(L('Shopping list · dough only →','Liste de courses · pâte seule →'));
- // Nothing chosen: a full-width way on at the top too, before the catalogue (16 Nov 2026 review).
- await expect(page.locator('[data-skip-fillings]')).toHaveText(L('Dough only? Skip to shopping list →','Pâte seule ? Passer à la liste de courses →'));
+ await expect(companion.getByRole('button').last()).toHaveText(L('Skip toppings →','Sans garniture →'));
+ // No top "Dough only? Skip" link any more (round 20): the bottom button says it.
+ await expect(page.locator('[data-skip-fillings]')).toHaveCount(0);
  await companion.getByRole('button',{name:L('Back to Recipe','Retour à la recette'),exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Recipe','Recette'));
- await bar(page).getByRole('button',{name:'Pizzas →',exact:true}).tap();
- await companion.getByRole('button',{name:L('Shopping list · dough only →','Liste de courses · pâte seule →'),exact:true}).tap();
+ await bar(page).getByRole('button',{name:NEXT,exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Shopping list','Liste de courses'));
  await expect(page.getByRole('button',{name:L('Add toppings — optional','Ajouter des garnitures — facultatif')}).filter({visible:true})).toHaveCount(0);
- await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Pizzas','Retour aux pizzas'));
+ // Nothing picked: the shopping list goes back to the Recipe.
+ await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Recipe','Retour à la recette'));
  await bar(page).getByRole('button').last().tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Preparation','Préparation'));
  await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Shopping list','Retour aux courses'));
@@ -79,7 +82,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await sections(L(/^My bake/,/^Ma fournée/));
  await expect(page.getByRole('heading',{level:1,name:L('Review my choices','Revoir mes choix'),exact:true})).toBeVisible();
  await expect(page.locator('[data-my-bake-plan]')).toHaveCount(0);
- await page.getByRole('button',{name:L('Edit : Bake time','Modifier : Heure de cuisson'),exact:true}).tap();
+ await page.getByRole('button',{name:L('Edit: Bake time','Modifier : Heure de cuisson'),exact:true}).tap();
  await expect(time).toBeVisible();
  await expect(page.getByText(L('See all hands-on steps','Voir toutes les interventions')).filter({visible:true})).toHaveCount(0);
  // The edit returns to where the baker came from (Baking & serving here).
@@ -93,7 +96,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await page.locator('[data-mode-switch]').tap();
  await expect(page.getByRole('heading',{level:1,name:L('Review my choices','Revoir mes choix'),exact:true})).toBeVisible();
  await expect(page.getByRole('heading',{name:L('How would you like to set up your recipe?','Comment définir votre recette ?')})).toHaveCount(0);
- await expect(page.getByRole('button',{name:L('Edit : Flour','Modifier : Farine'),exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:L('Edit: Flour','Modifier : Farine'),exact:true})).toBeVisible();
  await expect(page.locator('[data-mode-switch]')).toHaveText(L('Use the recommended settings','Revenir aux réglages conseillés'));
  expect(errors).toEqual([]);
 });

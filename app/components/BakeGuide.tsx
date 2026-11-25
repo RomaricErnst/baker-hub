@@ -16,6 +16,9 @@ import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
 import { type ScheduleResult, formatPlanTime, finalProofWindow } from '../utils';
 import { breadCoolingRange } from '../utils/servingTime';
+import { buildMaestroContext } from '../utils/maestroContext';
+import { pieceWeightG } from '../utils/doughAllowance';
+import { askToken, dropAskToken } from '../lib/askToken';
 import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
@@ -447,11 +450,15 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
     if (!question || loading) return;
     setLoading(true); setError(null); setAnswer(null);
     try {
-      const res = await fetch('/api/bake-coach', {
+      const body = JSON.stringify({ question, stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext });
+      const send = async () => fetch('/api/bake-coach', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }),
+        headers: { 'Content-Type': 'application/json', 'x-bh-ask': await askToken('bake-coach') },
+        body,
       });
+      let res = await send();
+      // A token from before a deployment or past its time: one fresh try.
+      if (res.status === 403) { dropAskToken('bake-coach'); res = await send(); }
       const data = await res.json().catch(() => ({}));
       if (res.ok && typeof data.feedback === 'string' && data.feedback.trim()) setAnswer(data.feedback);
       else setError(res.status === 429 ? 'busy' : 'failed');
@@ -495,9 +502,10 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
       </div>
       {answer && (
         <div data-maestro-answer style={{
-          background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px',
+          // Light on cream (round 20): the dark box was heavy beside the step.
+          background: 'var(--cream)', borderLeft: '3px solid var(--terra)', borderRadius: '12px',
           padding: '12px 16px', marginTop: '8px',
-          color: '#F0EBE0', fontSize: '14px', fontFamily: 'var(--font-ui)', lineHeight: 1.6, whiteSpace: 'pre-line',
+          color: 'var(--char)', fontSize: '14px', fontFamily: 'var(--font-ui)', lineHeight: 1.6, whiteSpace: 'pre-line',
         }}>
           {answer}
           <div>
@@ -506,7 +514,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
               onClick={() => { setAnswer(null); setQ(''); }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', minHeight: 44,
-                color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)',
+                color: 'var(--terra)', fontSize: '13px', fontFamily: 'var(--font-ui)',
                 textDecoration: 'underline', padding: 0,
               }}
             >
@@ -519,7 +527,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         <div role="status" style={{ fontSize: '13px', color: D.smoke, marginTop: '8px', fontFamily: 'var(--font-ui)' }}>
           {error === 'busy'
             ? (l === 'fr' ? 'Beaucoup de questions d’un coup. Réessayez dans quelques minutes.' : 'Lots of questions at once. Try again in a few minutes.')
-            : (l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.')}
+            : (l === 'fr' ? 'L’aide n’est pas disponible pour le moment. Réessayez dans une minute.' : 'Help is unavailable right now. Try again in a minute.')}
         </div>
       )}
     </div>
@@ -939,62 +947,8 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
   const mixingOverviewNote = batch && batch.count > 1 ? (l === 'fr' ? `${batch.count} pétrissées à la suite` : `${batch.count} consecutive batches`) : undefined;
   const serialMixNote = batch && batch.count > 1 ? <p>{l === 'fr' ? 'Pétrissez les lots l’un après l’autre. Le premier commence à lever pendant que vous pétrissez le suivant ; les horaires comptent à partir du premier.' : 'Mix the batches one after the other. The first starts rising while you mix the next; the times count from the first.'}</p> : null;
   const bgPoolishG = batch?.portion.preferment || null;
-  // Compact recipe facts for Maestro — so it explains the plan's own numbers
-  // (e.g. "0.3g IDY is correct for a 31h cold ferment") instead of guessing
-  // and contradicting the app. Only real, computed values.
-  const maestroRecipeContext = (() => {
-    if (!recipe) return undefined;
-    const totalFlour = Math.round(recipe.flour);
-    const coldH = Math.round(schedule.totalColdHours ?? 0);
-    const rtH = Math.round((schedule.totalRTHours ?? 0));
-
-    // ── The dough ──
-    const dough: string[] = [];
-    dough.push(`style ${styleKey}`);
-    dough.push(`${numItems} × ${Math.round((recipe.totalDough ?? 0) / Math.max(1, numItems))}g pieces`);
-    dough.push(`total flour ${totalFlour}g`);
-    dough.push(`hydration ${Math.round(hydration)}%`);
-    if (recipe.salt != null) dough.push(`salt ${Math.round(recipe.salt)}g (${(recipe.salt / totalFlour * 100).toFixed(1)}%)`);
-    if (recipe.oil && recipe.oil > 0) dough.push(`oil ${Math.round(recipe.oil)}g`);
-    if (recipe.sugar && recipe.sugar > 0) dough.push(`sugar ${Math.round(recipe.sugar)}g`);
-    if (recipe.enrichment) for (const key of ['milk','eggs','butter'] as const) if (recipe.enrichment[key] > 0) dough.push(`${key} ${recipe.enrichment[key]}g`);
-    if (recipe.blendProfile?.displayName) dough.push(`flour: ${recipe.blendProfile.displayName}`);
-
-    // ── The schedule ──
-    const sched: string[] = [];
-    if (coldH > 0) sched.push(`${coldH}h cold (fridge${recipe.preferment?.cold ? '' : ''}) ferment`);
-    if (rtH > 0) sched.push(`${rtH}h room-temp ferment`);
-    sched.push(`kitchen ${Math.round(kitchenTemp)}°C`);
-    if (recipe.waterTemp != null) sched.push(`target water temp ${Math.round(recipe.waterTemp)}°C`);
-
-    // ── Leavening ──
-    const leaven: string[] = [];
-    if (recipe.sourdough) {
-      leaven.push('leavened with a sourdough starter (levain), no commercial yeast');
-    } else if (recipe.yeast) {
-      const yg = parseFloat(recipe.yeast.convertedGrams.toFixed(2));
-      // Same precision rule as the recipe card: two significant figures below
-      // 1%. This string goes to Maestro, so a fabricated third digit would be
-      // repeated back to the baker as fact.
-      const ypRaw = recipe.yeast.convertedGrams / totalFlour * 100;
-      const yp = ypRaw >= 1
-        ? ypRaw.toFixed(1)
-        : ypRaw.toFixed(Math.max(2, 1 - Math.floor(Math.log10(ypRaw))));
-      const yt = recipe.yeast.yeastType ?? 'IDY';
-      leaven.push(`final-dough yeast ${yg}g ${yt} (${yp}% of total flour)`);
-    }
-    if (recipe.preferment && prefermentType && prefermentType !== 'none') {
-      const p = recipe.preferment;
-      const pf = Math.round((p.prefFlour / totalFlour) * 100);
-      leaven.push(`${prefermentType}: ${pf}% of the flour (${Math.round(p.prefFlour)}g flour + ${Math.round(p.prefWater)}g water), ${p.prefYeastGrams}g yeast${p.finalYeastGrams ? ` (+ ${p.finalYeastGrams}g yeast in the final dough)` : ''}, ferments ${p.fermentHoursMin}-${p.fermentHoursMax}h${p.cold ? ' in the fridge' : ' at room temp'}`);
-    }
-
-    return `Computed recipe estimates and settings, not measurements or proof of correctness.
-DOUGH: ${dough.join('; ')}.
-SCHEDULE: ${sched.join('; ')}.
-LEAVENING: ${leaven.join('; ')}.
-Actual dough condition and equipment may differ from these estimates.`;
-  })();
+  // The bake's own numbers for Maestro (one builder with Pizza Party's box, `buildMaestroContext`).
+  const maestroRecipeContext = buildMaestroContext({ recipe, schedule, styleKey, numItems, hydration, kitchenTemp, prefermentType, ovenType });
 
   const bgFlour90Label = bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water');
   const bgSaltLabel    = bgSaltG ? (l === 'fr' ? `Ajoutez le sel (${bgSaltG}g)` : `Add salt (${bgSaltG}g)`) : (l === 'fr' ? 'Ajoutez le sel' : 'Add salt');
@@ -1383,7 +1337,8 @@ Actual dough condition and equipment may differ from these estimates.`;
               {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
               {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
               {bold:recipe?.preferment?.cold ? (l === 'fr' ? `Placez au réfrigérateur jusqu’à ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Refrigerate until ${formatPlanTime(bgMixStart, _fmtLocale)}.`) : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatPlanTime(chillPoolishAt,l)}, puis placez le poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatPlanTime(chillPoolishAt,l)}, then refrigerate it.`) : !isPoolish ? (l === 'fr' ? `Laissez mûrir dans un endroit frais (16–18 °C) jusqu’à ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Let it ripen in a cool spot (16–18 °C) until ${formatPlanTime(bgMixStart, _fmtLocale)}.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
-                note:recipe?.preferment?.cold ? '' : (l === 'fr' ? `Pétrissage prévu : ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Main mix planned: ${formatPlanTime(bgMixStart, _fmtLocale)}.`)},
+                // The cool-spot biga's line already ends at the mix: said once (round 20).
+                note:recipe?.preferment?.cold || (!chillPoolishAt && !isPoolish) ? '' : (l === 'fr' ? `Pétrissage prévu : ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Main mix planned: ${formatPlanTime(bgMixStart, _fmtLocale)}.`)},
             ]} />
           </Section>
 
@@ -1924,7 +1879,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             ) : panGuide ? <Steps items={panGuide.shaping[l]} /> : (
               <>
                 <Steps items={[
-                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids${recipe?.totalDough ? ` (environ ${displayWeight(Math.round(recipe.totalDough / Math.max(1,numItems)),u,l)} chacun)` : ''}` : `Weigh dough and divide into ${numItems} equal pieces${recipe?.totalDough ? ` (about ${displayWeight(Math.round(recipe.totalDough / Math.max(1,numItems)),u,l)} each)` : ''}`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
+                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids${recipe?.totalDough ? ` (${displayWeight(Math.round(pieceWeightG(recipe.totalDough, numItems, recipe.wastePct)),u,l)} chacun ; le reste est pour le bol)` : ''}` : `Weigh dough and divide into ${numItems} equal pieces${recipe?.totalDough ? ` (${displayWeight(Math.round(pieceWeightG(recipe.totalDough, numItems, recipe.wastePct)),u,l)} each; the rest is for the bowl)` : ''}`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
                   ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
                   ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
                 ]} />
