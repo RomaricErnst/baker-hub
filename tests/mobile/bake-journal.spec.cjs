@@ -156,6 +156,16 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  visit.on('pageerror',e=>errors.push(e.message));
  await visit.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await visit.goto('/');
+ // Round 21 (F1): the bake is now reliably behind (its draft moved with it), so a new tab reopens it on its due step,
+ // as Resume does; the test relied on the draft keeping its future time. Start the next bake from the menu.
+ visit.on('dialog',d=>d.accept());
+ const bakeView=visit.locator('.bh-bake-navigator-trigger:visible');
+ if(await bakeView.first().waitFor({timeout:20000}).then(()=>true,()=>false)){
+  const auto=visit.getByRole('dialog',{name:'Bake journal entry'});
+  if(await auto.count())await auto.getByRole('button',{name:'Close',exact:true}).tap();
+  await visit.getByRole('button',{name:'Menu',exact:true}).tap();
+  await visit.getByRole('button',{name:'Start a new bake'}).tap();
+ }
  await generate(visit,false,2);
  expect((await journal(visit)).some(row=>row.id===entry.id&&row.photoIds.length===1)).toBe(true);
  expect(errors).toEqual([]);

@@ -79,7 +79,9 @@ test('storage auto: Generate keeps the room-temperature poolish, which now peaks
  // Before (#137): the planner moved the poolish into the fridge. Now the room-temperature poolish is ripe at the knead.
  expect(s.prefGoesInFridge).toBe(false);
  expect(s.eatTime).toBe(Z('2026-11-22T09:00'));
- expect(s.prefOffsetH).toBe(11.25);expect(s.startTime).toBe(Z('2026-11-21T17:15'));// poolish 7:00, knead 18:15 (Paris)
+ // Round 21 (rule E1): the knead is 15 min later (the dough's fridge step may sit on the 23:00 night edge); the poolish
+ // still starts at 7:00, when the night ends (a long step may start at a busy time's end), and holds 11.5 h.
+ expect(s.prefOffsetH).toBe(11.5);expect(s.startTime).toBe(Z('2026-11-21T17:30'));// poolish 7:00, knead 18:30 (Paris)
  expect(s.prefermentFlourPct).toBe(20);
  await expect(page.locator('[data-recipe-stages]')).toBeVisible();
  await expect(finalDough(page)).toContainText('Fresh yeast');
