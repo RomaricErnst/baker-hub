@@ -389,7 +389,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
  await expect.poll(async()=>(await stored(page))?.navigation?.prepReturnToService).toBe('fillings');
  if(!bread){
-  await page.getByRole('button',{name:'Liste de courses',exact:true}).tap();
+  // The standard bar (round 20): back to the shopping list.
+  await page.getByRole('button',{name:'Retour aux courses',exact:true}).filter({visible:true}).last().tap();
   await page.getByRole('button',{name:'Passer à la préparation →',exact:true}).tap();
   await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
  }

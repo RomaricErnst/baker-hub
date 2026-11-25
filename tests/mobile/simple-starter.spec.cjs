@@ -109,6 +109,8 @@ test('simple sourdough: bake again opens on Quantity, asks the starter, then gen
  await page.getByRole('button',{name:c.generate,exact:true}).tap();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated,{timeout:20000}).toBe(true);
  const id=await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journal_v1')||'[]')[0]?.id);
+ // Bake again is offered once the bake is behind (round 20, item 7): the clock moves past it.
+ await page.clock.setFixedTime(new Date('2026-11-13T21:00:00+08:00'));
  await page.getByRole('button',{name:'Menu',exact:true}).tap();
  await page.getByRole('button',{name:'My bakes',exact:true}).tap();
  await page.locator(`#bakerhub-menu [data-journal-entry="${id}"]`).tap();

@@ -54,7 +54,7 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in �
  await sheet.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).tap();
  await bakedTwoHoursAgo(page,first.id);
  await page.reload();
- await openMyBakes(page,false);
+ await openMyBakes(page,fr);
  await menu.locator(`[data-journal-entry="${first.id}"]`).tap();
  await expect(sheet.getByText(fr?'Comment s’est passée votre cuisson ?':'How did it turn out?',{exact:true})).toBeVisible();
  await sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true}).tap();
