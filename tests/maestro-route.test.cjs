@@ -19,9 +19,11 @@ const guard=require('../app/lib/apiGuard.ts');
 Module._load=original;
 let ip=0;
 const ORIGIN='https://www.bakerhub.app';
-const tokenFor=from=>guard.issueAskToken('bake-coach',from);
+// Round 23: the token is bound to the page's random id, not the address.
+const PAGE='pageAAAAAAAAAAAAAAAA1';
+const tokenFor=()=>guard.issueAskToken('bake-coach',PAGE);
 // Each call from its own address unless one is given, so the rate limit stays out of the other tests.
-const call=(body,from,extra={})=>{const raw=JSON.stringify(body);const addr=from??`10.0.0.${++ip}`;const headers=new Map([['x-forwarded-for',addr],['content-length',String(raw.length)],['origin',ORIGIN],['x-bh-ask',tokenFor(addr)],...Object.entries(extra)]);for(const [k,v] of Object.entries(extra))if(v===null)headers.delete(k);return POST({headers:{get:k=>headers.get(k)??null},text:async()=>raw});};
+const call=(body,from,extra={})=>{const raw=JSON.stringify(body);const addr=from??`10.0.0.${++ip}`;const headers=new Map([['x-forwarded-for',addr],['content-length',String(raw.length)],['origin',ORIGIN],['x-bh-page',PAGE],['x-bh-ask',tokenFor(addr)],...Object.entries(extra)]);for(const [k,v] of Object.entries(extra))if(v===null)headers.delete(k);return POST({headers:{get:k=>headers.get(k)??null},text:async()=>raw});};
 
 test('text question keeps the recipe context, French instruction and the newer model',async()=>{
  sent=[];const response=await call({stepId:'mix',stepTitle:'Main mix',question:'Why is it sticky?',recipeContext:'main water 320g; poolish water 100g',locale:'fr'});
@@ -65,7 +67,7 @@ test('flour scan: images over 5 MB are refused before the provider',async()=>{
  const fetched=[];const realFetch=global.fetch;global.fetch=async(...a)=>{fetched.push(a);return {ok:false,json:async()=>({error:{message:'x'}}),status:500};};
  try{
   const big=JSON.stringify({base64:'A'.repeat(Math.ceil(5.2*1024*1024*4/3)),mediaType:'image/jpeg'});
-  const h=new Map([['x-forwarded-for','198.51.100.1'],['origin',ORIGIN],['x-bh-ask',guard.issueAskToken('flour-scan','198.51.100.1')]]);
+  const h=new Map([['x-forwarded-for','198.51.100.1'],['origin',ORIGIN],['x-bh-page',PAGE],['x-bh-ask',guard.issueAskToken('flour-scan',PAGE)]]);
   const r=await scan({headers:{get:k=>h.get(k)??null},text:async()=>big});assert.equal(r.status,413);assert.equal(fetched.filter(([u])=>!String(u).includes('/rest/v1/')).length,0); // the rate store (Supabase, set in CI) may be asked; the provider never
  }finally{global.fetch=realFetch;}
 });
@@ -75,7 +77,7 @@ test('round 20: the flour scan returns the reading only, never the provider mess
  process.env.ANTHROPIC_API_KEY=process.env.ANTHROPIC_API_KEY||'test-key';
  const realFetch=global.fetch;let provider={ok:true,status:200,json:async()=>({id:'msg_01SECRET',model:'claude-haiku-4-5',usage:{input_tokens:900},content:[{type:'text',text:'{"name":"Moulin du Val T65 Tradition","w":220,"protein":11.5,"wOnBag":false,"proteinOnBag":true,"confidence":"medium","readability":"clear","source":"database","note":"W borrowed from Grands Moulins T65"}'}]})};
  global.fetch=async()=>provider;
- const req=()=>{const raw=JSON.stringify({base64:'YQ==',mediaType:'image/jpeg'});const h=new Map([['x-forwarded-for','198.51.100.2'],['origin',ORIGIN],['x-bh-ask',guard.issueAskToken('flour-scan','198.51.100.2')]]);return {headers:{get:k=>h.get(k)??null},text:async()=>raw};};
+ const req=()=>{const raw=JSON.stringify({base64:'YQ==',mediaType:'image/jpeg'});const h=new Map([['x-forwarded-for','198.51.100.2'],['origin',ORIGIN],['x-bh-page',PAGE],['x-bh-ask',guard.issueAskToken('flour-scan',PAGE)]]);return {headers:{get:k=>h.get(k)??null},text:async()=>raw};};
  const old=console.error;console.error=()=>{};
  try{
   const r=await scan(req());assert.equal(r.status,200);const j=await r.json();
@@ -116,21 +118,33 @@ test('round 20: other sites and calls without a valid ask token are refused befo
  assert.equal((await call({stepId:'mix',question:'q'},undefined,{origin:'https://evil.example'})).status,403);
  assert.equal((await call({stepId:'mix',question:'q'},undefined,{origin:null})).status,403);
  assert.equal((await call({stepId:'mix',question:'q'},undefined,{'x-bh-ask':'1.2.3'})).status,403);
- // A token issued to another address does not work here.
- assert.equal((await call({stepId:'mix',question:'q'},'203.0.113.1',{'x-bh-ask':guard.issueAskToken('bake-coach','203.0.113.2')})).status,403);
+ // A token issued to another page does not work here; no page id, no call.
+ assert.equal((await call({stepId:'mix',question:'q'},'203.0.113.1',{'x-bh-ask':guard.issueAskToken('bake-coach','pageBBBBBBBBBBBBBBBB2')})).status,403);
+ assert.equal((await call({stepId:'mix',question:'q'},'203.0.113.1',{'x-bh-page':null})).status,403);
+ assert.equal((await call({stepId:'mix',question:'q'},'203.0.113.1',{'x-bh-page':'short'})).status,403);
  assert.equal(sent.length,0);
- const h=new Map([['origin',ORIGIN],['x-forwarded-for','198.51.100.7']]);const g=await GET({headers:{get:k=>h.get(k)??null}});const {token}=await g.json();
- assert.ok(guard.validAskToken('bake-coach','198.51.100.7',token));assert.ok(!guard.validAskToken('flour-scan','198.51.100.7',token));
- assert.ok(!guard.validAskToken('bake-coach','198.51.100.7',token,Date.now()+31*60000));
- const bad=new Map([['origin','https://evil.example']]);assert.equal((await GET({headers:{get:k=>bad.get(k)??null}})).status,403);
+ const h=new Map([['origin',ORIGIN],['x-forwarded-for','198.51.100.7'],['x-bh-page',PAGE]]);const g=await GET({headers:{get:k=>h.get(k)??null}});const {token}=await g.json();
+ assert.ok(guard.validAskToken('bake-coach',PAGE,token));assert.ok(!guard.validAskToken('flour-scan',PAGE,token));
+ assert.ok(!guard.validAskToken('bake-coach',PAGE,token,Date.now()+31*60000));
+ assert.ok(!guard.validAskToken('bake-coach',null,token));
+ const bad=new Map([['origin','https://evil.example'],['x-bh-page',PAGE]]);assert.equal((await GET({headers:{get:k=>bad.get(k)??null}})).status,403);
+ const noPage=new Map([['origin',ORIGIN]]);assert.equal((await GET({headers:{get:k=>noPage.get(k)??null}})).status,403);
+});
+test('round 23: a phone that changes network keeps its token (fetched on Wi-Fi, used on 4G)',async()=>{
+ sent=[];
+ const h=new Map([['origin',ORIGIN],['x-forwarded-for','198.51.100.20'],['x-bh-page',PAGE]]);const {token}=await (await GET({headers:{get:k=>h.get(k)??null}})).json();
+ const r=await call({stepId:'mix',question:'q'},'203.0.113.99',{'x-bh-ask':token});
+ assert.equal(r.status,200);assert.equal(sent.length,1);
 });
 test('round 20: the durable count decides when the store answers; memory when it cannot be reached',async()=>{
  process.env.NEXT_PUBLIC_SUPABASE_URL='https://example.supabase.co';process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY='anon';
- const calls=[];let answer=true;const store=async(url,init)=>{calls.push([url,JSON.parse(init.body)]);return {ok:true,json:async()=>answer};};
- const h=addr=>{const m=new Map([['origin',ORIGIN],['x-forwarded-for',addr],['x-bh-ask',guard.issueAskToken('bake-coach',addr)]]);return {get:k=>m.get(k)??null};};
+ const calls=[];let answer=true;const store=async(url,init)=>{calls.push([url,JSON.parse(init.body),init.headers]);return {ok:true,json:async()=>answer};};
+ const h=addr=>{const m=new Map([['origin',ORIGIN],['x-forwarded-for',addr],['x-bh-page',PAGE],['x-bh-ask',guard.issueAskToken('bake-coach',PAGE)]]);return {get:k=>m.get(k)??null};};
  try{
   assert.deepEqual(await guard.guardModelCall('bake-coach',h('192.0.2.50'),store),{ok:true});
-  assert.match(calls[0][0],/\/rest\/v1\/rpc\/bh_rate_hit$/);assert.equal(calls[0][1].p_limit,20);assert.equal(calls[0][1].p_window_seconds,600);
+  assert.match(calls[0][0],/\/rest\/v1\/rpc\/bh_rate_hit$/);
+  // A publishable key goes on apikey only (round 23); a legacy JWT key also as Bearer.
+  assert.equal(calls[0][2].apikey,'anon');assert.equal(calls[0][2].Authorization,undefined);assert.equal(calls[0][1].p_limit,20);assert.equal(calls[0][1].p_window_seconds,600);
   assert.doesNotMatch(JSON.stringify(calls),/192\.0\.2\.50/,'the address itself is never sent');
   assert.match(calls[1][1].p_bucket,/^bake-coach:all:\d{4}-\d\d-\d\d$/);assert.equal(calls[1][1].p_limit,guard.DAILY_LIMIT);
   answer=false;assert.equal((await guard.guardModelCall('bake-coach',h('192.0.2.50'),store)).status,429);
@@ -138,5 +152,10 @@ test('round 20: the durable count decides when the store answers; memory when it
   guard.resetRateLimit();const down=async()=>{throw new Error('offline');};
   for(let i=0;i<20;i++)assert.ok((await guard.guardModelCall('bake-coach',h('192.0.2.60'),down)).ok);
   assert.equal((await guard.guardModelCall('bake-coach',h('192.0.2.60'),down)).status,429);
+  // The 21st call from another page of the same address is still the 429: the address is the rate key.
+  const other=new Map([['origin',ORIGIN],['x-forwarded-for','192.0.2.60'],['x-bh-page','pageCCCCCCCCCCCCCCCC3'],['x-bh-ask',guard.issueAskToken('bake-coach','pageCCCCCCCCCCCCCCCC3')]]);
+  assert.equal((await guard.guardModelCall('bake-coach',{get:k=>other.get(k)??null},down)).status,429);
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY='eyJhbGciOi.x.y';calls.length=0;answer=true;
+  await guard.guardModelCall('bake-coach',h('192.0.2.70'),store);assert.equal(calls[0][2].Authorization,'Bearer eyJhbGciOi.x.y');
  }finally{delete process.env.NEXT_PUBLIC_SUPABASE_URL;delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;guard.resetRateLimit();}
 });

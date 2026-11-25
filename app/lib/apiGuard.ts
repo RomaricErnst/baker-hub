@@ -5,7 +5,9 @@
 // instance, so a count in memory does not hold. Round 20 (no new paid service):
 //   1. Same origin: a browser call must come from the app's own pages (Origin, else Referer).
 //   2. A short-lived ask token the page fetches first (GET on the route), signed on the server and bound
-//      to the caller's address, so a bare script must make two calls and cannot reuse a token elsewhere.
+//      to the page's own random id (`x-bh-page`, made once per page load), so a bare script must make two
+//      calls. Round 23: it was bound to the caller's address, and a phone that changed network (Wi-Fi to
+//      4G) between the GET and the POST was refused (403); the address is now only the rate key.
 //   3. A durable count in Supabase (`bh_rate_hit`, migration 20261125_api_rate_hits.sql): one row per
 //      call, keyed by a salted hash of the address (never the address itself), counted atomically in a
 //      SECURITY DEFINER function the anon key may only execute; the table itself has RLS on and no policy.
@@ -78,19 +80,26 @@ export function sameOrigin(headers: Pick<Headers, 'get'> | undefined): boolean {
 // ── Ask token ───────────────────────────────────────────
 const TOKEN_TTL_MS = 30 * 60_000;
 
-/** A token for this address, valid 30 minutes: `<expiry>.<nonce>.<signature>`. */
-export function issueAskToken(route: string, ip: string, now = Date.now()): string {
+/** The page's random id (header `x-bh-page`), or null when it is missing or malformed. */
+export function pageIdOf(headers: Pick<Headers, 'get'> | undefined): string | null {
+  const id = headers?.get('x-bh-page')?.trim();
+  return id && /^[A-Za-z0-9_-]{16,64}$/.test(id) ? id : null;
+}
+
+/** A token for this page, valid 30 minutes: `<expiry>.<nonce>.<signature>`. It does not depend on the
+ *  caller's address, so it survives a change of network (round 23). */
+export function issueAskToken(route: string, pageId: string, now = Date.now()): string {
   const exp = String(now + TOKEN_TTL_MS);
   const nonce = randomBytes(9).toString('base64url');
-  const sig = createHmac('sha256', serverSecret('token')).update(`${route}|${hashedIp(ip)}|${exp}|${nonce}`).digest('base64url');
+  const sig = createHmac('sha256', serverSecret('token')).update(`${route}|${pageId}|${exp}|${nonce}`).digest('base64url');
   return `${exp}.${nonce}.${sig}`;
 }
 
-export function validAskToken(route: string, ip: string, token: string | null | undefined, now = Date.now()): boolean {
-  if (!token) return false;
+export function validAskToken(route: string, pageId: string | null, token: string | null | undefined, now = Date.now()): boolean {
+  if (!token || !pageId) return false;
   const [exp, nonce, sig] = token.split('.');
   if (!exp || !nonce || !sig || !/^\d+$/.test(exp) || +exp < now || +exp > now + TOKEN_TTL_MS) return false;
-  const want = createHmac('sha256', serverSecret('token')).update(`${route}|${hashedIp(ip)}|${exp}|${nonce}`).digest();
+  const want = createHmac('sha256', serverSecret('token')).update(`${route}|${pageId}|${exp}|${nonce}`).digest();
   let got: Buffer;
   try { got = Buffer.from(sig, 'base64url'); } catch { return false; }
   return got.length === want.length && timingSafeEqual(got, want);
@@ -106,26 +115,40 @@ async function durableHit(bucket: string, limit: number, windowSeconds: number, 
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   try {
+    // Round 23: the project's key is a publishable key (`sb_publishable_…`), which is not a JWT. Supabase
+    // takes it on the `apikey` header only; as `Authorization: Bearer` it is refused, so every count fell
+    // back to one instance's memory and the live limit never held. Bearer only for a legacy JWT key.
+    const headers: Record<string, string> = { apikey: key, 'Content-Type': 'application/json' };
+    if (/^eyJ/.test(key)) headers.Authorization = `Bearer ${key}`;
     const res = await doFetch(`${url}/rest/v1/rpc/bh_rate_hit`, {
       method: 'POST',
-      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ p_bucket: bucket, p_limit: limit, p_window_seconds: windowSeconds }),
       signal: AbortSignal.timeout(2500),
     });
-    if (!res.ok) return null;
+    if (!res.ok) { storeDown(`HTTP ${res.status}`); return null; }
     const body = await res.json();
     return body === true ? true : body === false ? false : null;
-  } catch { return null; }
+  } catch (err) { storeDown(err instanceof Error ? err.name : 'error'); return null; }
+}
+
+let storeDownLogged = false;
+/** Says once per instance, in the server log, that the durable count is unavailable (round 23: the
+ *  fallback had been silent, so a limit that never held looked like one that did). */
+function storeDown(why: string): void {
+  if (storeDownLogged) return;
+  storeDownLogged = true;
+  console.warn(`apiGuard: rate store unavailable (${why}); counting in this instance's memory`);
 }
 
 export type GuardResult = { ok: true } | { ok: false; status: 403 | 429; error: string };
 
-/** Every check before a model call: same origin, a valid ask token, the per-address limit and the
+/** Every check before a model call: same origin, a valid ask token for this page, the per-address limit and the
  *  route's daily cap (durable, else this instance's memory). */
 export async function guardModelCall(route: string, headers: Pick<Headers, 'get'> | undefined, doFetch: Fetch = fetch, now = Date.now()): Promise<GuardResult> {
   if (!sameOrigin(headers)) return { ok: false, status: 403, error: 'Forbidden' };
+  if (!validAskToken(route, pageIdOf(headers), headers?.get('x-bh-ask'), now)) return { ok: false, status: 403, error: 'Forbidden' };
   const ip = clientIp(headers);
-  if (!validAskToken(route, ip, headers?.get('x-bh-ask'), now)) return { ok: false, status: 403, error: 'Forbidden' };
   const own = await durableHit(`${route}:${hashedIp(ip)}`, RATE_LIMIT, WINDOW_MS / 1000, doFetch);
   const allowed = own ?? allowRequest(route, ip, now);
   if (!allowed) return { ok: false, status: 429, error: 'Too many requests' };

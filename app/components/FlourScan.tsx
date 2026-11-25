@@ -4,7 +4,7 @@ import { useLocale } from 'next-intl';
 import { FLOUR_DB } from '@/lib/flourDatabase';
 import { formatPercent } from '../utils/units';
 import { SECONDARY_CTA } from '../lib/navButtons';
-import { askToken, dropAskToken } from '../lib/askToken';
+import { askPost } from '../lib/askToken';
 
 export function matchScannedFlour(name: string) {
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -46,13 +46,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
     let text = '';
     try {
       const body = JSON.stringify({ base64, mediaType });
-      const send = async () => fetch('/api/flour-scan', {
-        method: 'POST', signal,
-        headers: { 'Content-Type': 'application/json', 'x-bh-ask': await askToken('flour-scan', signal) },
-        body,
-      });
-      let response = await send();
-      if (response.status === 403) { dropAskToken('flour-scan'); response = await send(); }
+      const response = await askPost('flour-scan', body, signal);
 
       const data = await response.json();
       if (!response.ok) {

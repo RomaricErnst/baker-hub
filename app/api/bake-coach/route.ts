@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { clientIp, guardModelCall, issueAskToken, readJsonCapped, sameOrigin } from '../../lib/apiGuard';
+import { guardModelCall, issueAskToken, pageIdOf, readJsonCapped, sameOrigin } from '../../lib/apiGuard';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -105,10 +105,11 @@ export function plainCoachText(text: string): string {
     .trim();
 }
 
-/** The page's ask token (round 20): fetched before a call, bound to the caller's address. */
+/** The page's ask token (round 20): fetched before a call, bound to the page's random id (round 23). */
 export async function GET(req: NextRequest) {
-  if (!sameOrigin(req.headers)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  return NextResponse.json({ token: issueAskToken('bake-coach', clientIp(req.headers)) }, { headers: { 'Cache-Control': 'no-store' } });
+  const page = pageIdOf(req.headers);
+  if (!sameOrigin(req.headers) || !page) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  return NextResponse.json({ token: issueAskToken('bake-coach', page) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(req: NextRequest) {

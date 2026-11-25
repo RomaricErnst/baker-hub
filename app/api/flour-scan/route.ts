@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { FLOUR_DB } from '@/lib/flourDatabase';
-import { clientIp, guardModelCall, issueAskToken, readJsonCapped, sameOrigin } from '../../lib/apiGuard';
+import { guardModelCall, issueAskToken, pageIdOf, readJsonCapped, sameOrigin } from '../../lib/apiGuard';
 
 // Abuse guard (round 18, M4): per-IP rate limit and an image of at most 5 MB.
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -8,10 +8,11 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const maxDuration = 30;
 const MAX_BODY = Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 4096;
 
-/** The page's ask token (round 20): fetched before a call, bound to the caller's address. */
+/** The page's ask token (round 20): fetched before a call, bound to the page's random id (round 23). */
 export async function GET(request: Request) {
-  if (!sameOrigin(request.headers)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  return NextResponse.json({ token: issueAskToken('flour-scan', clientIp(request.headers)) }, { headers: { 'Cache-Control': 'no-store' } });
+  const page = pageIdOf(request.headers);
+  if (!sameOrigin(request.headers) || !page) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  return NextResponse.json({ token: issueAskToken('flour-scan', page) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(request: Request) {

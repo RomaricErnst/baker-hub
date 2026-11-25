@@ -18,7 +18,7 @@ import { type ScheduleResult, formatPlanTime, finalProofWindow } from '../utils'
 import { breadCoolingRange } from '../utils/servingTime';
 import { buildMaestroContext } from '../utils/maestroContext';
 import { pieceWeightG } from '../utils/doughAllowance';
-import { askToken, dropAskToken } from '../lib/askToken';
+import { askPost } from '../lib/askToken';
 import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
@@ -451,14 +451,8 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
     setLoading(true); setError(null); setAnswer(null);
     try {
       const body = JSON.stringify({ question, stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext });
-      const send = async () => fetch('/api/bake-coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-bh-ask': await askToken('bake-coach') },
-        body,
-      });
-      let res = await send();
-      // A token from before a deployment or past its time: one fresh try.
-      if (res.status === 403) { dropAskToken('bake-coach'); res = await send(); }
+      // A token from before a deployment or past its time: one fresh try, silently (askPost).
+      const res = await askPost('bake-coach', body);
       const data = await res.json().catch(() => ({}));
       if (res.ok && typeof data.feedback === 'string' && data.feedback.trim()) setAnswer(data.feedback);
       else setError(res.status === 429 ? 'busy' : 'failed');
