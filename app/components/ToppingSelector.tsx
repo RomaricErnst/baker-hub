@@ -206,6 +206,8 @@ interface Props {
   skipLabel?:string;
   /** False until the baker has set how many (16 Nov 2026 review: "2 dough balls" before Quantity said 4). */
   countKnown?:boolean;
+  /** Main journey: the tally sits in the Your bake bar, so the line under the title stays the instruction. */
+  tallyInBar?:boolean;
   directSelectionReturn?:boolean;
   active?:boolean;
   baseReady?:boolean;
@@ -1363,7 +1365,7 @@ export function shoppingSpoonNote(note: string | undefined, fr: boolean): string
   return spoon ? `${spoon[1]} ${fr ? 'par pizza' : 'per pizza'}` : note;
 }
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,selectionForward,skipLabel,countKnown=true,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,selectionForward,skipLabel,countKnown=true,tallyInBar=false,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -1727,9 +1729,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           <h1 className="bh-page-title" style={{marginBottom:4}}>{l === 'fr' ? 'Quelles pizzas ?' : 'Which pizzas?'}</h1>
           {/* One line under the title: what to do, then a short tally (the full list is in the selection sheet). */}
           <p data-pizza-count style={{margin:'0 0 12px',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>
-            {totalQty===0
+            {totalQty===0||(tallyInBar&&countKnown&&totalQty<=numItems)
               ? (!countKnown ? (l === 'fr' ? 'Choisissez vos pizzas : vous fixerez la quantité ensuite.' : 'Pick your pizzas; you’ll set how many next.')
-                : l === 'fr' ? `Choisissez une pizza pour chacun de vos ${numItems} pâton${numItems > 1 ? 's' : ''}.` : `Pick one for each of your ${numItems} dough ball${numItems === 1 ? '' : 's'}.`)
+                : <>{l === 'fr' ? `Choisissez une pizza pour chacun de vos ${numItems} pâton${numItems > 1 ? 's' : ''}.` : `Pick one for each of your ${numItems} dough ball${numItems === 1 ? '' : 's'}.`}{totalQty>0&&<>{' '}<button type="button" data-see-selection onClick={()=>setSummarySheetOpen(true)} style={{minHeight:44,margin:'-12px 0',verticalAlign:'baseline',border:0,background:'none',color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2,padding:0,font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Voir ma sélection' : 'See my selection'}</button></>}</>)
               : <><strong style={{color:'var(--char)'}}>{!countKnown ? (l === 'fr' ? `${totalQty} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} chosen`) : totalQty > numItems
                 ? (l === 'fr' ? `${totalQty} pizzas, ${numItems} pâton${numItems > 1 ? 's' : ''} · ajoutez ${totalQty - numItems} pâton${totalQty - numItems > 1 ? 's' : ''}` : `${totalQty} pizzas, ${numItems} dough ball${numItems > 1 ? 's' : ''} · add ${totalQty - numItems} ball${totalQty - numItems > 1 ? 's' : ''}`)
                 : l === 'fr' ? `${totalQty} sur ${numItems} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} of ${numItems} chosen`}</strong>{' · '}<button type="button" data-see-selection onClick={()=>setSummarySheetOpen(true)} style={{minHeight:44,margin:'-12px 0',verticalAlign:'baseline',border:0,background:'none',color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2,padding:0,font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Voir ma sélection' : 'See my selection'}</button></>}

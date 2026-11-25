@@ -10,7 +10,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // 8: Preparation › Fillings lists every topping the shopping list has, with the standard bottom bar.
 // 10: at most one note above the steps after a recorded mix.
 // Owner (skip the pizzas): the Recipe goes on to shopping and preparation, pizzas are one optional row, and the
-//    Pizzas screen has no top skip link; its button reads "Continue without toppings →" until a pizza is picked.
+//    Pizzas screen has no top skip link; its button reads "Skip toppings →" until a pizza is picked.
 const H=3600000;
 const NOW=Date.parse('2026-11-25T02:00:00Z'); // Wed 10:00am in Singapore
 test.use({timezoneId:'Asia/Singapore'});
@@ -55,6 +55,13 @@ async function generateNeapolitan(page,fr,bake,temp='22'){
  const keep=page.locator('[data-decision-sheet] [data-simple-keep-all]');if(await keep.count())await keep.first().tap();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated,{timeout:20000}).toBe(true);
 }
+// One line, whole: no ellipsis (a .bh-cta-text span narrower than its text) and one row of text.
+const fitsOneLine=locator=>locator.evaluate(el=>{
+ const span=el.querySelector('.bh-cta-text');if(span&&span.scrollWidth>span.clientWidth+1)return false;
+ const range=document.createRange();range.selectNodeContents(span??el);
+ const tops=new Set([...range.getClientRects()].filter(r=>r.width>1).map(r=>Math.round(r.top)));
+ return tops.size===1&&el.scrollWidth<=el.clientWidth+1;
+});
 const resume=async(page,fr)=>{const r=page.getByRole('button',{name:fr?/Reprendre|Voir les ingrédients/:/Resume|View ingredients/}).first();await expect(r).toBeVisible({timeout:20000});await r.tap();};
 
 for(const fr of [false,true]){
@@ -154,19 +161,36 @@ for(const fr of [false,true]){
    await expect(page.getByRole('button',{name:L('Cook pizzas →','Cuire les pizzas →')})).toHaveCount(0);
   });
 
-  test('owner: pizzas are optional — Recipe goes on to shopping, one "Add pizzas" row, "Continue without toppings"',async({page})=>{
+  test('owner: pizzas are optional — Recipe goes on to shopping, one "Add pizzas" row, "Skip toppings"',async({page})=>{
    const s=session();
    await seeded(page,{bh_session_v1:JSON.stringify(s),bh_journal_v1:JSON.stringify([entryFor('one',s,NOW-H)]),bh_journal_current_v1:'one'},path);
    await resume(page,fr);
    await section(page,fr,L('Recipe','Recette'));
    const bar=page.locator('.bh-recipe-next:visible').last();
-   await expect(bar.locator('[data-recipe-next]')).toHaveAccessibleName(L('Next: shopping & preparation →','Suite : courses et préparation →'));
+   await expect(bar.locator('[data-recipe-next]')).toHaveAccessibleName(L('Shopping & prep →','Courses et prépa →'));
+   expect(await fitsOneLine(bar.locator('[data-recipe-next]')),'Recipe button on one line').toBe(true);
    const add=page.locator('[data-add-fillings]:visible');
    await expect(add).toHaveText(L('Add pizzas (optional)','Ajouter des pizzas (facultatif)'));
    await add.tap();
    await expect(page.locator('[data-skip-fillings]')).toHaveCount(0);
    const companion=page.locator('[data-companion-action]:visible');
-   await expect(companion.getByRole('button').last()).toHaveText(L('Continue without toppings →','Continuer sans garniture →'));
+   await expect(companion.getByRole('button').last()).toHaveText(L('Skip toppings →','Sans garniture →'));
+   expect(await fitsOneLine(companion.getByRole('button').last()),'Pizzas button on one line').toBe(true);
+   // Owner (25 Nov 2026): the tally rides in the Your bake bar once a pizza is picked.
+   const tally=page.locator('[data-navigator-bake]').filter({hasText:L(/of 4 chosen/,/sur 4 choisie/)});
+   await expect(tally).toHaveCount(0);
+   const card=page.getByRole('button',{name:/^Margherita(?: · \d+)?$/});
+   await card.getByRole('button',{name:/^\+/}).tap();
+   await expect(page.locator('[data-navigator-bake]')).toHaveText(L('· 1 of 4 chosen','· 1 sur 4 choisie'));
+   for(let i=0;i<4;i++)await card.getByRole('button',{name:/^\+/}).tap();
+   await expect(page.locator('[data-navigator-bake]')).toHaveText(L('· 5 of 4 chosen','· 5 sur 4 choisies'));
+   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+   await expect(page.locator('[data-navigator-bake]')).toBeInViewport();
+   const search=page.getByRole('searchbox').first();
+   if(await search.count()){await search.tap();await expect(page.locator('[data-navigator-bake]')).toBeInViewport();await search.blur();}
+   for(let i=0;i<5;i++)await card.getByRole('button',{name:/^[−-]/}).first().tap();
+   await expect(tally).toHaveCount(0);
+   await expect(companion.getByRole('button').last()).toHaveText(L('Skip toppings →','Sans garniture →'));
    await companion.getByRole('button').last().tap();
    await expect(page.locator('.bh-navigator-current')).toContainText(L('Shopping list','Liste de courses'));
    await section(page,fr,L('Recipe','Recette'));

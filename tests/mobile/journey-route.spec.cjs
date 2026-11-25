@@ -40,7 +40,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await expect(page.getByText(L(/Use a mixer|hand kneading/,/Utiliser un robot|pétrissage à la main/)).filter({visible:true})).toHaveCount(0);
  if(await page.locator('[data-water-help]:visible').count())await expect(page.locator('[data-water-temp]:visible').first()).toContainText(L('ice','glace'));
  // The Recipe goes on to shopping and preparation; pizzas are one optional row above the bar.
- const NEXT=L('Next: shopping & preparation →','Suite : courses et préparation →');
+ const NEXT=L('Shopping & prep →','Courses et prépa →');
  await expect(bar(page).getByRole('button')).toHaveText([L('‹ My choices','‹ Mes choix'),NEXT]);
  await expect(page.locator('[data-add-fillings]:visible')).toHaveText(L('Add pizzas (optional)','Ajouter des pizzas (facultatif)'));
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
@@ -60,7 +60,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await expect(companion.getByRole('button')).toHaveCount(2);
  await expect(companion.getByRole('button').first()).toHaveAccessibleName(L('Back to Recipe','Retour à la recette'));
  await expect(companion.getByRole('button').first().locator('[aria-hidden="true"]')).toHaveText(L('‹ Recipe','‹ Recette'));
- await expect(companion.getByRole('button').last()).toHaveText(L('Continue without toppings →','Continuer sans garniture →'));
+ await expect(companion.getByRole('button').last()).toHaveText(L('Skip toppings →','Sans garniture →'));
  // No top "Dough only? Skip" link any more (round 20): the bottom button says it.
  await expect(page.locator('[data-skip-fillings]')).toHaveCount(0);
  await companion.getByRole('button',{name:L('Back to Recipe','Retour à la recette'),exact:true}).tap();

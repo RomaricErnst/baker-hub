@@ -1366,7 +1366,7 @@ export default function Home() {
   // Pizzas/Fillings are optional (round 20, owner): the Recipe goes on to shopping and offers them as one row;
   // the selection screen has no top "Dough only? Skip" link, its bottom button says it.
   const fillingsSkipLabel:string|undefined=undefined;
-  const fillingsDoneLabel=fillingsReturn?.forward?(hasFillings?(locale==='fr'?'Liste de courses →':'Shopping list →'):(locale==='fr'?'Continuer sans garniture →':bakeType==='pizza'?'Continue without toppings →':'Continue without fillings →')):fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à la préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
+  const fillingsDoneLabel=fillingsReturn?.forward?(hasFillings?(locale==='fr'?'Liste de courses →':'Shopping list →'):(locale==='fr'?'Sans garniture →':bakeType==='pizza'?'Skip toppings →':'Skip fillings →')):fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à la préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
   // Late toppings from Preparation or Baking & serving: the normal pair, the return on the left
   // ("‹ Preparation") and the shopping list on the right (16 Nov 2026 design review).
   const fillingsForward=recipeGenerated&&fillingsReturn&&!fillingsReturn.forward&&(fillingsReturn.destination==='protocol'||fillingsReturn.destination==='service')?{
@@ -5162,6 +5162,11 @@ export default function Home() {
                 onUseCalculatedWeight={() => chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn))}
               />);
   // Recipe and My bake name the bake in full; elsewhere the section bar carries it.
+  // Pizzas: the tally rides in the sticky "Your bake" bar, so it stays in view down the catalogue
+  // and over the keyboard at no extra height (25 Nov 2026; a sticky tally row cost 44 px at 320×568).
+  const pizzaTallyN=Object.values(pizzaPartyQtys).reduce((sum,q)=>sum+Math.max(0,q),0);
+  const pizzaTally=browsingFillings&&bakeType==='pizza'&&pizzaTallyN>0&&(qtyChosen||!!recipeGenerated)
+    ?(fr?`${pizzaTallyN} sur ${numItems} choisie${pizzaTallyN>1?'s':''}`:`${pizzaTallyN} of ${numItems} chosen`):undefined;
   const compactBakeContext = recipeGenerated && !browsingFillings && ['shopping','protocol','service'].includes(destination);
   // "Your bake" lists My bake's answers; in Custom, The basics before Customize (16 Nov 2026).
   const showStepInBar = !execution&&!mixExecution&&!browsingFillings&&!setupOverview&&['batch','organisation'].includes(destination);
@@ -5192,7 +5197,7 @@ export default function Home() {
       if(styleKey&&(destination==='protocol'||destination==='service')){captureEditReturn();setBatchView('fillings');setActiveTab('batch');scrollToStepTop();return;}
       if(recipeGenerated){openToppingsStep();return;}
       setFillingsReturn(null);setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
-    contextLabel={compactBakeContext?bakeQuantityLabel(numItems,bakeType,styleKey,fr):undefined}
+    contextLabel={compactBakeContext?bakeQuantityLabel(numItems,bakeType,styleKey,fr):pizzaTally}
     stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} nextStep={journeyNext}
     headline={styleKey?(qtyChosen?bakeHeadline(bakeType,styleKey,numItems,eatTime,locale):styleDisplayName(styleKey)):undefined} bakeTimeSet={!!eatTime} /> : null;
 
@@ -5950,7 +5955,7 @@ export default function Home() {
                 hideSuggested
                 onJump={id => { setSetupOverview(false); if(id===7)setBakeTimeQuestion(true); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
-                forward={recipeGenerated&&!protocolStale&&(!fillingsReturn||(fillingsReturn.destination==='recipe'&&!fillingsReturn.forward))?{label:`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`,onClick:()=>{setFillingsReturn(null);openDestination('shopping');}}:undefined}
+                forward={recipeGenerated&&!protocolStale&&(!fillingsReturn||(fillingsReturn.destination==='recipe'&&!fillingsReturn.forward))?{label:`${(fr?'Courses et prépa':'Shopping & prep')} →`,onClick:()=>{setFillingsReturn(null);openDestination('shopping');}}:undefined}
                 onBackToRecipe={finishSetupEdit}
               />
             )}
@@ -6207,7 +6212,7 @@ export default function Home() {
                   {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{bakeType==='pizza'?(fr?'Ajouter des pizzas (facultatif)':'Add pizzas (optional)'):(fr?'Ajouter des garnitures (facultatif)':'Add fillings (optional)')}</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
-                    {(()=>{const next=oneLineCta(`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
+                    {(()=>{const next=oneLineCta(`${(fr?'Courses et prépa':'Shopping & prep')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
 
                   </BottomActions>}
                 </div>
@@ -6281,7 +6286,7 @@ export default function Home() {
                   locale={locale}
                   maestroContext={buildMaestroContext({recipe, schedule, styleKey, numItems, hydration: recipe?.hydration ?? 0, kitchenTemp, prefermentType, ovenType})}
                   kitchenTemp={kitchenTemp} prefermentType={prefermentType}
-                  countKnown={qtyChosen||!!recipeGenerated}
+                  countKnown={qtyChosen||!!recipeGenerated} tallyInBar
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
                   styleKey={styleKey ?? undefined}
@@ -6359,7 +6364,7 @@ export default function Home() {
                 modeChip={{ value: 'custom', onClick: () => { chooseMode('simple'); setSetupOverview(recipeGenerated); scrollToStepTop(); } }}
                 onJump={id => { setSetupOverview(false); if(id===9)setBakeTimeQuestion(true); customFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
-                forward={recipeGenerated&&!protocolStale&&(!fillingsReturn||(fillingsReturn.destination==='recipe'&&!fillingsReturn.forward))?{label:`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`,onClick:()=>{setFillingsReturn(null);openDestination('shopping');}}:undefined}
+                forward={recipeGenerated&&!protocolStale&&(!fillingsReturn||(fillingsReturn.destination==='recipe'&&!fillingsReturn.forward))?{label:`${(fr?'Courses et prépa':'Shopping & prep')} →`,onClick:()=>{setFillingsReturn(null);openDestination('shopping');}}:undefined}
                 onBackToRecipe={finishSetupEdit}
               />
             )}
@@ -6997,7 +7002,7 @@ export default function Home() {
                   {activeTab==='plan'&&fillingsStep&&<button type="button" data-toppings-step data-add-fillings style={{...SECONDARY_CTA,margin:'4px 0 12px'}} onClick={openToppingsStep}>{bakeType==='pizza'?(fr?'Ajouter des pizzas (facultatif)':'Add pizzas (optional)'):(fr?'Ajouter des garnitures (facultatif)':'Add fillings (optional)')}</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
-                    {(()=>{const next=oneLineCta(`${(fr?'Suite : courses et préparation':'Next: shopping & preparation')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
+                    {(()=>{const next=oneLineCta(`${(fr?'Courses et prépa':'Shopping & prep')} →`);return <button type="button" data-recipe-next className={next.className} aria-label={next['aria-label']} style={planEdit||preheatEdit?{...SECONDARY_CTA,width:'auto'}:NEXT_CTA} onClick={()=>{setFillingsReturn(null);openDestination('shopping');}}>{next.children}</button>;})()}
 
                   </BottomActions>}
                 </div>
@@ -7071,7 +7076,7 @@ export default function Home() {
                   locale={locale}
                   maestroContext={buildMaestroContext({recipe, schedule, styleKey, numItems, hydration: recipe?.hydration ?? 0, kitchenTemp, prefermentType, ovenType})}
                   kitchenTemp={kitchenTemp} prefermentType={prefermentType}
-                  countKnown={qtyChosen||!!recipeGenerated}
+                  countKnown={qtyChosen||!!recipeGenerated} tallyInBar
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
                   styleKey={styleKey ?? undefined}
