@@ -66,7 +66,7 @@ test('flour scan: images over 5 MB are refused before the provider',async()=>{
  try{
   const big=JSON.stringify({base64:'A'.repeat(Math.ceil(5.2*1024*1024*4/3)),mediaType:'image/jpeg'});
   const h=new Map([['x-forwarded-for','198.51.100.1'],['origin',ORIGIN],['x-bh-ask',guard.issueAskToken('flour-scan','198.51.100.1')]]);
-  const r=await scan({headers:{get:k=>h.get(k)??null},text:async()=>big});assert.equal(r.status,413);assert.equal(fetched.length,0);
+  const r=await scan({headers:{get:k=>h.get(k)??null},text:async()=>big});assert.equal(r.status,413);assert.equal(fetched.filter(([u])=>!String(u).includes('/rest/v1/')).length,0); // the rate store (Supabase, set in CI) may be asked; the provider never
  }finally{global.fetch=realFetch;}
 });
 test('round 20: the flour scan returns the reading only, never the provider message',async()=>{
