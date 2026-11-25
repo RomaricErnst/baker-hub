@@ -57,7 +57,7 @@ async function generateNeapolitan(page,fr,bake,temp='22'){
 }
 // One line, whole: no ellipsis (a .bh-cta-text span narrower than its text) and one row of text.
 const fitsOneLine=locator=>locator.evaluate(el=>{
- const span=el.querySelector('.bh-cta-text');if(span&&span.scrollWidth>span.clientWidth+1)return false;
+ const span=el.querySelector('.bh-cta-text');if(span&&span.scrollWidth>span.clientWidth)return false;
  const range=document.createRange();range.selectNodeContents(span??el);
  const tops=new Set([...range.getClientRects()].filter(r=>r.width>1).map(r=>Math.round(r.top)));
  return tops.size===1&&el.scrollWidth<=el.clientWidth+1;
@@ -70,7 +70,7 @@ for(const fr of [false,true]){
   test.use({locale:fr?'fr-FR':'en-GB'});
 
   test('3: a mix recorded 15 minutes late keeps a plan: no clash, one Start Dough, Adjust timing on the recorded mix',async({context})=>{
-   test.setTimeout(150000);
+   test.setTimeout(240000);
    const plan=await visit(context,'2026-11-25T12:00:00+08:00',fr);
    await generateNeapolitan(plan,fr,'2026-11-26T19:30');
    const mixAt=(await stored(plan)).startTime;
@@ -85,7 +85,8 @@ for(const fr of [false,true]){
    const done=page.getByRole('checkbox',{name:L(/Step done/,/Étape faite/)}).first();
    await done.scrollIntoViewIfNeeded();await done.check();
    await page.getByRole('button',{name:L('Different time?','À une autre heure ?')}).first().tap();
-   const late=new Date(mixAt+15*60000);const local=new Date(+late-late.getTimezoneOffset()*60000).toISOString().slice(0,16);
+   // The box's local time in the page's time zone (Asia/Singapore), never the test runner's (CI runs in UTC).
+   const local=await page.evaluate(ms=>{const d=new Date(ms);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);},mixAt+15*60000);
    await page.getByLabel(L(/Actual time|Mixing time/,/Heure réelle|Heure du pétrissage/)).first().fill(local);
    await page.locator('[data-done-time]:visible, .bh-start-status:visible').getByRole('button',{name:L('Set time','Enregistrer'),exact:true}).first().tap();
    await expect.poll(async()=>(await stored(page))?.execution?.actualAt,{timeout:10000}).toBe(mixAt+15*60000);

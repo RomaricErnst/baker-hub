@@ -786,6 +786,9 @@ summary.bh-chevron-inline::-webkit-details-marker { display:none; }
 .bh-cta-one-line, .bh-step-actions .bh-cta-one-line { display:flex; align-items:center; justify-content:center; white-space:nowrap; min-width:0; }
 .bh-cta-one-line > .bh-cta-text { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .bh-cta-one-line > .bh-cta-arrow { flex-shrink:0; }
+/* At 320–360 px a one-line bottom-bar label gets the button's side padding back (round 20: « Courses et prépa → » was
+   one pixel short at 320 in Chromium and ellipsised in WebKit, whose Figtree runs a little wider). */
+@media (max-width: 360px) { .bh-step-actions .bh-cta-one-line { padding-left: 10px !important; padding-right: 10px !important; } }
 /* A busy-time preset that is not applied reads as an offer (a dashed outline), never as a choice already made
    (20 Nov 2026 round 6, Wei Ling read "Weekdays 9:00am – 6:00pm" as set). Applied chips keep the cream fill,
    brown border and tick. No generated text: it would join the button's accessible name. */

@@ -4,7 +4,16 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // "My bakes"; rating and note survive a reload; delete is immediate, with Undo (round 18).
 const journal=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journal_v1')||'[]'));
 // Round 20 (item 7): a bake still to come offers no rating and no Bake again; these tests move the bake into the past.
-const bakedTwoHoursAgo=(page,id)=>page.evaluate(id=>{const rows=JSON.parse(localStorage.getItem('bh_journal_v1')||'[]');for(const row of rows)if(row.id===id)row.eatTime=Date.now()-2*3600000;localStorage.setItem('bh_journal_v1',JSON.stringify(rows));},id);
+// The draft is the same bake: it moves too, or the next save writes its future bake time back over the entry's
+// (round 20 CI: WebKit saved the draft after the reload and the sheet still showed a bake to come).
+// (2 h ago: still within the 12 h when the sheet offers "Open my bake".)
+const bakedTwoHoursAgo=(page,id)=>page.evaluate(id=>{
+ const rows=JSON.parse(localStorage.getItem('bh_journal_v1')||'[]');const row=rows.find(r=>r.id===id);if(!row)return;
+ const shift=Date.now()-2*3600000-row.eatTime;
+ const move=s=>{if(!s)return s;for(const k of ['startTime','eatTime','acceptedStartTime','acceptedPreparationAt','acceptedEatTime'])if(typeof s[k]==='number')s[k]+=shift;return s;};
+ row.eatTime+=shift;move(row.session);localStorage.setItem('bh_journal_v1',JSON.stringify(rows));
+ if(localStorage.getItem('bh_journal_current_v1')===id){const d=JSON.parse(localStorage.getItem('bh_session_v1')||'null');if(d)localStorage.setItem('bh_session_v1',JSON.stringify(move(d)));}
+},id);
 async function generate(page,fr,count=1){
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
@@ -23,12 +32,19 @@ async function generate(page,fr,count=1){
  await expect.poll(async()=>(await journal(page)).length).toBe(count);
 }
 async function openMyBakes(page,fr){
- await page.getByRole('button',{name:'Menu',exact:true}).tap();
+ // A bake baked within 12 h opens its rating sheet by itself when the page comes back (round 6); on a slow
+ // runner it can land after the reload settles (round 20 CI). Close it: My bakes opens the same sheet.
+ const auto=page.getByRole('dialog',{name:fr?'FournÃ©e du journal':'Bake journal entry'});
+ for(let i=0;;i++){
+  if(await auto.count())await auto.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).tap();
+  try{await page.getByRole('button',{name:'Menu',exact:true}).tap({timeout:5000});break;}catch(e){if(i>=5)throw e;}
+ }
  await page.getByRole('button',{name:fr?'Mes fournÃ©es':'My bakes',exact:true}).tap();
 }
 
 for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in â€” rate, note, reload, delete`,async({page})=>{
  const fr=lang==='fr';
+ test.setTimeout(120000); // two reloads and a full generate: a slow runner needs more than the default minute
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  let confirms=0;page.on('dialog',d=>{confirms++;d.dismiss();});
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
@@ -75,6 +91,8 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in â€
  await expect(sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true})).toHaveAttribute('aria-pressed','true');
 
  // Delete is immediate, with Undo in My bakes where its card was (round 18, H3); never a confirm.
+ // The draft as it stands (a bake behind is no longer a live recipe on reload): Undo brings back this one.
+ const draftBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.recipeGenerated);
  await sheet.getByRole('button',{name:fr?'Supprimer de cet appareil':'Delete from this device',exact:true}).tap();
  await expect(sheet).toHaveCount(0);
  expect(await journal(page)).toEqual([]);
@@ -83,8 +101,8 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in â€
  // It was the bake on screen: its draft goes with it, and Undo brings both back.
  expect(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBeNull();
  await removed.locator('[data-journal-undo]').tap();
- expect((await journal(page)).map(e=>e.id)).toEqual([first.id]);
- expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.recipeGenerated)).toBe(true);
+ await expect.poll(async()=>(await journal(page)).map(e=>e.id)).toEqual([first.id]);
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.recipeGenerated)).toBe(draftBefore);
  await expect(menu.locator(`[data-journal-entry="${first.id}"]`)).toBeVisible();
  // Delete again and close the menu: Undo is gone.
  await menu.locator(`[data-journal-entry="${first.id}"]`).tap();
