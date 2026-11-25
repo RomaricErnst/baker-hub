@@ -612,7 +612,9 @@ export default function RecipeOutput({
   // stages add up to the whole dough; a direct dough has the whole dough only.
   const stagedPref = !!pf && !!prefermentType && prefermentType !== 'none';
   const staged = stagedPref || sdActive;
-  const stages = staged ? recipeStages(result, feedRatio ?? 1) : [];
+  // With a jar shared with another bake, this dough's levain comes from the shared feed, at its ratio (round 20, item 4:
+  // the pizza showed its own 1:1:1 build beside the bread's 1:4:4 feed for both).
+  const stages = staged ? recipeStages(result, sharedStarterFeed?.ratio ?? feedRatio ?? 1) : [];
   const yeastDoses = pf ? stageYeastDoses([pf.prefYeastGrams, pf.finalYeastGrams ?? 0], locale) : null;
   const custom = mode === 'custom';
   const pctOf = (g: number) => custom ? pctStr(Math.round(g / flour * 1000) / 10) : undefined;
@@ -624,7 +626,7 @@ export default function RecipeOutput({
   const prefName = prefermentType ? PREFERMENT_TYPES[prefermentType]?.name ?? '' : '';
   const prefYeastLabel = pf ? t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`) : '';
   const totalDoughLabel = u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`;
-  const levainBuild = sourdough ? starterBuild(sourdough.starterGramsMid, sourdough.starterGramsMax, feedRatio ?? 1) : null;
+  const levainBuild = sourdough ? starterBuild(sourdough.starterGramsMid, sourdough.starterGramsMax, sharedStarterFeed?.ratio ?? feedRatio ?? 1) : null;
   // One jar, two bakes: the jar's rest after both doughs, the amount the starter card gives (round 9, N: 61 g here, 122 g there).
   const starterLeft = sharedStarterFeed ? sharedStarterFeed.keep : sourdough && levainBuild ? Math.max(levainBuild.keep, levainBuild.total - sourdough.starterGramsMid) : 0;
 

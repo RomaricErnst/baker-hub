@@ -2533,7 +2533,7 @@ export default function Home() {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (!cr) return undefined;
     // Yeast named by type, sugar and oil listed, quantities in the selected units.
-    const items = buildDoughShoppingItems({ recipe: cr, yeastType: yeastType ?? 'instant', locale, units, flourName: flourShoppingName(styleKey ?? '', locale, flourChosen ? 'custom' : 'simple', flourBlend, !cr.preferment && !cr.sourdough) });
+    const items = buildDoughShoppingItems({ recipe: cr, yeastType: yeastType ?? 'instant', locale, units, flourName: flourShoppingName(styleKey ?? '', locale, flourChosen ? 'custom' : 'simple', flourBlend, !cr.preferment && !cr.sourdough), feedsListed: starterFeedFlour > 0 });
     if (starterFeedFlour > 0) items.push({ tickKey: 'dough_starter_feeds', name: starterFeedFlourName, amount: displayWeight(Math.round(starterFeedFlour), units, locale) });
     return items;
   }, [tab, advancedRecipe, recipe, yeastType, locale, units, styleKey, flourChosen, flourBlend, starterFeedFlour, starterFeedFlourName]);
@@ -5016,10 +5016,12 @@ export default function Home() {
     ...(prefStartTime ? [+prefStartTime] : []),
     // The starter's take-out step (round 13, item 7: Priya's pizza began its plan and Preparation at the refresh, 9:45pm,
     // after the 8:15pm take-out the guide shows first).
-    ...(yeastType==='sourdough' ? shownStarterEvents.filter(e=>!e.isPast && e.kind!=='last_fed' && e.kind!=='known_peak').map(e=>+e.time) : []),
+    // The starter's steps as the guide shows them: with a jar shared with another bake, the shared feed and the
+    // jar's steps (round 20, item 4: the pizza's Preparation header said 11:15pm while its steps said 8:15pm).
+    ...(yeastType==='sourdough' ? guideStarterEvents.filter(e=>!e.isPast && e.kind!=='last_fed' && e.kind!=='known_peak').map(e=>+starterStepShownTime(e)) : []),
   ));
-  const firstStarterAction = yeastType==='sourdough' ? shownStarterEvents.find(e=>!e.isPast && +e.time===+firstRecipeAction && e.kind!=='last_fed' && e.kind!=='known_peak') : undefined;
-  const firstRecipeActionLabel = (firstStarterAction ? starterActionLabelFor(firstStarterAction,shownStarterEvents,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
+  const firstStarterAction = yeastType==='sourdough' ? guideStarterEvents.find(e=>!e.isPast && +starterStepShownTime(e)===+firstRecipeAction && e.kind!=='last_fed' && e.kind!=='known_peak') : undefined;
+  const firstRecipeActionLabel = (firstStarterAction ? starterActionLabelFor(firstStarterAction,guideStarterEvents,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
     ? (prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish'))
     : (schedule?.availabilityActions ?? []).some(action=>action.id==='autolyse'&&+action.at===+firstRecipeAction) ? (fr?'Autolyse puis pétrissage':'Autolyse, then mixing')
     : +firstRecipeAction < +startTime ? (yeastType==='sourdough'?(fr?'Préparer le levain':'Build the levain'):(fr?'Préparer le préferment':'Make the preferment')) : (fr?'Pétrir la pâte':'Start Dough'));

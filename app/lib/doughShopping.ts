@@ -75,8 +75,11 @@ export function shoppingAmount(amount: string): string {
 
 export function doughShoppingItems(input: {
   recipe: DoughShoppingRecipe; yeastType: string; locale: string; units?: UnitSystem; flourName: string;
+  /** The starter feeds' flour has its own line (page.tsx): the levain's flour comes from those feeds, so the dough's
+   *  flour line leaves it out instead of counting it twice (round 20, item 4). */
+  feedsListed?: boolean;
 }): DoughShoppingItem[] {
-  const { recipe, yeastType, locale, units = 'metric', flourName } = input;
+  const { recipe, yeastType, locale, units = 'metric', flourName, feedsListed = false } = input;
   const fr = locale === 'fr';
   // Whole grams on a shopping list; the selected unit system like the recipe.
   const weight = (grams: number) => displayWeight(Math.round(grams), units, locale).replace(' ', ' ');
@@ -86,10 +89,11 @@ export function doughShoppingItems(input: {
     ? Number((recipe.sourdough as { starterGramsMid?: number }).starterGramsMid) || 0 : 0;
   const starterFlour = Math.round(starterGrams / 2);
   const starterHint = starterFlour > 0 ? (fr ? `dont ${weight(starterFlour)} dans le levain` : `includes ${weight(starterFlour)} in the starter`) : undefined;
+  const less = feedsListed ? starterFlour : 0;
   const flourRows: DoughShoppingItem[] = recipe.flourParts?.length
-      ? recipe.flourParts.map(part => ({ tickKey: `dough_flour_${part.key}`, name: fr ? part.nameFr : part.name, amount: weight(part.grams) }))
-      : [{ tickKey: 'dough_0', name: flourName, amount: weight(recipe.flour) }];
-  if (starterHint && flourRows[0]) flourRows[0] = { ...flourRows[0], hint: starterHint };
+      ? recipe.flourParts.map((part, index) => ({ tickKey: `dough_flour_${part.key}`, name: fr ? part.nameFr : part.name, amount: weight(part.grams - (index === 0 ? less : 0)) }))
+      : [{ tickKey: 'dough_0', name: flourName, amount: weight(recipe.flour - less) }];
+  if (starterHint && !feedsListed && flourRows[0]) flourRows[0] = { ...flourRows[0], hint: starterHint };
   const items: DoughShoppingItem[] = [
     ...flourRows,
     { tickKey: 'dough_1', name: fr ? 'Sel' : 'Salt', amount: weight(recipe.salt) },
@@ -97,7 +101,8 @@ export function doughShoppingItems(input: {
   const yeastGrams = recipe.preferment != null ? recipe.preferment.prefYeastGrams + (recipe.preferment.finalYeastGrams ?? 0) : recipe.yeast?.convertedGrams;
   const leavened = yeastType === 'sourdough' || (!!yeastGrams && yeastGrams > 0);
   if (yeastType === 'sourdough') {
-    items.push({ tickKey: 'dough_2', name: fr ? 'Levain actif' : 'Active starter', amount: '—' });
+    // Nothing to buy: the starter is the baker's jar (round 20: "Active starter —").
+    items.push({ tickKey: 'dough_2', name: fr ? 'Levain' : 'Starter', amount: fr ? 'votre bocal' : 'from your jar' });
   } else if (yeastGrams && yeastGrams > 0) {
     // The amount is the one for this yeast type, so the name must say which.
     const type = recipe.preferment?.prefYeastType ?? recipe.yeast?.yeastType ?? yeastType;
